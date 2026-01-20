@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -72,7 +73,7 @@ export default function SummaryBillPage() {
   const currentHeaders = React.useMemo(() => workbook[selectedSheet]?.headers || [], [workbook, selectedSheet]);
   
   const filteredHeaders = React.useMemo(() => {
-    return currentHeaders.filter(h => h && String(h).trim() !== '' && !String(h).startsWith('__EMPTY'));
+    return currentHeaders.filter(h => h && String(h).trim() !== '' && !String(h).trim().startsWith('__EMPTY'));
   }, [currentHeaders]);
 
   React.useEffect(() => {
@@ -146,16 +147,37 @@ export default function SummaryBillPage() {
         
         excelWorkbook.SheetNames.forEach(sheetName => {
             const worksheet = excelWorkbook.Sheets[sheetName];
-            const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+            const dataAsArray: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
 
-            if (jsonData && jsonData.length > 0) {
-                const newHeaders = Object.keys(jsonData[0]);
-                const sheetData = jsonData.map((row, index) => ({
-                    ...row,
-                    id: `summary-${sheetName}-${Date.now()}-${index}`
-                })) as SummaryBillData[];
+            if (!dataAsArray || dataAsArray.length === 0) return;
 
-                newWorkbook[sheetName] = { data: sheetData, headers: newHeaders };
+            // Find the first row with content to treat as header
+            let headerRowIndex = -1;
+            for(let i=0; i < dataAsArray.length; i++) {
+              if(dataAsArray[i].some(cell => cell !== "")) {
+                headerRowIndex = i;
+                break;
+              }
+            }
+
+            if(headerRowIndex === -1) return; // Sheet is empty
+
+            const headers = dataAsArray[headerRowIndex].map(h => String(h || '').trim());
+            const dataRows = dataAsArray.slice(headerRowIndex + 1);
+
+            const sheetData = dataRows.map((row, index) => {
+                const rowData: SummaryBillData = { id: `summary-${sheetName}-${Date.now()}-${index}` };
+                headers.forEach((header, i) => {
+                    rowData[header] = row[i] ?? "";
+                });
+                return rowData;
+            }).filter(obj => {
+                // Filter out rows that are completely empty (besides our ID)
+                return Object.keys(obj).some(key => key !== 'id' && obj[key] !== "");
+            });
+
+            if (sheetData.length > 0) {
+                 newWorkbook[sheetName] = { data: sheetData, headers };
             }
         });
 
@@ -164,9 +186,9 @@ export default function SummaryBillPage() {
         }
 
         setWorkbook(newWorkbook);
-        setSelectedSheet(excelWorkbook.SheetNames[0]);
+        setSelectedSheet(Object.keys(newWorkbook)[0]);
         setCurrentPage(1);
-        toast({ title: 'Import Successful', description: `${excelWorkbook.SheetNames.length} sheet(s) have been loaded.` });
+        toast({ title: 'Import Successful', description: `${Object.keys(newWorkbook).length} sheet(s) have been loaded.` });
         setImportStatus({ inProgress: false });
 
       } catch (error: any) {
