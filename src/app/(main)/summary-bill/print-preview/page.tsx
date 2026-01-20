@@ -58,7 +58,7 @@ const PrintableSummaryBill = React.forwardRef<HTMLDivElement, {
         return `${day} ${month}, ${year}`;
     };
 
-    const filteredHeaders = headers.filter(h => h && String(h).trim() !== '');
+    const filteredHeaders = headers.filter(h => h && String(h).trim() !== '' && !String(h).startsWith('__EMPTY'));
 
   return (
     <div ref={ref} className={cn("text-black bg-white w-full h-full box-border p-8", fontClass)} style={baseStyle}>
