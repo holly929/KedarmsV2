@@ -85,11 +85,23 @@ function GoogleSheetIntegrationView() {
           <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
         ) : sheetUrl ? (
           <div className="space-y-4">
+             <Alert>
+              <Printer className="h-4 w-4" />
+              <AlertTitle>How to Print</AlertTitle>
+              <AlertDescription>
+                To print your data with the app's formatting, please follow these steps:
+                <ol className="list-decimal list-inside mt-2 space-y-1">
+                  <li>In the Google Sheet below, go to <strong>File &gt; Download &gt; Microsoft Excel (.xlsx)</strong>.</li>
+                  <li>Switch to the "Upload Excel" tab on this page.</li>
+                  <li>Upload the downloaded file. You will then be able to print it.</li>
+                </ol>
+              </AlertDescription>
+            </Alert>
             <Alert>
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Having trouble editing?</AlertTitle>
+              <AlertTitle>Having trouble viewing or editing?</AlertTitle>
               <AlertDescription>
-                To view and edit the sheet, you must be logged into the correct Google account in this browser. If the sheet doesn't load, try opening it in a new tab first, then refresh this page.
+                To interact with the sheet, you must be logged into the correct Google account in this browser. If it doesn't load, try opening it in a new tab first, then refresh this page.
               </AlertDescription>
             </Alert>
             <div className="aspect-video w-full rounded-lg border">
@@ -186,7 +198,7 @@ export default function SummaryBillPage() {
     }
   };
 
-  const handleFile = (file: File | undefined) => {
+const handleFile = (file: File | undefined) => {
     if (importStatus.inProgress) return;
     if (!file) {
       toast({ variant: 'destructive', title: 'File Error', description: 'No file selected.' });
@@ -208,35 +220,48 @@ export default function SummaryBillPage() {
 
         excelWorkbook.SheetNames.forEach(sheetName => {
           const worksheet = excelWorkbook.Sheets[sheetName];
+          const sheetJson: any[] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
           
-          const dataAsArray: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+          if (sheetJson.length === 0) return;
+
           let headerRowIndex = -1;
-          for(let i=0; i < dataAsArray.length; i++) {
-            if(dataAsArray[i] && dataAsArray[i].length > 0 && dataAsArray[i].some(cell => cell != null && String(cell).trim() !== "")) {
+          for(let i=0; i < sheetJson.length; i++) {
+            if(sheetJson[i] && sheetJson[i].length > 0 && sheetJson[i].some((cell: any) => cell !== null && String(cell).trim() !== "")) {
               headerRowIndex = i;
               break;
             }
           }
           if(headerRowIndex === -1) return;
 
-          const sheetJson: any[] = XLSX.utils.sheet_to_json(worksheet, {
-              range: headerRowIndex,
-              defval: ""
-          });
-
-          const sheetData: SummaryBillData[] = sheetJson.map((row, index) => ({ id: `summary-${sheetName}-${Date.now()}-${index}`, ...row }));
-
-          if (sheetData.length > 0) {
-              const originalHeaders = Object.keys(sheetData[0]);
-              const finalHeaders = originalHeaders.filter(h => h && h.trim() !== '' && !h.startsWith('__EMPTY') && h !== 'id');
-              
-              const filteredSheetData = sheetData.filter(obj => {
-                  return finalHeaders.some(key => obj[key] !== null && String(obj[key]).trim() !== "");
-              });
-              
-              if (filteredSheetData.length > 0) {
-                  newWorkbook[sheetName] = { data: filteredSheetData, headers: finalHeaders };
+          const rawHeaders = sheetJson[headerRowIndex];
+          const validHeaderMap: { [key: number]: string } = {};
+          rawHeaders.forEach((header: any, index: number) => {
+              if (header && String(header).trim() !== '' && !String(header).startsWith('__EMPTY')) {
+                  validHeaderMap[index] = String(header).trim();
               }
+          });
+          const validHeaders = Object.values(validHeaderMap);
+          
+          const dataRows = sheetJson.slice(headerRowIndex + 1);
+          
+          const sheetData: SummaryBillData[] = dataRows
+            .map((row, index) => {
+              const rowData: SummaryBillData = { id: `summary-${sheetName}-${Date.now()}-${index}` };
+              let hasData = false;
+              Object.entries(validHeaderMap).forEach(([colIndex, headerName]) => {
+                  const val = row[parseInt(colIndex, 10)];
+                  rowData[headerName] = val;
+                  if (val !== null && String(val).trim() !== '') {
+                    hasData = true;
+                  }
+              });
+              return hasData ? rowData : null;
+            })
+            .filter((row): row is SummaryBillData => row !== null);
+
+
+          if (sheetData.length > 0 && validHeaders.length > 0) {
+              newWorkbook[sheetName] = { data: sheetData, headers: validHeaders };
           }
         });
 
@@ -558,5 +583,3 @@ export default function SummaryBillPage() {
     </>
   );
 }
-
-    
