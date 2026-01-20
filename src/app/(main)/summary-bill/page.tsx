@@ -167,7 +167,7 @@ export default function SummaryBillPage() {
             const sheetData = dataRows.map((rowArray, index) => {
                 const rowData: SummaryBillData = { id: `summary-${sheetName}-${Date.now()}-${index}` };
                 headers.forEach((header, i) => {
-                    if (header) { 
+                    if (header && String(header).trim() !== '' && !String(header).startsWith('__EMPTY')) { 
                        rowData[header] = rowArray[i] ?? "";
                     }
                 });
@@ -357,7 +357,7 @@ export default function SummaryBillPage() {
             </div>
             </CardHeader>
             <CardContent>
-            {isMobile ? renderMobileView() : renderDataView()}
+            {isMobile ? renderMobileView() : renderDesktopView()}
             </CardContent>
             {totalPages > 1 && (
               <CardFooter className="flex justify-between items-center border-t pt-4">
@@ -482,5 +482,3 @@ export default function SummaryBillPage() {
     </>
   );
 }
-
-    
