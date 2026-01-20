@@ -71,6 +71,10 @@ export default function SummaryBillPage() {
   const currentSheetData = React.useMemo(() => workbook[selectedSheet]?.data || [], [workbook, selectedSheet]);
   const currentHeaders = React.useMemo(() => workbook[selectedSheet]?.headers || [], [workbook, selectedSheet]);
   
+  const filteredHeaders = React.useMemo(() => {
+    return currentHeaders.filter(h => h && String(h).trim() !== '' && !String(h).startsWith('__EMPTY'));
+  }, [currentHeaders]);
+
   React.useEffect(() => {
     setLoading(false);
   }, []);
@@ -109,7 +113,7 @@ export default function SummaryBillPage() {
   const handlePrint = () => {
     if (currentSheetData.length > 0) {
       localStorage.setItem('selectedSummaryBillsForPrinting', JSON.stringify(currentSheetData));
-      localStorage.setItem('summaryBillHeadersForPrinting', JSON.stringify(currentHeaders));
+      localStorage.setItem('summaryBillHeadersForPrinting', JSON.stringify(filteredHeaders));
       router.push('/summary-bill/print-preview');
     } else {
       toast({
@@ -223,7 +227,7 @@ export default function SummaryBillPage() {
       <Table>
         <TableHeader>
           <TableRow>
-            {currentHeaders.map((header) => (
+            {filteredHeaders.map((header) => (
               <TableHead key={header}>{header}</TableHead>
             ))}
           </TableRow>
@@ -232,7 +236,7 @@ export default function SummaryBillPage() {
           {paginatedData.length > 0 ? (
             paginatedData.map((row) => (
               <TableRow key={row.id}>
-                {currentHeaders.map((header, cellIndex) => (
+                {filteredHeaders.map((header, cellIndex) => (
                   <TableCell key={cellIndex} className={cellIndex === 0 ? 'font-medium' : ''}>
                     {String(row[header] ?? '')}
                   </TableCell>
@@ -241,7 +245,7 @@ export default function SummaryBillPage() {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={currentHeaders.length || 1} className="h-24 text-center">
+              <TableCell colSpan={filteredHeaders.length || 1} className="h-24 text-center">
                 No results found for this sheet.
               </TableCell>
             </TableRow>
@@ -256,10 +260,10 @@ export default function SummaryBillPage() {
       {paginatedData.length > 0 ? paginatedData.map(row => (
         <Card key={row.id} className="transition-shadow hover:shadow-lg">
           <CardHeader className="flex flex-row items-start justify-between pb-2">
-            <CardTitle className="text-base font-semibold">{row[currentHeaders[0]] || 'N/A'}</CardTitle>
+            <CardTitle className="text-base font-semibold">{row[filteredHeaders[0]] || 'N/A'}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm pl-6 pr-6 pb-4">
-            {currentHeaders.slice(1).map(header => {
+            {filteredHeaders.slice(1).map(header => {
               const value = row[header];
               if (header.toLowerCase() === 'id' || !value) return null;
               return (
@@ -456,3 +460,5 @@ export default function SummaryBillPage() {
     </>
   );
 }
+
+    
