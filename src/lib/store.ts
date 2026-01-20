@@ -43,8 +43,7 @@ interface AppStore {
     propertyHeaders: string[];
     bops: Bop[];
     bopHeaders: string[];
-    summaryBills: Bop[];
-    summaryBillHeaders: string[];
+    summaryBillWorkbook: { [sheetName: string]: { data: Bop[], headers: string[] } };
     bills: Bill[];
     users: User[];
     permissions: RolePermissions;
@@ -58,8 +57,7 @@ function getDefaultStore(): AppStore {
         propertyHeaders: ['Owner Name', 'Property No', 'Town', 'Rateable Value', 'Total Payment'],
         bops: [],
         bopHeaders: ['Business Name', 'Owner Name', 'Phone Number', 'Town', 'Permit Fee', 'Payment'],
-        summaryBills: [],
-        summaryBillHeaders: [],
+        summaryBillWorkbook: {},
         bills: [],
         users: [defaultAdminUser],
         permissions: defaultPermissions,

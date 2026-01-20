@@ -7,9 +7,8 @@ import { store, saveStore } from '@/lib/store';
 import { useActivityLog } from './ActivityLogContext';
 
 interface SummaryBillContextType {
-    summaryBillData: SummaryBillData[];
-    headers: string[];
-    setSummaryBillData: (data: SummaryBillData[], headers: string[]) => void;
+    workbook: { [sheetName: string]: { data: SummaryBillData[], headers: string[] } };
+    setWorkbook: (workbook: { [sheetName: string]: { data: SummaryBillData[], headers: string[] } }) => void;
     deleteAllSummaryBills: () => void;
 }
 
@@ -17,30 +16,28 @@ const SummaryBillContext = createContext<SummaryBillContextType | undefined>(und
 
 export function SummaryBillProvider({ children }: { children: React.ReactNode }) {
     const { addLog } = useActivityLog();
-    const [summaryBillData, setSummaryBillDataState] = useState<SummaryBillData[]>([]);
-    const [headers, setHeadersState] = useState<string[]>([]);
+    const [workbook, setWorkbookState] = useState<{ [sheetName: string]: { data: SummaryBillData[], headers: string[] } }>({});
     
     useEffect(() => {
-        setSummaryBillDataState(store.summaryBills || []);
-        setHeadersState(store.summaryBillHeaders || []);
+        setWorkbookState(store.summaryBillWorkbook || {});
     }, []);
 
-    const setAndPersistData = (newData: SummaryBillData[], newHeaders: string[]) => {
-        store.summaryBills = newData;
-        store.summaryBillHeaders = newHeaders;
-        setSummaryBillDataState(newData);
-        setHeadersState(newHeaders);
+    const setAndPersistWorkbook = (newWorkbook: { [sheetName: string]: { data: SummaryBillData[], headers: string[] } }) => {
+        store.summaryBillWorkbook = newWorkbook;
+        setWorkbookState(newWorkbook);
         saveStore();
     };
 
     const deleteAllSummaryBills = () => {
-        const count = store.summaryBills.length;
-        setAndPersistData([], []);
-        addLog('Cleared Summary Bills', `${count} records deleted`);
+        const count = Object.values(store.summaryBillWorkbook).reduce((acc, sheet) => acc + sheet.data.length, 0);
+        setAndPersistWorkbook({});
+        if (count > 0) {
+            addLog('Cleared Summary Bills', `${count} records deleted from all sheets`);
+        }
     };
 
     return (
-        <SummaryBillContext.Provider value={{ summaryBillData, headers, setSummaryBillData: setAndPersistData, deleteAllSummaryBills }}>
+        <SummaryBillContext.Provider value={{ workbook, setWorkbook: setAndPersistWorkbook, deleteAllSummaryBills }}>
             {children}
         </SummaryBillContext.Provider>
     );

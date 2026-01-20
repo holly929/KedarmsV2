@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -34,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSummaryBillData } from '@/context/SummaryBillContext';
@@ -45,7 +46,6 @@ import type { Bop as SummaryBillData } from '@/lib/types';
 
 
 const ROWS_PER_PAGE = 15;
-const IMPORT_CHUNK_SIZE = 200;
 
 export default function SummaryBillPage() {
   useRequirePermission();
@@ -55,35 +55,45 @@ export default function SummaryBillPage() {
   const { user: authUser } = useAuth();
   const isViewer = authUser?.role === 'Viewer';
 
-  const { summaryBillData, headers, setSummaryBillData, deleteAllSummaryBills } = useSummaryBillData();
+  const { workbook, setWorkbook, deleteAllSummaryBills } = useSummaryBillData();
   const [loading, setLoading] = React.useState(true);
   
+  const [selectedSheet, setSelectedSheet] = React.useState<string>('');
   const [filter, setFilter] = React.useState('');
   const [currentPage, setCurrentPage] = React.useState(1);
   const isMobile = useIsMobile();
 
   const [importStatus, setImportStatus] = React.useState<{
     inProgress: boolean;
-    total: number;
-    processed: number;
-  }>({ inProgress: false, total: 0, processed: 0 });
+  }>({ inProgress: false });
 
   const [isDragging, setIsDragging] = React.useState(false);
+
+  const sheetNames = React.useMemo(() => Object.keys(workbook), [workbook]);
+  const currentSheetData = React.useMemo(() => workbook[selectedSheet]?.data || [], [workbook, selectedSheet]);
+  const currentHeaders = React.useMemo(() => workbook[selectedSheet]?.headers || [], [workbook, selectedSheet]);
   
   React.useEffect(() => {
-    if(summaryBillData.length >= 0) {
-      setLoading(false);
+    setLoading(false);
+  }, []);
+
+  React.useEffect(() => {
+    if (sheetNames.length > 0 && !selectedSheet) {
+      setSelectedSheet(sheetNames[0]);
+    } else if (sheetNames.length === 0 && selectedSheet) {
+      setSelectedSheet('');
     }
-  }, [summaryBillData]);
+  }, [sheetNames, selectedSheet]);
+
 
   const filteredData = React.useMemo(() => {
-    if (!filter) return summaryBillData;
-    return summaryBillData.filter((row) =>
+    if (!filter) return currentSheetData;
+    return currentSheetData.filter((row) =>
       Object.values(row).some((value) =>
         String(value).toLowerCase().includes(filter.toLowerCase())
       )
     );
-  }, [summaryBillData, filter]);
+  }, [currentSheetData, filter]);
   
   const totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE);
 
@@ -96,18 +106,18 @@ export default function SummaryBillPage() {
   
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [filter]);
+  }, [filter, selectedSheet]);
 
   const handlePrint = () => {
-    if (summaryBillData.length > 0) {
-      localStorage.setItem('selectedSummaryBillsForPrinting', JSON.stringify(summaryBillData));
-      localStorage.setItem('summaryBillHeadersForPrinting', JSON.stringify(headers));
+    if (currentSheetData.length > 0) {
+      localStorage.setItem('selectedSummaryBillsForPrinting', JSON.stringify(currentSheetData));
+      localStorage.setItem('summaryBillHeadersForPrinting', JSON.stringify(currentHeaders));
       router.push('/summary-bill/print-preview');
     } else {
       toast({
         variant: 'destructive',
         title: 'No Data to Print',
-        description: 'Please upload data to print a summary bill.',
+        description: 'Please select a sheet with data to print.',
       });
     }
   };
@@ -123,73 +133,54 @@ export default function SummaryBillPage() {
         return;
     }
     
-    setImportStatus({ inProgress: true, total: 0, processed: 0 });
+    setImportStatus({ inProgress: true });
 
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const fileData = e.target?.result;
-        const workbook = XLSX.read(fileData, { type: 'binary' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+        const excelWorkbook = XLSX.read(fileData, { type: 'binary' });
+        const newWorkbook: { [sheetName: string]: { data: SummaryBillData[], headers: string[] } } = {};
         
-        if (!jsonData || jsonData.length < 2) {
-          throw new Error("Spreadsheet is empty or has only headers.");
+        excelWorkbook.SheetNames.forEach(sheetName => {
+            const worksheet = excelWorkbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+
+            if (jsonData && jsonData.length >= 1) {
+                const headerRow = jsonData[0] as any[];
+                const newHeaders = headerRow.map(h => String(h || ''));
+                const dataRows = (jsonData.slice(1) as any[][]).filter(row => row.some(cell => cell !== ''));
+
+                const sheetData = dataRows.map((row, index) => {
+                    const rowData: SummaryBillData = { id: `summary-${sheetName}-${Date.now()}-${index}` };
+                    newHeaders.forEach((header, i) => {
+                        rowData[header] = row[i];
+                    });
+                    return rowData;
+                });
+
+                newWorkbook[sheetName] = { data: sheetData, headers: newHeaders };
+            }
+        });
+
+        if (Object.keys(newWorkbook).length === 0) {
+            throw new Error("No readable sheets with data found in the Excel file.");
         }
 
-        const headerRow = jsonData[0] as any[];
-        const newHeaders = headerRow.map(h => String(h || ''));
-
-        const dataRows = (jsonData.slice(1) as any[][]).filter(row => row.some(cell => cell !== ''));
-
-        if (dataRows.length === 0) {
-            throw new Error("No data rows found in the spreadsheet.");
-        }
-        
-        setImportStatus(prev => ({ ...prev, total: dataRows.length }));
-        
-        let allNewData: SummaryBillData[] = [];
-        let currentIndex = 0;
-        
-        const processChunk = () => {
-          if (currentIndex >= dataRows.length) {
-              setSummaryBillData(allNewData, newHeaders);
-              setCurrentPage(1);
-              toast({ title: 'Import Successful', description: `${allNewData.length} records have been loaded.` });
-              setImportStatus({ inProgress: false, total: 0, processed: 0 });
-              return;
-          }
-
-          const nextIndex = Math.min(currentIndex + IMPORT_CHUNK_SIZE, dataRows.length);
-          const chunk = dataRows.slice(currentIndex, nextIndex);
-          
-          const chunkData: SummaryBillData[] = chunk.map((row, chunkIndex) => {
-              const rowIndex = currentIndex + chunkIndex;
-              const rowData: SummaryBillData = { id: `summary-imported-${Date.now()}-${rowIndex}` };
-              newHeaders.forEach((header, index) => {
-                  rowData[header] = row[index];
-              });
-              return rowData;
-          });
-          
-          allNewData.push(...chunkData);
-          setImportStatus(prev => ({ ...prev, processed: nextIndex }));
-          currentIndex = nextIndex;
-          
-          setTimeout(processChunk, 0);
-        }
-        
-        processChunk();
+        setWorkbook(newWorkbook);
+        setSelectedSheet(excelWorkbook.SheetNames[0]);
+        setCurrentPage(1);
+        toast({ title: 'Import Successful', description: `${excelWorkbook.SheetNames.length} sheet(s) have been loaded.` });
+        setImportStatus({ inProgress: false });
 
       } catch (error: any) {
         toast({ variant: 'destructive', title: 'Import Error', description: error.message || 'Failed to parse the Excel file.' });
-        setImportStatus({ inProgress: false, total: 0, processed: 0 });
+        setImportStatus({ inProgress: false });
       }
     };
     reader.onerror = () => {
         toast({ variant: 'destructive', title: 'File Read Error', description: 'Could not read the selected file.' });
-        setImportStatus({ inProgress: false, total: 0, processed: 0 });
+        setImportStatus({ inProgress: false });
     }
     reader.readAsBinaryString(file);
   };
@@ -240,7 +231,7 @@ export default function SummaryBillPage() {
       <Table>
         <TableHeader>
           <TableRow>
-            {headers.map((header) => (
+            {currentHeaders.map((header) => (
               <TableHead key={header}>{header}</TableHead>
             ))}
           </TableRow>
@@ -249,7 +240,7 @@ export default function SummaryBillPage() {
           {paginatedData.length > 0 ? (
             paginatedData.map((row) => (
               <TableRow key={row.id}>
-                {headers.map((header, cellIndex) => (
+                {currentHeaders.map((header, cellIndex) => (
                   <TableCell key={cellIndex} className={cellIndex === 0 ? 'font-medium' : ''}>
                     {String(getPropertyValue(row, header) ?? '')}
                   </TableCell>
@@ -258,8 +249,8 @@ export default function SummaryBillPage() {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={headers.length} className="h-24 text-center">
-                No results found.
+              <TableCell colSpan={currentHeaders.length || 1} className="h-24 text-center">
+                No results found for this sheet.
               </TableCell>
             </TableRow>
           )}
@@ -273,10 +264,10 @@ export default function SummaryBillPage() {
       {paginatedData.length > 0 ? paginatedData.map(row => (
         <Card key={row.id} className="transition-shadow hover:shadow-lg">
           <CardHeader className="flex flex-row items-start justify-between pb-2">
-            <CardTitle className="text-base font-semibold">{getPropertyValue(row, headers[0]) || 'N/A'}</CardTitle>
+            <CardTitle className="text-base font-semibold">{getPropertyValue(row, currentHeaders[0]) || 'N/A'}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm pl-6 pr-6 pb-4">
-            {headers.slice(1).map(header => {
+            {currentHeaders.slice(1).map(header => {
               const value = getPropertyValue(row, header);
               if (header.toLowerCase() === 'id' || !value) return null;
               return (
@@ -311,12 +302,6 @@ export default function SummaryBillPage() {
                 <Loader2 className="h-12 w-12 animate-spin text-primary mb-4"/>
                 <p className="text-lg font-medium text-foreground">Importing data...</p>
                 <p className="text-sm text-muted-foreground">Please wait while we process your file.</p>
-                <div className="w-full max-w-sm mt-4">
-                  <Progress value={importStatus.total > 0 ? (importStatus.processed / importStatus.total) * 100 : 0} />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {importStatus.processed} / {importStatus.total} records
-                  </p>
-                </div>
               </div>
             ) : (
               <>
@@ -330,15 +315,27 @@ export default function SummaryBillPage() {
             <CardHeader>
             <CardTitle className="font-headline">Summary Bill Data</CardTitle>
             <CardDescription>
-                View your {summaryBillData.length} imported records.
+                View your imported records. Use the dropdown to switch between sheets.
             </CardDescription>
             <div className="flex flex-col sm:flex-row items-center gap-2 pt-4">
                 <Input
                   placeholder="Filter data..."
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
-                  className="max-w-full sm:max-w-sm"
+                  className="max-w-full sm:max-w-xs"
                 />
+                 {sheetNames.length > 1 && (
+                    <Select value={selectedSheet} onValueChange={setSelectedSheet}>
+                        <SelectTrigger className="w-full sm:w-[200px]">
+                            <SelectValue placeholder="Select a sheet" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {sheetNames.map(name => (
+                                <SelectItem key={name} value={name}>{name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                 )}
             </div>
             </CardHeader>
             <CardContent>
@@ -347,7 +344,7 @@ export default function SummaryBillPage() {
             {totalPages > 1 && (
               <CardFooter className="flex justify-between items-center border-t pt-4">
                 <span className="text-sm text-muted-foreground">
-                  Page {currentPage} of {totalPages} ({filteredData.length} total records)
+                  Page {currentPage} of {totalPages} ({filteredData.length} total records on this sheet)
                 </span>
                 <div className="flex items-center gap-2">
                   <Button
@@ -388,12 +385,6 @@ export default function SummaryBillPage() {
                     <Loader2 className="h-12 w-12 animate-spin text-primary mb-4"/>
                     <p className="text-lg font-medium text-foreground">Importing data...</p>
                     <p className="text-sm text-muted-foreground">Please wait while we process your file.</p>
-                     <div className="w-full max-w-sm mt-4">
-                        <Progress value={importStatus.total > 0 ? (importStatus.processed / importStatus.total) * 100 : 0} />
-                        <p className="text-xs text-muted-foreground mt-1">
-                            {importStatus.processed} / {importStatus.total} records
-                        </p>
-                    </div>
                 </div>
             ) : (
                 <>
@@ -426,19 +417,19 @@ export default function SummaryBillPage() {
       <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-3xl font-bold tracking-tight font-headline">Summary Bill</h1>
         <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
-            {summaryBillData.length > 0 && !isViewer && (
+            {sheetNames.length > 0 && !isViewer && (
             <AlertDialog>
                 <AlertDialogTrigger asChild>
                     <Button variant="destructive" size="sm">
                         <Trash2 className="h-4 w-4 mr-2" />
-                        Delete All
+                        Delete All Data
                     </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete all {summaryBillData.length} records.
+                        This action cannot be undone. This will permanently delete all imported summary bill data from all sheets.
                     </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -456,7 +447,7 @@ export default function SummaryBillPage() {
                 Import
               </Button>
             }
-            {summaryBillData.length > 0 && (
+            {sheetNames.length > 0 && (
                 <Button size="sm" onClick={handlePrint}>
                     <Printer className="h-4 w-4 mr-2" />
                     Print Summary
@@ -469,7 +460,7 @@ export default function SummaryBillPage() {
         <div className="flex h-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
-      ) : summaryBillData.length > 0 ? renderDataView() : renderEmptyState()}
+      ) : sheetNames.length > 0 ? renderDataView() : renderEmptyState()}
     </>
   );
 }
