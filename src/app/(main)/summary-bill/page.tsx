@@ -185,15 +185,15 @@ export default function SummaryBillPage() {
   }, [filter, selectedSheet]);
 
   const handlePrint = () => {
-    if (currentSheetData.length > 0) {
-      localStorage.setItem('selectedSummaryBillsForPrinting', JSON.stringify(currentSheetData));
-      localStorage.setItem('summaryBillHeadersForPrinting', JSON.stringify(currentHeaders));
+    if (Object.keys(workbook).length > 0 && currentSheetData.length > 0) {
+      localStorage.setItem('summaryBillWorkbookForPrinting', JSON.stringify(workbook));
+      localStorage.setItem('activeSheetForPrinting', selectedSheet);
       router.push('/summary-bill/print-preview');
     } else {
       toast({
         variant: 'destructive',
         title: 'No Data to Print',
-        description: 'Please select a sheet with data to print.',
+        description: 'Please upload an Excel file and select a sheet with data to print.',
       });
     }
   };
@@ -583,3 +583,5 @@ const handleFile = (file: File | undefined) => {
     </>
   );
 }
+
+    

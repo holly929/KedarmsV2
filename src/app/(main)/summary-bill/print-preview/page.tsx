@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useReactToPrint } from 'react-to-print';
 import Link from 'next/link';
@@ -14,6 +14,7 @@ import { store } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type GeneralSettings = {
   assemblyName?: string;
@@ -29,7 +30,7 @@ type AppearanceSettings = {
   fontSize?: number;
 };
 
-const PrintableSummaryBill = React.forwardRef<HTMLDivElement, {
+const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
   data: SummaryBillData[];
   headers: string[];
   settings: { general: GeneralSettings, appearance: AppearanceSettings };
@@ -61,7 +62,7 @@ const PrintableSummaryBill = React.forwardRef<HTMLDivElement, {
     const filteredHeaders = headers.filter(h => h && String(h).trim() !== '' && !String(h).toLowerCase().startsWith('__empty'));
 
   return (
-    <div ref={ref} className={cn("text-black bg-white w-full h-full box-border p-8", fontClass)} style={baseStyle}>
+    <div className={cn("text-black bg-white w-full h-full box-border p-8", fontClass)} style={baseStyle}>
       <div className="h-full flex flex-col">
         <header className="mb-4 pb-4">
             <div className="flex justify-between items-center text-center">
@@ -114,7 +115,7 @@ const PrintableSummaryBill = React.forwardRef<HTMLDivElement, {
       </div>
     </div>
   );
-});
+}));
 PrintableSummaryBill.displayName = 'PrintableSummaryBill';
 
 export default function SummaryBillPrintPage() {
@@ -122,8 +123,9 @@ export default function SummaryBillPrintPage() {
   const componentRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   
-  const [data, setData] = useState<SummaryBillData[]>([]);
-  const [headers, setHeaders] = useState<string[]>([]);
+  const [workbook, setWorkbook] = useState<{[sheetName: string]: { data: SummaryBillData[], headers: string[] }}>({});
+  const [activeSheet, setActiveSheet] = useState<string>('');
+  const [printScope, setPrintScope] = useState<'current' | 'all'>('current');
   const [settings, setSettings] = useState<{general: GeneralSettings, appearance: AppearanceSettings}>({ general: {}, appearance: {} });
   const [isClient, setIsClient] = useState(false);
 
@@ -131,17 +133,18 @@ export default function SummaryBillPrintPage() {
     setIsClient(true);
     const loadData = () => {
         try {
-            const storedData = localStorage.getItem('selectedSummaryBillsForPrinting');
-            const storedHeaders = localStorage.getItem('summaryBillHeadersForPrinting');
-            if (storedData) setData(JSON.parse(storedData));
-            if (storedHeaders) setHeaders(JSON.parse(storedHeaders));
+            const storedWorkbook = localStorage.getItem('summaryBillWorkbookForPrinting');
+            const storedActiveSheet = localStorage.getItem('activeSheetForPrinting');
+
+            if (storedWorkbook) setWorkbook(JSON.parse(storedWorkbook));
+            if (storedActiveSheet) setActiveSheet(storedActiveSheet);
 
             setSettings({
                 general: store.settings.generalSettings || {},
                 appearance: store.settings.appearanceSettings || {},
             });
         } catch (error) {
-            console.error("Could not load data", error);
+            console.error("Could not load data for printing", error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load data for printing.' });
         }
     }
@@ -156,6 +159,19 @@ export default function SummaryBillPrintPage() {
         .no-print { display: none; } 
     }`,
   });
+  
+  const sheetNames = Object.keys(workbook);
+  const currentSheet = workbook[activeSheet];
+
+  const sheetsToRender = useMemo(() => {
+    if (printScope === 'all') {
+      return sheetNames.map(name => ({ name, ...workbook[name] }));
+    }
+    if (currentSheet) {
+      return [{ name: activeSheet, ...currentSheet }];
+    }
+    return [];
+  }, [printScope, workbook, activeSheet, sheetNames, currentSheet]);
 
   if (!isClient) {
     return (
@@ -179,28 +195,58 @@ export default function SummaryBillPrintPage() {
                 Print Preview (Summary Bill)
             </h1>
         </div>
-        <Button onClick={handlePrint} disabled={data.length === 0}>
-          <Printer className="mr-2 h-4 w-4" />
-          Print
-        </Button>
-      </header>
-
-      {data.length > 0 ? (
-         <main className="flex-grow bg-muted/40 p-8">
-            <div className="w-[210mm] min-h-[297mm] mx-auto bg-white shadow-lg">
-                <PrintableSummaryBill ref={componentRef} data={data} headers={headers} settings={settings} />
-            </div>
-         </main>
-      ) : (
-         <div className="flex-grow flex items-center justify-center text-center">
-            <div>
-                <h2 className="text-2xl font-semibold">No Data to Display</h2>
-                <p className="text-muted-foreground mt-2">
-                    Please go back and upload an Excel file to generate a summary bill.
-                </p>
-            </div>
+        <div className="flex items-center gap-4">
+            {sheetNames.length > 1 && (
+                <Select value={printScope} onValueChange={(value) => setPrintScope(value as 'current' | 'all')}>
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select print scope" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="current">Print Current Sheet</SelectItem>
+                        <SelectItem value="all">Print All Sheets</SelectItem>
+                    </SelectContent>
+                </Select>
+            )}
+            <Button onClick={handlePrint} disabled={sheetsToRender.length === 0}>
+              <Printer className="mr-2 h-4 w-4" />
+              Print
+            </Button>
         </div>
-      )}
+      </header>
+        
+      <main className="flex-grow flex items-center justify-center p-4 print:hidden">
+         <div className="text-center">
+            <h2 className="text-2xl font-semibold">Ready to Print</h2>
+             {sheetsToRender.length > 0 ? (
+                <>
+                <p className="text-muted-foreground mt-2">
+                    {printScope === 'all' 
+                        ? `This will print all ${sheetsToRender.length} sheets.` 
+                        : `This will print the "${activeSheet}" sheet.`}
+                </p>
+                <p className="text-muted-foreground mt-1">Click the "Print" button above to continue.</p>
+                </>
+             ) : (
+                <p className="text-muted-foreground mt-2 max-w-md">
+                    No data was found in the uploaded file. Please go back and upload an Excel file with data to print.
+                </p>
+             )}
+         </div>
+      </main>
+
+      <div className="invisible h-0 overflow-hidden print:visible print:h-auto print:overflow-visible">
+          {sheetsToRender.length > 0 && (
+            <div ref={componentRef}>
+                {sheetsToRender.map((sheet, index) => (
+                    <div key={sheet.name} className={index < sheetsToRender.length - 1 ? 'print-page-break' : ''}>
+                       <PrintableSummaryBill data={sheet.data} headers={sheet.headers} settings={settings} />
+                    </div>
+                ))}
+            </div>
+          )}
+      </div>
     </div>
   );
 }
+
+    
