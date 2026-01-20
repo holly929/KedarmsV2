@@ -151,33 +151,33 @@ export default function SummaryBillPage() {
 
             if (!dataAsArray || dataAsArray.length === 0) return;
 
-            // Find the first row with content to treat as header
             let headerRowIndex = -1;
             for(let i=0; i < dataAsArray.length; i++) {
-              if(dataAsArray[i].some(cell => cell !== "")) {
+              if(dataAsArray[i] && dataAsArray[i].length > 0 && dataAsArray[i].some(cell => cell != null && cell !== "")) {
                 headerRowIndex = i;
                 break;
               }
             }
 
-            if(headerRowIndex === -1) return; // Sheet is empty
+            if(headerRowIndex === -1) return;
 
             const headers = dataAsArray[headerRowIndex].map(h => String(h || '').trim());
             const dataRows = dataAsArray.slice(headerRowIndex + 1);
 
-            const sheetData = dataRows.map((row, index) => {
+            const sheetData = dataRows.map((rowArray, index) => {
                 const rowData: SummaryBillData = { id: `summary-${sheetName}-${Date.now()}-${index}` };
                 headers.forEach((header, i) => {
-                    rowData[header] = row[i] ?? "";
+                    if (header) { 
+                       rowData[header] = rowArray[i] ?? "";
+                    }
                 });
                 return rowData;
             }).filter(obj => {
-                // Filter out rows that are completely empty (besides our ID)
-                return Object.keys(obj).some(key => key !== 'id' && obj[key] !== "");
+                return Object.keys(obj).some(key => key !== 'id' && obj[key] !== null && String(obj[key]).trim() !== "");
             });
 
             if (sheetData.length > 0) {
-                 newWorkbook[sheetName] = { data: sheetData, headers };
+                 newWorkbook[sheetName] = { data: sheetData, headers: headers };
             }
         });
 
@@ -282,12 +282,12 @@ export default function SummaryBillPage() {
       {paginatedData.length > 0 ? paginatedData.map(row => (
         <Card key={row.id} className="transition-shadow hover:shadow-lg">
           <CardHeader className="flex flex-row items-start justify-between pb-2">
-            <CardTitle className="text-base font-semibold">{row[filteredHeaders[0]] || 'N/A'}</CardTitle>
+            <CardTitle className="text-base font-semibold">{filteredHeaders.length > 0 ? row[filteredHeaders[0]] : 'N/A'}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm pl-6 pr-6 pb-4">
             {filteredHeaders.slice(1).map(header => {
               const value = row[header];
-              if (header.toLowerCase() === 'id' || !value) return null;
+              if (header.toLowerCase() === 'id' || value === null || value === undefined || String(value).trim() === '') return null;
               return (
                 <div key={header} className="flex justify-between items-center text-xs">
                   <span className="font-semibold text-muted-foreground">{header}</span>
@@ -357,7 +357,7 @@ export default function SummaryBillPage() {
             </div>
             </CardHeader>
             <CardContent>
-            {isMobile ? renderMobileView() : renderDesktopView()}
+            {isMobile ? renderMobileView() : renderDataView()}
             </CardContent>
             {totalPages > 1 && (
               <CardFooter className="flex justify-between items-center border-t pt-4">
