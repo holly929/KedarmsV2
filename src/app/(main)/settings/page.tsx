@@ -71,7 +71,8 @@ const ImageUploadPreview = ({ src, alt, dataAiHint }: { src: string | null, alt:
 const permissionPageLabels: Record<PermissionPage, string> = {
   'dashboard': 'Dashboard', 'properties': 'Properties', 'billing': 'Billing', 'bills': 'Bills',
   'reports': 'Reports', 'users': 'User Management', 'settings': 'Settings', 'integrations': 'Integrations',
-  'bop': 'BOP Data', 'bop-billing': 'BOP Billing', 'defaulters': 'Defaulters', 'payment': 'Payment', 'activity-logs': 'Activity Logs'
+  'bop': 'BOP Data', 'bop-billing': 'BOP Billing', 'defaulters': 'Defaulters', 'payment': 'Payment', 'activity-logs': 'Activity Logs',
+  'summary-bill': 'Summary Bill'
 };
 
 const mockPropertyForPreview: Property = {

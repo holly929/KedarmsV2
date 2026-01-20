@@ -23,15 +23,15 @@ const defaultAdminUser: User = {
 const defaultPermissions: RolePermissions = {
   Admin: {
     dashboard: true, properties: true, billing: true, bop: true, 'bop-billing': true, bills: true, defaulters: true, reports: true,
-    users: true, settings: true, 'integrations': true, payment: true, 'activity-logs': true,
+    users: true, settings: true, 'integrations': true, payment: true, 'activity-logs': true, 'summary-bill': true,
   },
   'Data Entry': {
     dashboard: true, properties: true, billing: true, bop: true, 'bop-billing': true, bills: true, defaulters: true, reports: true,
-    users: false, settings: false, 'integrations': true, payment: true, 'activity-logs': false,
+    users: false, settings: false, 'integrations': true, payment: true, 'activity-logs': false, 'summary-bill': true,
   },
   Viewer: {
     dashboard: true, properties: false, billing: false, bop: false, 'bop-billing': false, bills: false, defaulters: false, reports: false,
-    users: false, settings: false, 'integrations': false, payment: true, 'activity-logs': false,
+    users: false, settings: false, 'integrations': false, payment: true, 'activity-logs': false, 'summary-bill': false,
   },
 };
 
@@ -43,6 +43,8 @@ interface AppStore {
     propertyHeaders: string[];
     bops: Bop[];
     bopHeaders: string[];
+    summaryBills: Bop[];
+    summaryBillHeaders: string[];
     bills: Bill[];
     users: User[];
     permissions: RolePermissions;
@@ -56,6 +58,8 @@ function getDefaultStore(): AppStore {
         propertyHeaders: ['Owner Name', 'Property No', 'Town', 'Rateable Value', 'Total Payment'],
         bops: [],
         bopHeaders: ['Business Name', 'Owner Name', 'Phone Number', 'Town', 'Permit Fee', 'Payment'],
+        summaryBills: [],
+        summaryBillHeaders: [],
         bills: [],
         users: [defaultAdminUser],
         permissions: defaultPermissions,

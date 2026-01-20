@@ -24,6 +24,7 @@ import {
   AlertCircle,
   CreditCard,
   History,
+  ClipboardList,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
@@ -49,6 +50,7 @@ import { BopProvider } from '@/context/BopDataContext';
 import { store } from '@/lib/store';
 import { UserProvider } from '@/context/UserDataContext';
 import { ActivityLogProvider, useActivityLog } from '@/context/ActivityLogContext';
+import { SummaryBillProvider } from '@/context/SummaryBillContext';
 
 
 const navItems = [
@@ -57,6 +59,7 @@ const navItems = [
   { href: '/billing', icon: ReceiptText, label: 'Billing' },
   { href: '/bop', icon: Store, label: 'BOP Data' },
   { href: '/bop-billing', icon: ReceiptText, label: 'BOP Billing' },
+  { href: '/summary-bill', icon: ClipboardList, label: 'Summary Bill' },
   { href: '/bills', icon: BookCopy, label: 'Bills' },
   { href: '/defaulters', icon: AlertCircle, label: 'Defaulters' },
   { href: '/payment', icon: CreditCard, label: 'Online Payment', isHidden: true },
@@ -239,7 +242,7 @@ function MainLayout({
 
   React.useEffect(() => {
     if (!loading && !user) {
-      router.replace('/login');
+      router.replace('/');
     }
   }, [user, loading, router]);
 
@@ -281,13 +284,15 @@ export default function LayoutWithProviders({ children }: { children: React.Reac
   return (
     <PermissionsProvider>
       <ActivityLogProvider>
-          <PropertyProvider>
+        <PropertyProvider>
           <BopProvider>
+            <SummaryBillProvider>
               <BillProvider>
-              <MainLayout>{children}</MainLayout>
+                <MainLayout>{children}</MainLayout>
               </BillProvider>
+            </SummaryBillProvider>
           </BopProvider>
-          </PropertyProvider>
+        </PropertyProvider>
       </ActivityLogProvider>
     </PermissionsProvider>
   );
