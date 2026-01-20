@@ -9,8 +9,11 @@ import {
   Loader2,
   UploadCloud,
   Printer,
+  BookCopy,
+  AlertCircle,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,17 +37,79 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSummaryBillData } from '@/context/SummaryBillContext';
 import { useAuth } from '@/context/AuthContext';
-import { Progress } from '@/components/ui/progress';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
 import type { Bop as SummaryBillData } from '@/lib/types';
-
+import { store } from '@/lib/store';
 
 const ROWS_PER_PAGE = 15;
+
+const getEditableSheetUrl = (originalUrl: string): string => {
+  if (!originalUrl) return '';
+  const regex = /spreadsheets\/d\/([a-zA-Z0-9-_]+)/;
+  const match = originalUrl.match(regex);
+  if (match && match[1]) {
+    const sheetId = match[1];
+    return `https://docs.google.com/spreadsheets/d/${sheetId}/edit?rm=minimal`;
+  }
+  return '';
+};
+
+function GoogleSheetIntegrationView() {
+  const [sheetUrl, setSheetUrl] = React.useState<string | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    setIsLoading(true);
+    const integrationsSettings = store.settings.integrationsSettings;
+    if (integrationsSettings && integrationsSettings.summaryBillGoogleSheetUrl) {
+      setSheetUrl(getEditableSheetUrl(integrationsSettings.summaryBillGoogleSheetUrl));
+    }
+    setIsLoading(false);
+  }, []);
+  
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Connected Summary Bill Sheet</CardTitle>
+        <CardDescription>View and edit your connected summary bill spreadsheet directly.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex h-64 items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+        ) : sheetUrl ? (
+          <div className="space-y-4">
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Having trouble editing?</AlertTitle>
+              <AlertDescription>
+                To view and edit the sheet, you must be logged into the correct Google account in this browser. If the sheet doesn't load, try opening it in a new tab first, then refresh this page.
+              </AlertDescription>
+            </Alert>
+            <div className="aspect-video w-full rounded-lg border">
+              <iframe src={sheetUrl} className="w-full h-full" frameBorder="0" title="Embedded Google Sheet" sandbox="allow-scripts allow-same-origin allow-forms allow-popups">Loading...</iframe>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center h-[calc(100vh-30rem)]">
+            <BookCopy className="h-12 w-12 text-muted-foreground" />
+            <h3 className="mt-4 text-lg font-semibold">No Summary Bill Spreadsheet Connected</h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Please go to the <Button variant="link" asChild className="p-0 h-auto"><Link href="/settings">Settings</Link></Button> page to connect a Google Sheet.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 
 export default function SummaryBillPage() {
   useRequirePermission();
@@ -157,14 +222,19 @@ export default function SummaryBillPage() {
 
             if(headerRowIndex === -1) return;
 
-            const originalHeaders = dataAsArray[headerRowIndex].map(h => String(h || '').trim());
-            const dataRows = dataAsArray.slice(headerRowIndex + 1);
+            const originalHeaders = dataAsArray[headerRowIndex];
 
-            const headerMapping = originalHeaders
-              .map((header, index) => ({ header, index }))
-              .filter(({ header }) => header && !header.startsWith('__EMPTY'));
-
+            const headerMapping: { header: string; index: number }[] = [];
+            originalHeaders.forEach((header, index) => {
+              const headerStr = String(header || '').trim();
+              if (headerStr && !headerStr.startsWith('__EMPTY')) {
+                headerMapping.push({ header: headerStr, index });
+              }
+            });
+            
             const finalHeaders = headerMapping.map(({ header }) => header);
+
+            const dataRows = dataAsArray.slice(headerRowIndex + 1);
 
             const sheetData = dataRows.map((rowArray, index) => {
                 const rowData: SummaryBillData = { id: `summary-${sheetName}-${Date.now()}-${index}` };
@@ -173,7 +243,7 @@ export default function SummaryBillPage() {
                 });
                 return rowData;
             }).filter(obj => {
-                return Object.keys(obj).some(key => key !== 'id' && obj[key] !== null && String(obj[key]).trim() !== "");
+                return finalHeaders.some(key => obj[key] !== null && String(obj[key]).trim() !== "");
             });
 
             if (sheetData.length > 0) {
@@ -424,63 +494,78 @@ export default function SummaryBillPage() {
 
   return (
     <>
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileSelect}
-        style={{ display: 'none' }}
-        accept=".xlsx, .xls"
-        disabled={importStatus.inProgress}
-      />
-      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight font-headline">Summary Bill</h1>
-        <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
-            {sheetNames.length > 0 && !isViewer && (
-            <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm">
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete All Data
-                    </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete all imported summary bill data from all sheets.
-                    </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleClearAll}>
-                        Yes, delete all
-                    </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-            )}
-            {!isViewer && 
-              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={importStatus.inProgress}>
-                {importStatus.inProgress ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : <FileUp className="h-4 w-4 mr-2" />}
-                Import
-              </Button>
-            }
-            {sheetNames.length > 0 && (
-                <Button size="sm" onClick={handlePrint}>
-                    <Printer className="h-4 w-4 mr-2" />
-                    Print Summary
-                </Button>
-            )}
-        </div>
       </div>
       
-      {loading ? (
-        <div className="flex h-full items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      ) : sheetNames.length > 0 ? renderDataView() : renderEmptyState()}
+      <Tabs defaultValue="upload" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="upload">Upload Excel</TabsTrigger>
+            <TabsTrigger value="google-sheet">Google Sheet Connect</TabsTrigger>
+        </TabsList>
+        <TabsContent value="upload" className="space-y-4">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div/>
+            <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
+                {sheetNames.length > 0 && !isViewer && (
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete All Data
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete all imported summary bill data from all sheets.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleClearAll}>
+                            Yes, delete all
+                        </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                )}
+                {!isViewer && 
+                  <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={importStatus.inProgress}>
+                    {importStatus.inProgress ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : <FileUp className="h-4 w-4 mr-2" />}
+                    Import
+                  </Button>
+                }
+                {sheetNames.length > 0 && (
+                    <Button size="sm" onClick={handlePrint}>
+                        <Printer className="h-4 w-4 mr-2" />
+                        Print Summary
+                    </Button>
+                )}
+            </div>
+          </div>
+          
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+            style={{ display: 'none' }}
+            accept=".xlsx, .xls"
+            disabled={importStatus.inProgress}
+          />
+          
+          {loading ? (
+            <div className="flex h-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : sheetNames.length > 0 ? renderDataView() : renderEmptyState()}
+
+        </TabsContent>
+        <TabsContent value="google-sheet">
+            <GoogleSheetIntegrationView />
+        </TabsContent>
+      </Tabs>
     </>
   );
 }
-
-    

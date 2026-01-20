@@ -45,6 +45,7 @@ const appearanceFormSchema = z.object({
 const integrationsFormSchema = z.object({
   googleSheetUrl: z.string().url("Please enter a valid Google Sheet URL.").optional().or(z.literal('')),
   bopGoogleSheetUrl: z.string().url("Please enter a valid Google Sheet URL.").optional().or(z.literal('')),
+  summaryBillGoogleSheetUrl: z.string().url("Please enter a valid Google Sheet URL.").optional().or(z.literal('')),
 });
 
 const smsFormSchema = z.object({
@@ -450,6 +451,15 @@ export default function SettingsPage() {
                         <FormLabel>Google Sheet URL for BOP Payments</FormLabel>
                         <FormControl><Input placeholder="https://docs.google.com/spreadsheets/d/..." {...field} /></FormControl>
                         <FormDescription>Link to a Google Sheet to view BOP payments data directly on the Integrations page.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField control={integrationsForm.control} name="summaryBillGoogleSheetUrl" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Google Sheet URL for Summary Bills</FormLabel>
+                        <FormControl><Input placeholder="https://docs.google.com/spreadsheets/d/..." {...field} /></FormControl>
+                        <FormDescription>Link to a Google Sheet to view Summary Bill data directly on the Summary Bill page.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
