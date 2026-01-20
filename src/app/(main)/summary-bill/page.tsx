@@ -39,7 +39,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSummaryBillData } from '@/context/SummaryBillContext';
 import { useAuth } from '@/context/AuthContext';
-import { getPropertyValue } from '@/lib/property-utils';
 import { Progress } from '@/components/ui/progress';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
 import type { Bop as SummaryBillData } from '@/lib/types';
@@ -242,7 +241,7 @@ export default function SummaryBillPage() {
               <TableRow key={row.id}>
                 {currentHeaders.map((header, cellIndex) => (
                   <TableCell key={cellIndex} className={cellIndex === 0 ? 'font-medium' : ''}>
-                    {String(getPropertyValue(row, header) ?? '')}
+                    {String(row[header] ?? '')}
                   </TableCell>
                 ))}
               </TableRow>
@@ -264,11 +263,11 @@ export default function SummaryBillPage() {
       {paginatedData.length > 0 ? paginatedData.map(row => (
         <Card key={row.id} className="transition-shadow hover:shadow-lg">
           <CardHeader className="flex flex-row items-start justify-between pb-2">
-            <CardTitle className="text-base font-semibold">{getPropertyValue(row, currentHeaders[0]) || 'N/A'}</CardTitle>
+            <CardTitle className="text-base font-semibold">{row[currentHeaders[0]] || 'N/A'}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm pl-6 pr-6 pb-4">
             {currentHeaders.slice(1).map(header => {
-              const value = getPropertyValue(row, header);
+              const value = row[header];
               if (header.toLowerCase() === 'id' || !value) return null;
               return (
                 <div key={header} className="flex justify-between items-center text-xs">
