@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -143,20 +142,14 @@ export default function SummaryBillPage() {
         
         excelWorkbook.SheetNames.forEach(sheetName => {
             const worksheet = excelWorkbook.Sheets[sheetName];
-            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+            const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-            if (jsonData && jsonData.length >= 1) {
-                const headerRow = jsonData[0] as any[];
-                const newHeaders = headerRow.map(h => String(h || ''));
-                const dataRows = (jsonData.slice(1) as any[][]).filter(row => row.some(cell => cell !== ''));
-
-                const sheetData = dataRows.map((row, index) => {
-                    const rowData: SummaryBillData = { id: `summary-${sheetName}-${Date.now()}-${index}` };
-                    newHeaders.forEach((header, i) => {
-                        rowData[header] = row[i];
-                    });
-                    return rowData;
-                });
+            if (jsonData && jsonData.length > 0) {
+                const newHeaders = Object.keys(jsonData[0]);
+                const sheetData = jsonData.map((row, index) => ({
+                    ...row,
+                    id: `summary-${sheetName}-${Date.now()}-${index}`
+                })) as SummaryBillData[];
 
                 newWorkbook[sheetName] = { data: sheetData, headers: newHeaders };
             }
