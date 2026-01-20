@@ -58,7 +58,7 @@ const PrintableSummaryBill = React.forwardRef<HTMLDivElement, {
         return `${day} ${month}, ${year}`;
     };
 
-    const filteredHeaders = headers.filter(h => h && String(h).trim() !== '' && !String(h).startsWith('__EMPTY'));
+    const filteredHeaders = headers.filter(h => h && String(h).trim() !== '' && !String(h).toLowerCase().startsWith('__empty'));
 
   return (
     <div ref={ref} className={cn("text-black bg-white w-full h-full box-border p-8", fontClass)} style={baseStyle}>
@@ -89,7 +89,7 @@ const PrintableSummaryBill = React.forwardRef<HTMLDivElement, {
               {data.map(row => (
                 <TableRow key={row.id}>
                   {filteredHeaders.map(header => (
-                    <TableCell key={header} className="border border-black">{row[header]}</TableCell>
+                    <TableCell key={header} className="border border-black">{String(row[header] ?? '')}</TableCell>
                   ))}
                 </TableRow>
               ))}
