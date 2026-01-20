@@ -58,20 +58,22 @@ const PrintableSummaryBill = React.forwardRef<HTMLDivElement, {
         return `${day} ${month}, ${year}`;
     };
 
+    const filteredHeaders = headers.filter(h => h && String(h).trim() !== '');
+
   return (
     <div ref={ref} className={cn("text-black bg-white w-full h-full box-border p-8", fontClass)} style={baseStyle}>
       <div className="h-full flex flex-col">
-        <header className="mb-4 border-b-2 border-black pb-4">
-            <div className="flex justify-center items-center text-center gap-8">
-                {settings.appearance?.ghanaLogo && <Image src={settings.appearance.ghanaLogo} alt="Ghana Coat of Arms" className="object-contain" width={80} height={80} />}
+        <header className="mb-4 pb-4">
+            <div className="flex justify-between items-center text-center">
+                {settings.appearance?.ghanaLogo ? <Image src={settings.appearance.ghanaLogo} alt="Ghana Coat of Arms" className="object-contain" width={80} height={80} /> : <div className="w-[80px]"></div>}
                 <div>
                     <h1 className="font-bold tracking-wide text-2xl">{settings.general?.assemblyName?.toUpperCase() || 'DISTRICT ASSEMBLY'}</h1>
-                    <h2 className="font-bold tracking-wide text-xl">SUMMARY BILL</h2>
                     <p className="text-sm">{settings.general?.postalAddress}</p>
                     <p className="text-sm">TEL: {settings.general?.contactPhone}</p>
                 </div>
-                {settings.appearance?.assemblyLogo && <Image src={settings.appearance.assemblyLogo} alt="Assembly Logo" className="object-contain" width={80} height={80} />}
+                {settings.appearance?.assemblyLogo ? <Image src={settings.appearance.assemblyLogo} alt="Assembly Logo" className="object-contain" width={80} height={80} /> : <div className="w-[80px]"></div>}
             </div>
+            <h2 className="font-bold tracking-wide text-xl text-center mt-4 border-y-2 border-black py-2">SUMMARY BILL</h2>
         </header>
 
         <p className="text-right mb-4">Date: {formatDate(new Date())}</p>
@@ -80,13 +82,13 @@ const PrintableSummaryBill = React.forwardRef<HTMLDivElement, {
           <Table>
             <TableHeader>
               <TableRow>
-                {headers.map(header => <TableHead key={header} className="border border-black text-black font-bold">{header}</TableHead>)}
+                {filteredHeaders.map(header => <TableHead key={header} className="border border-black text-black font-bold">{header}</TableHead>)}
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.map(row => (
                 <TableRow key={row.id}>
-                  {headers.map(header => (
+                  {filteredHeaders.map(header => (
                     <TableCell key={header} className="border border-black">{row[header]}</TableCell>
                   ))}
                 </TableRow>
