@@ -61,17 +61,15 @@ const PrintableSummaryBill = React.forwardRef<HTMLDivElement, {
   return (
     <div ref={ref} className={cn("text-black bg-white w-full h-full box-border p-8", fontClass)} style={baseStyle}>
       <div className="h-full flex flex-col">
-        <header className="flex justify-between items-start mb-4 border-b-2 border-black pb-4">
-            <div className="w-1/4 flex justify-start items-center">
+        <header className="mb-4 border-b-2 border-black pb-4">
+            <div className="flex justify-center items-center text-center gap-8">
                 {settings.appearance?.ghanaLogo && <Image src={settings.appearance.ghanaLogo} alt="Ghana Coat of Arms" className="object-contain" width={80} height={80} />}
-            </div>
-            <div className="w-1/2 text-center">
-                <h1 className="font-bold tracking-wide text-2xl">{settings.general?.assemblyName?.toUpperCase() || 'DISTRICT ASSEMBLY'}</h1>
-                <h2 className="font-bold tracking-wide text-xl">SUMMARY BILL</h2>
-                <p className="text-sm">{settings.general?.postalAddress}</p>
-                <p className="text-sm">TEL: {settings.general?.contactPhone}</p>
-            </div>
-            <div className="w-1/4 flex justify-end items-center">
+                <div>
+                    <h1 className="font-bold tracking-wide text-2xl">{settings.general?.assemblyName?.toUpperCase() || 'DISTRICT ASSEMBLY'}</h1>
+                    <h2 className="font-bold tracking-wide text-xl">SUMMARY BILL</h2>
+                    <p className="text-sm">{settings.general?.postalAddress}</p>
+                    <p className="text-sm">TEL: {settings.general?.contactPhone}</p>
+                </div>
                 {settings.appearance?.assemblyLogo && <Image src={settings.appearance.assemblyLogo} alt="Assembly Logo" className="object-contain" width={80} height={80} />}
             </div>
         </header>
