@@ -71,10 +71,6 @@ export default function SummaryBillPage() {
   const sheetNames = React.useMemo(() => Object.keys(workbook), [workbook]);
   const currentSheetData = React.useMemo(() => workbook[selectedSheet]?.data || [], [workbook, selectedSheet]);
   const currentHeaders = React.useMemo(() => workbook[selectedSheet]?.headers || [], [workbook, selectedSheet]);
-  
-  const filteredHeaders = React.useMemo(() => {
-    return currentHeaders.filter(h => h && String(h).trim() !== '' && !String(h).trim().startsWith('__EMPTY'));
-  }, [currentHeaders]);
 
   React.useEffect(() => {
     setLoading(false);
@@ -114,7 +110,7 @@ export default function SummaryBillPage() {
   const handlePrint = () => {
     if (currentSheetData.length > 0) {
       localStorage.setItem('selectedSummaryBillsForPrinting', JSON.stringify(currentSheetData));
-      localStorage.setItem('summaryBillHeadersForPrinting', JSON.stringify(filteredHeaders));
+      localStorage.setItem('summaryBillHeadersForPrinting', JSON.stringify(currentHeaders));
       router.push('/summary-bill/print-preview');
     } else {
       toast({
@@ -153,7 +149,7 @@ export default function SummaryBillPage() {
 
             let headerRowIndex = -1;
             for(let i=0; i < dataAsArray.length; i++) {
-              if(dataAsArray[i] && dataAsArray[i].length > 0 && dataAsArray[i].some(cell => cell != null && cell !== "")) {
+              if(dataAsArray[i] && dataAsArray[i].length > 0 && dataAsArray[i].some(cell => cell != null && String(cell).trim() !== "")) {
                 headerRowIndex = i;
                 break;
               }
@@ -161,15 +157,19 @@ export default function SummaryBillPage() {
 
             if(headerRowIndex === -1) return;
 
-            const headers = dataAsArray[headerRowIndex].map(h => String(h || '').trim());
+            const originalHeaders = dataAsArray[headerRowIndex].map(h => String(h || '').trim());
             const dataRows = dataAsArray.slice(headerRowIndex + 1);
+
+            const headerMapping = originalHeaders
+              .map((header, index) => ({ header, index }))
+              .filter(({ header }) => header && !header.startsWith('__EMPTY'));
+
+            const finalHeaders = headerMapping.map(({ header }) => header);
 
             const sheetData = dataRows.map((rowArray, index) => {
                 const rowData: SummaryBillData = { id: `summary-${sheetName}-${Date.now()}-${index}` };
-                headers.forEach((header, i) => {
-                    if (header && String(header).trim() !== '' && !String(header).startsWith('__EMPTY')) { 
-                       rowData[header] = rowArray[i] ?? "";
-                    }
+                headerMapping.forEach(({ header, index: headerIndex }) => {
+                    rowData[header] = rowArray[headerIndex] ?? "";
                 });
                 return rowData;
             }).filter(obj => {
@@ -177,7 +177,7 @@ export default function SummaryBillPage() {
             });
 
             if (sheetData.length > 0) {
-                 newWorkbook[sheetName] = { data: sheetData, headers: headers };
+                 newWorkbook[sheetName] = { data: sheetData, headers: finalHeaders };
             }
         });
 
@@ -249,7 +249,7 @@ export default function SummaryBillPage() {
       <Table>
         <TableHeader>
           <TableRow>
-            {filteredHeaders.map((header) => (
+            {currentHeaders.map((header) => (
               <TableHead key={header}>{header}</TableHead>
             ))}
           </TableRow>
@@ -258,8 +258,8 @@ export default function SummaryBillPage() {
           {paginatedData.length > 0 ? (
             paginatedData.map((row) => (
               <TableRow key={row.id}>
-                {filteredHeaders.map((header, cellIndex) => (
-                  <TableCell key={cellIndex} className={cellIndex === 0 ? 'font-medium' : ''}>
+                {currentHeaders.map((header) => (
+                  <TableCell key={header} className={currentHeaders.indexOf(header) === 0 ? 'font-medium' : ''}>
                     {String(row[header] ?? '')}
                   </TableCell>
                 ))}
@@ -267,7 +267,7 @@ export default function SummaryBillPage() {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={filteredHeaders.length || 1} className="h-24 text-center">
+              <TableCell colSpan={currentHeaders.length || 1} className="h-24 text-center">
                 No results found for this sheet.
               </TableCell>
             </TableRow>
@@ -282,10 +282,10 @@ export default function SummaryBillPage() {
       {paginatedData.length > 0 ? paginatedData.map(row => (
         <Card key={row.id} className="transition-shadow hover:shadow-lg">
           <CardHeader className="flex flex-row items-start justify-between pb-2">
-            <CardTitle className="text-base font-semibold">{filteredHeaders.length > 0 ? row[filteredHeaders[0]] : 'N/A'}</CardTitle>
+            <CardTitle className="text-base font-semibold">{currentHeaders.length > 0 ? row[currentHeaders[0]] : 'N/A'}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm pl-6 pr-6 pb-4">
-            {filteredHeaders.slice(1).map(header => {
+            {currentHeaders.slice(1).map(header => {
               const value = row[header];
               if (header.toLowerCase() === 'id' || value === null || value === undefined || String(value).trim() === '') return null;
               return (
@@ -482,3 +482,5 @@ export default function SummaryBillPage() {
     </>
   );
 }
+
+    
