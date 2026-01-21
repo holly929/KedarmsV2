@@ -52,14 +52,16 @@ const ROWS_PER_PAGE = 15;
 
 const getEditableSheetUrl = (originalUrl: string): string => {
   if (!originalUrl) return '';
+  // Ensure the URL is modified to be embeddable and hide some UI elements for a cleaner look
   const regex = /spreadsheets\/d\/([a-zA-Z0-9-_]+)/;
   const match = originalUrl.match(regex);
   if (match && match[1]) {
     const sheetId = match[1];
-    return `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
+    return `https://docs.google.com/spreadsheets/d/${sheetId}/edit?usp=sharing&rm=minimal`;
   }
-  return '';
+  return originalUrl; // fallback to original if regex fails
 };
+
 
 function GoogleSheetIntegrationView() {
   const [sheetUrl, setSheetUrl] = React.useState<string | null>(null);
@@ -89,10 +91,10 @@ function GoogleSheetIntegrationView() {
               <Printer className="h-4 w-4" />
               <AlertTitle>How to Print</AlertTitle>
               <AlertDescription>
-                To print your data with the app's formatting, please follow these steps:
+                To print your data with the app&apos;s formatting, please follow these steps:
                 <ol className="list-decimal list-inside mt-2 space-y-1">
                   <li>In the Google Sheet below, go to <strong>File &gt; Download &gt; Microsoft Excel (.xlsx)</strong>.</li>
-                  <li>Switch to the "Upload Excel" tab on this page.</li>
+                  <li>Switch to the &quot;Upload Excel&quot; tab on this page.</li>
                   <li>Upload the downloaded file. You will then be able to print it.</li>
                 </ol>
               </AlertDescription>
@@ -101,7 +103,7 @@ function GoogleSheetIntegrationView() {
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Having trouble viewing or editing?</AlertTitle>
               <AlertDescription>
-                To interact with the sheet, you must be logged into the correct Google account in this browser. If it doesn't load, try opening it in a new tab first, then refresh this page.
+                To interact with the sheet, you must be logged into the correct Google account in this browser. If it doesn&apos;t load, try opening it in a new tab first, then refresh this page.
               </AlertDescription>
             </Alert>
             <div className="aspect-video w-full rounded-lg border">
@@ -215,55 +217,35 @@ export default function SummaryBillPage() {
     reader.onload = (e) => {
       try {
         const fileData = e.target?.result;
-        const excelWorkbook = XLSX.read(fileData, { type: 'binary', cellDates: true, sheets: 0, header: 1 });
+        const excelWorkbook = XLSX.read(fileData, { type: 'binary', cellDates: true });
         const newWorkbook: { [sheetName: string]: { data: SummaryBillData[], headers: string[] } } = {};
         
         excelWorkbook.SheetNames.forEach(sheetName => {
             const worksheet = excelWorkbook.Sheets[sheetName];
-            const jsonData: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
+            
+            const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: null });
 
             if (jsonData.length === 0) return;
 
-            let headerRowIndex = -1;
-            let headers: string[] = [];
-            for (let i = 0; i < jsonData.length; i++) {
-                const row = jsonData[i];
-                const nonNullCells = row.filter(cell => cell !== null && String(cell).trim() !== '');
-                if (nonNullCells.length > 0) {
-                    headerRowIndex = i;
-                    headers = row.map(cell => String(cell || '').trim());
-                    break;
-                }
-            }
+            const headers = Object.keys(jsonData[0] || {}).filter(h => h && !h.startsWith('__EMPTY'));
 
-            if (headerRowIndex === -1) return;
-
-            const headerMap: { [key: string]: number } = {};
-            const validHeaders: string[] = [];
-            headers.forEach((h, i) => {
-                if (h && !h.startsWith('__EMPTY')) {
-                    headerMap[h] = i;
-                    validHeaders.push(h);
-                }
-            });
-
-            const dataRows = jsonData.slice(headerRowIndex + 1);
-
-            const sheetData = dataRows.map((row, rowIndex) => {
+            const sheetData = jsonData.map((row, rowIndex) => {
                 const newRow: SummaryBillData = { id: `summary-${sheetName}-${Date.now()}-${rowIndex}` };
                 let hasData = false;
-                validHeaders.forEach(header => {
-                    const cellValue = row[headerMap[header]];
+                
+                headers.forEach(header => {
+                    const cellValue = row[header];
                     newRow[header] = cellValue;
                     if (cellValue !== null && cellValue !== undefined && String(cellValue).trim() !== '') {
                         hasData = true;
                     }
                 });
+                
                 return hasData ? newRow : null;
             }).filter((row): row is SummaryBillData => row !== null);
 
             if (sheetData.length > 0) {
-                newWorkbook[sheetName] = { data: sheetData, headers: validHeaders };
+                newWorkbook[sheetName] = { data: sheetData, headers };
             }
         });
 
@@ -585,5 +567,3 @@ export default function SummaryBillPage() {
     </>
   );
 }
-
-    
