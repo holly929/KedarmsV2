@@ -220,26 +220,50 @@ export default function SummaryBillPage() {
 
         excelWorkbook.SheetNames.forEach(sheetName => {
           const worksheet = excelWorkbook.Sheets[sheetName];
+          const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
           
-          const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: null });
+          if (rows.length === 0) return;
 
-          if (jsonData.length === 0) return;
+          // Find the first row with actual content to treat as headers
+          let headerRowIndex = -1;
+          let headers: string[] = [];
+          for (let i = 0; i < rows.length; i++) {
+              const potentialHeaders = rows[i].filter(h => h !== null && h !== undefined && String(h).trim() !== '');
+              if (potentialHeaders.length > 0) {
+                  headerRowIndex = i;
+                  headers = rows[i];
+                  break;
+              }
+          }
+          
+          if (headerRowIndex === -1) return; // No headers found in sheet
 
-          const rawHeaders = Object.keys(jsonData[0]);
-          const validHeaders = rawHeaders.filter(h => h && String(h).trim() && !String(h).trim().startsWith('__EMPTY'));
-
+          // Create a map of valid headers and their original column index
+          const headerMap = new Map<number, string>();
+          headers.forEach((h, index) => {
+              const headerText = String(h || '').trim();
+              if (headerText && !headerText.startsWith('__EMPTY')) {
+                  headerMap.set(index, headerText);
+              }
+          });
+          
+          const validHeaders = Array.from(headerMap.values());
           if (validHeaders.length === 0) return;
 
-          const sheetData = jsonData.map((row, index) => {
-            const newRow: SummaryBillData = { id: `summary-${sheetName}-${Date.now()}-${index}` };
+          const dataRows = rows.slice(headerRowIndex + 1);
+
+          const sheetData = dataRows.map((row, rowIndex) => {
+            const newRow: SummaryBillData = { id: `summary-${sheetName}-${Date.now()}-${rowIndex}` };
             let hasData = false;
-            for (const header of validHeaders) {
-                const value = row[header];
-                newRow[header] = value;
+
+            headerMap.forEach((headerName, colIndex) => {
+                const value = row[colIndex];
+                newRow[headerName] = value;
                 if (value !== null && value !== undefined && String(value).trim() !== '') {
                     hasData = true;
                 }
-            }
+            });
+
             return hasData ? newRow : null;
           }).filter((row): row is SummaryBillData => row !== null);
           
@@ -249,13 +273,13 @@ export default function SummaryBillPage() {
         });
 
         if (Object.keys(newWorkbook).length === 0) {
-          throw new Error("No readable sheets with data found. Please ensure the first row of each sheet contains headers.");
+          throw new Error("No readable sheets with data found. Please ensure your file has at least one sheet with a header row and data.");
         }
 
         setWorkbook(newWorkbook);
         setSelectedSheet(Object.keys(newWorkbook)[0]);
         setCurrentPage(1);
-        toast({ title: 'Import Successful', description: `${Object.keys(newWorkbook).length} sheet(s) loaded. Note: Assumes first row is header.` });
+        toast({ title: 'Import Successful', description: `${Object.keys(newWorkbook).length} sheet(s) loaded.` });
 
       } catch (error: any) {
         toast({ variant: 'destructive', title: 'Import Error', description: error.message || 'Failed to parse the Excel file.' });
