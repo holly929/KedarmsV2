@@ -154,7 +154,7 @@ function DefaulterList<T extends Property | Bop>({ data, headers, isMobile, onDe
             toast({ variant: 'destructive', title: 'No Data to Export' });
             return;
         }
-        const worksheet = XLSX.utils.json_to_sheet(filteredData.map(({id, status, ...rest}) => rest));
+        const worksheet = XLSX.utils.json_to_sheet(filteredData.map(({id, status, payments, ...rest}) => rest));
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Defaulters');
         XLSX.writeFile(workbook, `${title}_defaulters_report.xlsx`);

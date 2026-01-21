@@ -132,7 +132,7 @@ export default function ReportsPage() {
       return;
     }
     
-    const exportData = reportData.map(({ status, ...rest }) => rest);
+    const exportData = reportData.map(({ status, payments, ...rest }) => rest);
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
