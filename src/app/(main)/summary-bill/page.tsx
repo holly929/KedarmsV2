@@ -198,7 +198,7 @@ export default function SummaryBillPage() {
     }
   };
 
-const handleFile = (file: File | undefined) => {
+  const handleFile = (file: File | undefined) => {
     if (importStatus.inProgress) return;
     if (!file) {
       toast({ variant: 'destructive', title: 'File Error', description: 'No file selected.' });
@@ -215,68 +215,51 @@ const handleFile = (file: File | undefined) => {
     reader.onload = (e) => {
       try {
         const fileData = e.target?.result;
-        const excelWorkbook = XLSX.read(fileData, { type: 'binary' });
+        const excelWorkbook = XLSX.read(fileData, { type: 'binary', cellDates: true });
         const newWorkbook: { [sheetName: string]: { data: SummaryBillData[], headers: string[] } } = {};
 
         excelWorkbook.SheetNames.forEach(sheetName => {
           const worksheet = excelWorkbook.Sheets[sheetName];
-          const sheetJson: any[] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
           
-          if (sheetJson.length === 0) return;
+          const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: null });
 
-          let headerRowIndex = -1;
-          for(let i=0; i < sheetJson.length; i++) {
-            if(sheetJson[i] && sheetJson[i].length > 0 && sheetJson[i].some((cell: any) => cell !== null && String(cell).trim() !== "")) {
-              headerRowIndex = i;
-              break;
-            }
-          }
-          if(headerRowIndex === -1) return;
+          if (jsonData.length === 0) return;
 
-          const rawHeaders = sheetJson[headerRowIndex];
-          const validHeaderMap: { [key: number]: string } = {};
-          rawHeaders.forEach((header: any, index: number) => {
-              if (header && String(header).trim() !== '' && !String(header).startsWith('__EMPTY')) {
-                  validHeaderMap[index] = String(header).trim();
-              }
-          });
-          const validHeaders = Object.values(validHeaderMap);
-          
-          const dataRows = sheetJson.slice(headerRowIndex + 1);
-          
-          const sheetData: SummaryBillData[] = dataRows
-            .map((row, index) => {
-              const rowData: SummaryBillData = { id: `summary-${sheetName}-${Date.now()}-${index}` };
-              let hasData = false;
-              Object.entries(validHeaderMap).forEach(([colIndex, headerName]) => {
-                  const val = row[parseInt(colIndex, 10)];
-                  rowData[headerName] = val;
-                  if (val !== null && String(val).trim() !== '') {
+          const rawHeaders = Object.keys(jsonData[0]);
+          const validHeaders = rawHeaders.filter(h => h && String(h).trim() && !String(h).trim().startsWith('__EMPTY'));
+
+          if (validHeaders.length === 0) return;
+
+          const sheetData = jsonData.map((row, index) => {
+            const newRow: SummaryBillData = { id: `summary-${sheetName}-${Date.now()}-${index}` };
+            let hasData = false;
+            for (const header of validHeaders) {
+                const value = row[header];
+                newRow[header] = value;
+                if (value !== null && value !== undefined && String(value).trim() !== '') {
                     hasData = true;
-                  }
-              });
-              return hasData ? rowData : null;
-            })
-            .filter((row): row is SummaryBillData => row !== null);
-
-
-          if (sheetData.length > 0 && validHeaders.length > 0) {
-              newWorkbook[sheetName] = { data: sheetData, headers: validHeaders };
+                }
+            }
+            return hasData ? newRow : null;
+          }).filter((row): row is SummaryBillData => row !== null);
+          
+          if (sheetData.length > 0) {
+            newWorkbook[sheetName] = { data: sheetData, headers: validHeaders };
           }
         });
 
         if (Object.keys(newWorkbook).length === 0) {
-          throw new Error("No readable sheets with data found in the Excel file.");
+          throw new Error("No readable sheets with data found. Please ensure the first row of each sheet contains headers.");
         }
 
         setWorkbook(newWorkbook);
         setSelectedSheet(Object.keys(newWorkbook)[0]);
         setCurrentPage(1);
-        toast({ title: 'Import Successful', description: `${Object.keys(newWorkbook).length} sheet(s) have been loaded.` });
-        setImportStatus({ inProgress: false });
+        toast({ title: 'Import Successful', description: `${Object.keys(newWorkbook).length} sheet(s) loaded. Note: Assumes first row is header.` });
 
       } catch (error: any) {
         toast({ variant: 'destructive', title: 'Import Error', description: error.message || 'Failed to parse the Excel file.' });
+      } finally {
         setImportStatus({ inProgress: false });
       }
     };
@@ -583,5 +566,3 @@ const handleFile = (file: File | undefined) => {
     </>
   );
 }
-
-    
