@@ -9,6 +9,7 @@ import { useRequirePermission } from '@/hooks/useRequirePermission';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { BookCopy, AlertCircle, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { store } from '@/lib/store';
 
 const getEditableSheetUrl = (originalUrl: string): string => {
   if (!originalUrl) return '';
@@ -16,16 +17,23 @@ const getEditableSheetUrl = (originalUrl: string): string => {
   const match = originalUrl.match(regex);
   if (match && match[1]) {
     const sheetId = match[1];
-    return `https://docs.google.com/spreadsheets/d/${sheetId}/edit?rm=minimal`;
+    return `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
   }
   return '';
 };
 
-// This component will not function as expected without a proper way to persist settings centrally.
-// For now, it will appear empty as the in-memory settings are not shared from the settings page.
-function GoogleSheetIntegration({ settingKey, title, description, emptyStateText }: { settingKey: 'googleSheetUrl' | 'bopGoogleSheetUrl', title: string, description: string, emptyStateText: string }) {
+function GoogleSheetIntegration({ settingKey, title, description, emptyStateText }: { settingKey: 'googleSheetUrl' | 'bopGoogleSheetUrl' | 'summaryBillGoogleSheetUrl', title: string, description: string, emptyStateText: string }) {
   const [sheetUrl, setSheetUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsLoading(true);
+    const integrationsSettings = store.settings.integrationsSettings;
+    if (integrationsSettings && integrationsSettings[settingKey]) {
+        setSheetUrl(getEditableSheetUrl(integrationsSettings[settingKey]));
+    }
+    setIsLoading(false);
+  }, [settingKey]);
 
   return (
     <Card>

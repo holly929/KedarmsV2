@@ -56,7 +56,7 @@ const getEditableSheetUrl = (originalUrl: string): string => {
   const match = originalUrl.match(regex);
   if (match && match[1]) {
     const sheetId = match[1];
-    return `https://docs.google.com/spreadsheets/d/${sheetId}/edit?rm=minimal`;
+    return `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
   }
   return '';
 };
@@ -215,55 +215,57 @@ export default function SummaryBillPage() {
     reader.onload = (e) => {
       try {
         const fileData = e.target?.result;
-        const excelWorkbook = XLSX.read(fileData, { type: 'binary', cellDates: true });
+        const excelWorkbook = XLSX.read(fileData, { type: 'binary', cellDates: true, sheets: 0, header: 1 });
         const newWorkbook: { [sheetName: string]: { data: SummaryBillData[], headers: string[] } } = {};
-
+        
         excelWorkbook.SheetNames.forEach(sheetName => {
-          const worksheet = excelWorkbook.Sheets[sheetName];
-          // Use sheet_to_json to let the library handle header detection and object creation.
-          const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-          
-          if (jsonData.length === 0) return;
+            const worksheet = excelWorkbook.Sheets[sheetName];
+            const jsonData: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
 
-          const firstRow = jsonData[0];
-          if (!firstRow) return;
+            if (jsonData.length === 0) return;
 
-          // Clean headers from the first row and create a mapping for renaming keys.
-          // This removes empty and '__EMPTY' columns.
-          const validHeaders: string[] = [];
-          Object.keys(firstRow).forEach(key => {
-              const trimmedKey = String(key || '').trim();
-              if (trimmedKey && !trimmedKey.startsWith('__EMPTY')) {
-                  // Ensure we don't have duplicate header names
-                  if (!validHeaders.includes(trimmedKey)) {
-                      validHeaders.push(trimmedKey);
-                  }
-              }
-          });
-          
-          if (validHeaders.length === 0) return; // Skip sheets with no valid headers
+            let headerRowIndex = -1;
+            let headers: string[] = [];
+            for (let i = 0; i < jsonData.length; i++) {
+                const row = jsonData[i];
+                const nonNullCells = row.filter(cell => cell !== null && String(cell).trim() !== '');
+                if (nonNullCells.length > 0) {
+                    headerRowIndex = i;
+                    headers = row.map(cell => String(cell || '').trim());
+                    break;
+                }
+            }
 
-          // Remap the data with clean keys and filter out empty rows.
-          const sheetData = jsonData.map((row, rowIndex) => {
-            const newRow: SummaryBillData = { id: `summary-${sheetName}-${Date.now()}-${rowIndex}` };
-            let hasData = false;
-            // Use validHeaders to ensure order and correctness
-            validHeaders.forEach(header => {
-                const value = row[header];
-                newRow[header] = value;
-                if (value !== null && value !== undefined && String(value).trim() !== '') {
-                    hasData = true;
+            if (headerRowIndex === -1) return;
+
+            const headerMap: { [key: string]: number } = {};
+            const validHeaders: string[] = [];
+            headers.forEach((h, i) => {
+                if (h && !h.startsWith('__EMPTY')) {
+                    headerMap[h] = i;
+                    validHeaders.push(h);
                 }
             });
-            
-            return hasData ? newRow : null;
-          }).filter((row): row is SummaryBillData => row !== null);
-          
-          if (sheetData.length > 0) {
-            newWorkbook[sheetName] = { data: sheetData, headers: validHeaders };
-          }
-        });
 
+            const dataRows = jsonData.slice(headerRowIndex + 1);
+
+            const sheetData = dataRows.map((row, rowIndex) => {
+                const newRow: SummaryBillData = { id: `summary-${sheetName}-${Date.now()}-${rowIndex}` };
+                let hasData = false;
+                validHeaders.forEach(header => {
+                    const cellValue = row[headerMap[header]];
+                    newRow[header] = cellValue;
+                    if (cellValue !== null && cellValue !== undefined && String(cellValue).trim() !== '') {
+                        hasData = true;
+                    }
+                });
+                return hasData ? newRow : null;
+            }).filter((row): row is SummaryBillData => row !== null);
+
+            if (sheetData.length > 0) {
+                newWorkbook[sheetName] = { data: sheetData, headers: validHeaders };
+            }
+        });
 
         if (Object.keys(newWorkbook).length === 0) {
           throw new Error("No readable sheets with data found. Please ensure your file has at least one sheet with a header row and data.");
