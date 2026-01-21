@@ -220,50 +220,42 @@ export default function SummaryBillPage() {
 
         excelWorkbook.SheetNames.forEach(sheetName => {
           const worksheet = excelWorkbook.Sheets[sheetName];
-          const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
+          // Use sheet_to_json to let the library handle header detection and object creation.
+          const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
           
-          if (rows.length === 0) return;
+          if (jsonData.length === 0) return;
 
-          // Find the first row with actual content to treat as headers
-          let headerRowIndex = -1;
-          let headers: string[] = [];
-          for (let i = 0; i < rows.length; i++) {
-              const potentialHeaders = rows[i].filter(h => h !== null && h !== undefined && String(h).trim() !== '');
-              if (potentialHeaders.length > 0) {
-                  headerRowIndex = i;
-                  headers = rows[i];
-                  break;
-              }
-          }
-          
-          if (headerRowIndex === -1) return; // No headers found in sheet
+          const firstRow = jsonData[0];
+          if (!firstRow) return;
 
-          // Create a map of valid headers and their original column index
-          const headerMap = new Map<number, string>();
-          headers.forEach((h, index) => {
-              const headerText = String(h || '').trim();
-              if (headerText && !headerText.startsWith('__EMPTY')) {
-                  headerMap.set(index, headerText);
+          // Clean headers from the first row and create a mapping for renaming keys.
+          // This removes empty and '__EMPTY' columns.
+          const validHeaders: string[] = [];
+          Object.keys(firstRow).forEach(key => {
+              const trimmedKey = String(key || '').trim();
+              if (trimmedKey && !trimmedKey.startsWith('__EMPTY')) {
+                  // Ensure we don't have duplicate header names
+                  if (!validHeaders.includes(trimmedKey)) {
+                      validHeaders.push(trimmedKey);
+                  }
               }
           });
           
-          const validHeaders = Array.from(headerMap.values());
-          if (validHeaders.length === 0) return;
+          if (validHeaders.length === 0) return; // Skip sheets with no valid headers
 
-          const dataRows = rows.slice(headerRowIndex + 1);
-
-          const sheetData = dataRows.map((row, rowIndex) => {
+          // Remap the data with clean keys and filter out empty rows.
+          const sheetData = jsonData.map((row, rowIndex) => {
             const newRow: SummaryBillData = { id: `summary-${sheetName}-${Date.now()}-${rowIndex}` };
             let hasData = false;
-
-            headerMap.forEach((headerName, colIndex) => {
-                const value = row[colIndex];
-                newRow[headerName] = value;
+            // Use validHeaders to ensure order and correctness
+            validHeaders.forEach(header => {
+                const value = row[header];
+                newRow[header] = value;
                 if (value !== null && value !== undefined && String(value).trim() !== '') {
                     hasData = true;
                 }
             });
-
+            
             return hasData ? newRow : null;
           }).filter((row): row is SummaryBillData => row !== null);
           
@@ -271,6 +263,7 @@ export default function SummaryBillPage() {
             newWorkbook[sheetName] = { data: sheetData, headers: validHeaders };
           }
         });
+
 
         if (Object.keys(newWorkbook).length === 0) {
           throw new Error("No readable sheets with data found. Please ensure your file has at least one sheet with a header row and data.");
@@ -340,8 +333,8 @@ export default function SummaryBillPage() {
       <Table>
         <TableHeader>
           <TableRow>
-            {currentHeaders.map((header) => (
-              <TableHead key={header}>{header}</TableHead>
+            {currentHeaders.map((header, index) => (
+              <TableHead key={`${header}-${index}`}>{header}</TableHead>
             ))}
           </TableRow>
         </TableHeader>
@@ -349,8 +342,8 @@ export default function SummaryBillPage() {
           {paginatedData.length > 0 ? (
             paginatedData.map((row) => (
               <TableRow key={row.id}>
-                {currentHeaders.map((header) => (
-                  <TableCell key={header} className={currentHeaders.indexOf(header) === 0 ? 'font-medium' : ''}>
+                {currentHeaders.map((header, index) => (
+                  <TableCell key={`${header}-${index}`} className={index === 0 ? 'font-medium' : ''}>
                     {String(row[header] ?? '')}
                   </TableCell>
                 ))}
@@ -373,14 +366,14 @@ export default function SummaryBillPage() {
       {paginatedData.length > 0 ? paginatedData.map(row => (
         <Card key={row.id} className="transition-shadow hover:shadow-lg">
           <CardHeader className="flex flex-row items-start justify-between pb-2">
-            <CardTitle className="text-base font-semibold">{currentHeaders.length > 0 ? row[currentHeaders[0]] : 'N/A'}</CardTitle>
+            <CardTitle className="text-base font-semibold">{currentHeaders.length > 0 ? String(row[currentHeaders[0]] ?? 'N/A') : 'N/A'}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm pl-6 pr-6 pb-4">
-            {currentHeaders.slice(1).map(header => {
+            {currentHeaders.slice(1).map((header, index) => {
               const value = row[header];
               if (header.toLowerCase() === 'id' || value === null || value === undefined || String(value).trim() === '') return null;
               return (
-                <div key={header} className="flex justify-between items-center text-xs">
+                <div key={`${header}-${index}`} className="flex justify-between items-center text-xs">
                   <span className="font-semibold text-muted-foreground">{header}</span>
                   <span className="text-right">{String(value)}</span>
                 </div>
@@ -590,3 +583,5 @@ export default function SummaryBillPage() {
     </>
   );
 }
+
+    
