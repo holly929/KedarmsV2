@@ -52,14 +52,13 @@ const ROWS_PER_PAGE = 15;
 
 const getEditableSheetUrl = (originalUrl: string): string => {
   if (!originalUrl) return '';
-  // Ensure the URL is modified to be embeddable and hide some UI elements for a cleaner look
   const regex = /spreadsheets\/d\/([a-zA-Z0-9-_]+)/;
   const match = originalUrl.match(regex);
   if (match && match[1]) {
     const sheetId = match[1];
-    return `https://docs.google.com/spreadsheets/d/${sheetId}/edit?usp=sharing&rm=minimal`;
+    return `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
   }
-  return originalUrl; // fallback to original if regex fails
+  return originalUrl;
 };
 
 
@@ -222,19 +221,27 @@ export default function SummaryBillPage() {
         
         excelWorkbook.SheetNames.forEach(sheetName => {
             const worksheet = excelWorkbook.Sheets[sheetName];
-            
-            const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: null });
+            const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { header: 'A', defval: "" });
 
             if (jsonData.length === 0) return;
 
-            const headers = Object.keys(jsonData[0] || {}).filter(h => h && !h.startsWith('__EMPTY'));
+            let headerRowIndex = jsonData.findIndex(row => Object.values(row).some(cell => cell !== null && String(cell).trim() !== ''));
+            if (headerRowIndex === -1) return;
 
-            const sheetData = jsonData.map((row, rowIndex) => {
+            const headerRow = jsonData[headerRowIndex];
+            const headers = Object.values(headerRow).map(h => String(h).trim()).filter(h => h);
+            
+            if (headers.length === 0) return;
+            
+            const dataRows = jsonData.slice(headerRowIndex + 1);
+
+            const sheetData = dataRows.map((row, rowIndex) => {
                 const newRow: SummaryBillData = { id: `summary-${sheetName}-${Date.now()}-${rowIndex}` };
                 let hasData = false;
                 
-                headers.forEach(header => {
-                    const cellValue = row[header];
+                headers.forEach((header, index) => {
+                    const cellKey = Object.keys(headerRow)[index];
+                    const cellValue = row[cellKey];
                     newRow[header] = cellValue;
                     if (cellValue !== null && cellValue !== undefined && String(cellValue).trim() !== '') {
                         hasData = true;
@@ -243,6 +250,7 @@ export default function SummaryBillPage() {
                 
                 return hasData ? newRow : null;
             }).filter((row): row is SummaryBillData => row !== null);
+
 
             if (sheetData.length > 0) {
                 newWorkbook[sheetName] = { data: sheetData, headers };
@@ -567,3 +575,4 @@ export default function SummaryBillPage() {
     </>
   );
 }
+ 
