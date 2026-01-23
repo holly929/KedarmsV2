@@ -134,13 +134,13 @@ export default function PropertiesPage() {
     reader.onload = (e) => {
       try {
         const fileData = e.target?.result;
-        const workbook = XLSX.read(fileData, { type: 'binary' });
+        const workbook = XLSX.read(fileData, { type: 'binary', cellDates: true });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         
         const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-        const cleanData = jsonData.filter(row => Object.values(row).some(cell => cell !== null && cell !== ''));
+        const cleanData = jsonData.filter(row => Object.values(row).some(cell => cell !== null && String(cell).trim() !== ''));
 
         if (cleanData.length === 0) {
             throw new Error("No data with content found in the spreadsheet.");

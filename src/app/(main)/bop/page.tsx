@@ -131,45 +131,15 @@ export default function BopPage() {
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         
-        const data: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
+        const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
         
-        if (data.length === 0) throw new Error("No data found in the spreadsheet.");
-
-        let headerIndex = -1;
-        for (let i = 0; i < data.length; i++) {
-          if (data[i].some(cell => cell !== null && String(cell).trim() !== '')) {
-            headerIndex = i;
-            break;
-          }
+        const cleanData = jsonData.filter(row => Object.values(row).some(cell => cell !== null && String(cell).trim() !== ''));
+        
+        if (cleanData.length === 0) {
+            throw new Error("No data with content found in the spreadsheet.");
         }
-        if (headerIndex === -1) throw new Error("Could not find a valid header row.");
 
-        const rawHeaders: string[] = data[headerIndex];
-        const headerMap = new Map<number, string>();
-        const finalHeaders: string[] = [];
-        rawHeaders.forEach((header, index) => {
-          if (header !== null && String(header).trim() !== '') {
-            const trimmedHeader = String(header).trim();
-            headerMap.set(index, trimmedHeader);
-            finalHeaders.push(trimmedHeader);
-          }
-        });
-        
-        if (finalHeaders.length === 0) throw new Error("No valid column headers found.");
-
-        const dataRows = data.slice(headerIndex + 1);
-        const cleanData = dataRows.map(rowArray => {
-          const rowObject: any = {};
-          let hasData = false;
-          headerMap.forEach((header, colIndex) => {
-            const value = rowArray[colIndex];
-            rowObject[header] = value;
-            if (value !== null && String(value).trim() !== '') hasData = true;
-          });
-          return hasData ? rowObject : null;
-        }).filter(Boolean);
-
-        if (!cleanData || cleanData.length === 0) throw new Error("Spreadsheet contains headers but no data rows.");
+        const finalHeaders = Object.keys(cleanData[0]);
         
         setImportStatus(prev => ({ ...prev, total: cleanData.length }));
         
@@ -177,7 +147,7 @@ export default function BopPage() {
         let currentIndex = 0;
         
         const processChunk = () => {
-          if (currentIndex >= (cleanData as any[]).length) {
+          if (currentIndex >= cleanData.length) {
               setBopData(allNewData, finalHeaders);
               setCurrentPage(1);
               toast({ title: 'Import Successful', description: `${allNewData.length} records have been loaded.` });
@@ -185,8 +155,8 @@ export default function BopPage() {
               return;
           }
 
-          const nextIndex = Math.min(currentIndex + IMPORT_CHUNK_SIZE, (cleanData as any[]).length);
-          const chunk = (cleanData as any[]).slice(currentIndex, nextIndex);
+          const nextIndex = Math.min(currentIndex + IMPORT_CHUNK_SIZE, cleanData.length);
+          const chunk = cleanData.slice(currentIndex, nextIndex);
           
           const chunkData: Bop[] = chunk.map((row, chunkIndex) => {
               const rowIndex = currentIndex + chunkIndex;
