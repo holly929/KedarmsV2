@@ -56,6 +56,7 @@ const getEditableSheetUrl = (originalUrl: string): string => {
   const match = originalUrl.match(regex);
   if (match && match[1]) {
     const sheetId = match[1];
+    // Use the standard edit view instead of the minimal one
     return `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
   }
   return originalUrl;
@@ -221,44 +222,25 @@ export default function SummaryBillPage() {
         
         excelWorkbook.SheetNames.forEach(sheetName => {
             const worksheet = excelWorkbook.Sheets[sheetName];
-            const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { header: 'A', defval: "" });
-
-            if (jsonData.length === 0) return;
-
-            let headerRowIndex = jsonData.findIndex(row => Object.values(row).some(cell => cell !== null && String(cell).trim() !== ''));
-            if (headerRowIndex === -1) return;
-
-            const headerRow = jsonData[headerRowIndex];
-            const headers = Object.values(headerRow).map(h => String(h).trim()).filter(h => h);
             
-            if (headers.length === 0) return;
+            const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+            const cleanData = jsonData.filter(row => Object.values(row).some(cell => cell !== null && cell !== ''));
             
-            const dataRows = jsonData.slice(headerRowIndex + 1);
+            if (cleanData.length > 0) {
+                const headers = Object.keys(cleanData[0]).filter(h => h && !h.startsWith('__EMPTY'));
 
-            const sheetData = dataRows.map((row, rowIndex) => {
-                const newRow: SummaryBillData = { id: `summary-${sheetName}-${Date.now()}-${rowIndex}` };
-                let hasData = false;
-                
-                headers.forEach((header, index) => {
-                    const cellKey = Object.keys(headerRow)[index];
-                    const cellValue = row[cellKey];
-                    newRow[header] = cellValue;
-                    if (cellValue !== null && cellValue !== undefined && String(cellValue).trim() !== '') {
-                        hasData = true;
-                    }
-                });
-                
-                return hasData ? newRow : null;
-            }).filter((row): row is SummaryBillData => row !== null);
+                const sheetData = cleanData.map((row, rowIndex) => ({
+                    ...row,
+                    id: `summary-${sheetName}-${Date.now()}-${rowIndex}`,
+                }));
 
-
-            if (sheetData.length > 0) {
-                newWorkbook[sheetName] = { data: sheetData, headers };
+                newWorkbook[sheetName] = { data: sheetData, headers: headers };
             }
         });
 
         if (Object.keys(newWorkbook).length === 0) {
-          throw new Error("No readable sheets with data found. Please ensure your file has at least one sheet with a header row and data.");
+          throw new Error("No readable sheets with data found in the file.");
         }
 
         setWorkbook(newWorkbook);
@@ -575,4 +557,3 @@ export default function SummaryBillPage() {
     </>
   );
 }
- 

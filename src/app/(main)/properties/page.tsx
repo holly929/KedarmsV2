@@ -137,28 +137,24 @@ export default function PropertiesPage() {
         const workbook = XLSX.read(fileData, { type: 'binary' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
         
-        if (!jsonData || jsonData.length < 2) {
-          throw new Error("Spreadsheet is empty or has only headers.");
-        }
+        const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-        const headerRow = jsonData[0] as any[];
-        const newHeaders = headerRow.map(h => String(h || ''));
+        const cleanData = jsonData.filter(row => Object.values(row).some(cell => cell !== null && cell !== ''));
 
-        const dataRows = (jsonData.slice(1) as any[][]).filter(row => row.some(cell => cell !== ''));
-
-        if (dataRows.length === 0) {
-            throw new Error("No data rows found in the spreadsheet.");
+        if (cleanData.length === 0) {
+            throw new Error("No data with content found in the spreadsheet.");
         }
         
-        setImportStatus(prev => ({ ...prev, total: dataRows.length }));
+        const newHeaders = Object.keys(cleanData[0]);
+
+        setImportStatus(prev => ({ ...prev, total: cleanData.length }));
         
         let allNewData: Property[] = [];
         let currentIndex = 0;
         
         const processChunk = () => {
-          if (currentIndex >= dataRows.length) {
+          if (currentIndex >= cleanData.length) {
               setProperties(allNewData, newHeaders);
               setCurrentPage(1);
               toast({ title: 'Import Successful', description: `${allNewData.length} records have been loaded.` });
@@ -166,16 +162,15 @@ export default function PropertiesPage() {
               return;
           }
 
-          const nextIndex = Math.min(currentIndex + IMPORT_CHUNK_SIZE, dataRows.length);
-          const chunk = dataRows.slice(currentIndex, nextIndex);
+          const nextIndex = Math.min(currentIndex + IMPORT_CHUNK_SIZE, cleanData.length);
+          const chunk = cleanData.slice(currentIndex, nextIndex);
           
           const chunkData: Property[] = chunk.map((row, chunkIndex) => {
               const rowIndex = currentIndex + chunkIndex;
-              const rowData: Property = { id: `imported-${Date.now()}-${rowIndex}` };
-              newHeaders.forEach((header, index) => {
-                  rowData[header] = row[index];
-              });
-              return rowData;
+              return { 
+                ...row,
+                id: `imported-${Date.now()}-${rowIndex}`,
+              };
           });
           
           allNewData.push(...chunkData);
