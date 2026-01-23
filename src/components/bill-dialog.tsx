@@ -129,22 +129,6 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
         return isNaN(num) ? null : num;
     };
 
-    const formatDate = (date: Date) => {
-        const day = date.getDate();
-        const month = date.toLocaleString('default', { month: 'long' }).toUpperCase();
-        const year = date.getFullYear();
-        const getOrdinal = (n: number) => {
-            if (n > 3 && n < 21) return n + 'TH';
-            switch (n % 10) {
-                case 1:  return n + "ST";
-                case 2:  return n + "ND";
-                case 3:  return n + "RD";
-                default: return n + "TH";
-            }
-        };
-        return `${getOrdinal(day)} ${month}, ${year}`;
-    };
-
     const formatAmount = useCallback((amount: number | null) => (amount != null ? amount.toFixed(2) : '0.00'), []);
     
     const formatValue = useCallback((valueKey: string) => {
@@ -239,7 +223,6 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                 <div className="w-[33%]">
                     <DetailRowRight label="SUBURB" valueKey="Suburb" />
                     <DetailRowRight label="ACCOUNT NUMBER" valueKey="Account Number" />
-                    <div className="flex"><div className="w-1/2 font-bold border-b border-black p-1">BILL DATE</div><div className="w-1/2 border-b border-l border-black p-1">{formatDate(new Date())}</div></div>
                     <DetailRowRight label="PROPERTY TYPE" valueKey="Property Type" />
                     <div className="font-bold text-center p-1">AMOUNT (GH&#8373;)</div>
                 </div>
@@ -300,7 +283,6 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <DetailRow label="TOWN" valueKey="Town" />
                 </div>
                 <div className="w-[33%]">
-                    <div className="flex"><div className="w-1/2 font-bold border-b border-black p-1">BILL DATE</div><div className="w-1/2 border-b border-l border-black p-1">{formatDate(new Date())}</div></div>
                     <div className="font-bold text-center p-1">AMOUNT (GH&#8373;)</div>
                 </div>
             </div>

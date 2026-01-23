@@ -53,13 +53,6 @@ const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
         lineHeight: `${(fontSize || 10) * 1.4}px`,
     };
 
-    const formatDate = (date: Date) => {
-        const day = date.getDate();
-        const month = date.toLocaleString('default', { month: 'long' }).toUpperCase();
-        const year = date.getFullYear();
-        return `${day} ${month}, ${year}`;
-    };
-
     const filteredHeaders = headers.filter(h => h && String(h).trim() !== '' && !String(h).toLowerCase().startsWith('__empty'));
 
   return (
@@ -79,8 +72,6 @@ const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
                 SUMMARY BILL - {sheetName.toUpperCase()}
             </h2>
         </header>
-
-        <p className="text-right mb-4">Date: {formatDate(new Date())}</p>
         
         <main className="flex-grow">
           <Table>
