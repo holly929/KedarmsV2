@@ -138,23 +138,29 @@ export default function PropertiesPage() {
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         
-        const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+        const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
+        if (rows.length === 0) throw new Error("No data found in the spreadsheet.");
 
-        const cleanData = jsonData.filter(row => Object.values(row).some(cell => cell !== null && String(cell).trim() !== ''));
+        let headerRowIndex = rows.findIndex(row => row.some(cell => cell !== null && String(cell).trim() !== ''));
+        if (headerRowIndex === -1) throw new Error("No header row found in the spreadsheet.");
 
-        if (cleanData.length === 0) {
-            throw new Error("No data with content found in the spreadsheet.");
-        }
+        const headerRow = rows[headerRowIndex];
+        const dataRows = rows.slice(headerRowIndex + 1);
+
+        const validHeadersWithIndices = headerRow
+          .map((header, index) => ({ header: String(header || '').trim(), index }))
+          .filter(h => h.header && !h.header.toLowerCase().startsWith('__empty'));
         
-        const newHeaders = Object.keys(cleanData[0]);
+        const newHeaders = validHeadersWithIndices.map(h => h.header);
+        if (newHeaders.length === 0) throw new Error("No valid headers found.");
 
-        setImportStatus(prev => ({ ...prev, total: cleanData.length }));
+        setImportStatus(prev => ({ ...prev, total: dataRows.length }));
         
         let allNewData: Property[] = [];
         let currentIndex = 0;
         
         const processChunk = () => {
-          if (currentIndex >= cleanData.length) {
+          if (currentIndex >= dataRows.length) {
               setProperties(allNewData, newHeaders);
               setCurrentPage(1);
               toast({ title: 'Import Successful', description: `${allNewData.length} records have been loaded.` });
@@ -162,16 +168,18 @@ export default function PropertiesPage() {
               return;
           }
 
-          const nextIndex = Math.min(currentIndex + IMPORT_CHUNK_SIZE, cleanData.length);
-          const chunk = cleanData.slice(currentIndex, nextIndex);
+          const nextIndex = Math.min(currentIndex + IMPORT_CHUNK_SIZE, dataRows.length);
+          const chunk = dataRows.slice(currentIndex, nextIndex);
           
           const chunkData: Property[] = chunk.map((row, chunkIndex) => {
+              if (row.every(cell => cell === null || String(cell).trim() === '')) return null;
               const rowIndex = currentIndex + chunkIndex;
-              return { 
-                ...row,
-                id: `imported-${Date.now()}-${rowIndex}`,
-              };
-          });
+              const rowData: { [key: string]: any } = { id: `imported-${Date.now()}-${rowIndex}` };
+              validHeadersWithIndices.forEach(({ header, index }) => {
+                  rowData[header] = row[index];
+              });
+              return rowData as Property;
+          }).filter((row): row is Property => row !== null);
           
           allNewData.push(...chunkData);
           setImportStatus(prev => ({ ...prev, processed: nextIndex }));

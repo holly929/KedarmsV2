@@ -222,17 +222,35 @@ export default function SummaryBillPage() {
         excelWorkbook.SheetNames.forEach(sheetName => {
             const worksheet = excelWorkbook.Sheets[sheetName];
             
-            const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+            const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
+            if (rows.length === 0) return;
 
-            const cleanData = jsonData.filter(row => Object.values(row).some(cell => cell !== null && String(cell).trim() !== ''));
-            
-            if (cleanData.length > 0) {
-                const headers = Object.keys(cleanData[0]);
-                const sheetData = cleanData.map((row, rowIndex) => ({
-                    ...row,
-                    id: `summary-${sheetName}-${Date.now()}-${rowIndex}`,
-                }));
-                newWorkbook[sheetName] = { data: sheetData, headers };
+            let headerRowIndex = rows.findIndex(row => row.some(cell => cell !== null && String(cell).trim() !== ''));
+            if (headerRowIndex === -1) return;
+
+            const headerRow = rows[headerRowIndex];
+            const dataRows = rows.slice(headerRowIndex + 1);
+
+            const validHeadersWithIndices = headerRow
+                .map((header, index) => ({ header: String(header || '').trim(), index }))
+                .filter(h => h.header && !h.header.toLowerCase().startsWith('__empty'));
+
+            const validHeaders = validHeadersWithIndices.map(h => h.header);
+            if (validHeaders.length === 0) return;
+
+            const sheetData = dataRows.map((row, rowIndex) => {
+                if (row.every(cell => cell === null || String(cell).trim() === '')) return null;
+                
+                const rowData: { [key: string]: any } = { id: `summary-${sheetName}-${Date.now()}-${rowIndex}` };
+                validHeadersWithIndices.forEach(({ header, index }) => {
+                    rowData[header] = row[index];
+                });
+                return rowData as SummaryBillData;
+            }).filter((row): row is SummaryBillData => row !== null);
+
+
+            if (sheetData.length > 0) {
+                 newWorkbook[sheetName] = { data: sheetData, headers: validHeaders };
             }
         });
 

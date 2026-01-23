@@ -34,7 +34,8 @@ const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
   data: SummaryBillData[];
   headers: string[];
   settings: { general: GeneralSettings, appearance: AppearanceSettings };
-}>(({ data, headers, settings }, ref) => {
+  sheetName: string;
+}>(({ data, headers, settings, sheetName }, ref) => {
 
     const { 
         fontFamily, 
@@ -48,8 +49,8 @@ const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
     }[fontFamily || 'sans'];
 
     const baseStyle = {
-        fontSize: `${fontSize || 12}px`,
-        lineHeight: `${(fontSize || 12) * 1.4}px`,
+        fontSize: `${fontSize || 10}px`,
+        lineHeight: `${(fontSize || 10) * 1.4}px`,
     };
 
     const formatDate = (date: Date) => {
@@ -74,7 +75,9 @@ const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
                 </div>
                 {settings.appearance?.assemblyLogo ? <Image src={settings.appearance.assemblyLogo} alt="Assembly Logo" className="object-contain" width={80} height={80} /> : <div className="w-[80px]"></div>}
             </div>
-            <h2 className="font-bold tracking-wide text-xl text-center mt-4 border-y-2 border-black py-2">SUMMARY BILL</h2>
+            <h2 className="font-bold tracking-wide text-xl text-center mt-4 border-y-2 border-black py-2">
+                SUMMARY BILL - {sheetName.toUpperCase()}
+            </h2>
         </header>
 
         <p className="text-right mb-4">Date: {formatDate(new Date())}</p>
@@ -239,7 +242,7 @@ export default function SummaryBillPrintPage() {
             <div ref={componentRef}>
                 {sheetsToRender.map((sheet, index) => (
                     <div key={sheet.name} className={index < sheetsToRender.length - 1 ? 'print-page-break' : ''}>
-                       <PrintableSummaryBill data={sheet.data} headers={sheet.headers} settings={settings} />
+                       <PrintableSummaryBill data={sheet.data} headers={sheet.headers} settings={settings} sheetName={sheet.name} />
                     </div>
                 ))}
             </div>
@@ -248,5 +251,3 @@ export default function SummaryBillPrintPage() {
     </div>
   );
 }
-
-    
