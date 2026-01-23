@@ -56,7 +56,6 @@ const getEditableSheetUrl = (originalUrl: string): string => {
   const match = originalUrl.match(regex);
   if (match && match[1]) {
     const sheetId = match[1];
-    // Use the standard edit view instead of the minimal one
     return `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
   }
   return originalUrl;
@@ -223,19 +222,57 @@ export default function SummaryBillPage() {
         excelWorkbook.SheetNames.forEach(sheetName => {
             const worksheet = excelWorkbook.Sheets[sheetName];
             
-            const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-
-            const cleanData = jsonData.filter(row => Object.values(row).some(cell => cell !== null && cell !== ''));
+            const data: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
             
-            if (cleanData.length > 0) {
-                const headers = Object.keys(cleanData[0]).filter(h => h && !h.startsWith('__EMPTY'));
+            if (data.length === 0) return;
 
-                const sheetData = cleanData.map((row, rowIndex) => ({
-                    ...row,
-                    id: `summary-${sheetName}-${Date.now()}-${rowIndex}`,
-                }));
+            let headerIndex = -1;
+            for(let i = 0; i < data.length; i++) {
+              if (data[i].some(cell => cell !== null && String(cell).trim() !== '')) {
+                headerIndex = i;
+                break;
+              }
+            }
 
-                newWorkbook[sheetName] = { data: sheetData, headers: headers };
+            if (headerIndex === -1) return;
+
+            const rawHeaders: string[] = data[headerIndex];
+            const headerMap = new Map<number, string>();
+            const finalHeaders: string[] = [];
+
+            rawHeaders.forEach((header, index) => {
+              if (header !== null && String(header).trim() !== '') {
+                const trimmedHeader = String(header).trim();
+                headerMap.set(index, trimmedHeader);
+                finalHeaders.push(trimmedHeader);
+              }
+            });
+            
+            if (finalHeaders.length === 0) return;
+
+            const dataRows = data.slice(headerIndex + 1);
+
+            const sheetData = dataRows.map((rowArray, rowIndex) => {
+              const rowObject: any = {};
+              let hasData = false;
+              headerMap.forEach((header, colIndex) => {
+                const value = rowArray[colIndex];
+                rowObject[header] = value;
+                if (value !== null && String(value).trim() !== '') {
+                  hasData = true;
+                }
+              });
+              
+              if (!hasData) return null;
+
+              return {
+                  ...rowObject,
+                  id: `summary-${sheetName}-${Date.now()}-${rowIndex}`,
+              };
+            }).filter(Boolean);
+            
+            if (sheetData.length > 0) {
+                newWorkbook[sheetName] = { data: sheetData as SummaryBillData[], headers: finalHeaders };
             }
         });
 
