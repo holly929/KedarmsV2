@@ -3,11 +3,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { BookCopy, AlertCircle, Loader2 } from 'lucide-react';
+import { BookCopy, AlertCircle, Loader2, Info, Server } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { store } from '@/lib/store';
 
@@ -81,6 +81,40 @@ function GoogleSheetIntegration({ settingKey, title, description, emptyStateText
   );
 }
 
+function SmsFeatureInfo() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Automated SMS Notifications</CardTitle>
+        <CardDescription>
+          Keep property owners informed with automatic SMS alerts.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertTitle>How It Works</AlertTitle>
+          <AlertDescription>
+            The system can automatically send SMS notifications when key events happen, such as when a new property is registered or a new bill is generated.
+          </AlertDescription>
+        </Alert>
+        <Alert>
+          <Server className="h-4 w-4" />
+          <AlertTitle>Configuration Required</AlertTitle>
+          <AlertDescription>
+            This feature is powered by Infobip. To enable it, you must configure your Infobip API credentials and message templates on the Settings page.
+          </AlertDescription>
+        </Alert>
+      </CardContent>
+      <CardFooter>
+         <Button asChild>
+            <Link href="/settings">Go to Settings</Link>
+          </Button>
+      </CardFooter>
+    </Card>
+  )
+}
+
 export default function IntegrationsPage() {
   useRequirePermission();
 
@@ -92,8 +126,9 @@ export default function IntegrationsPage() {
       
       <Tabs defaultValue="sheets" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="sheets">Property Rates</TabsTrigger>
-          <TabsTrigger value="bop-sheets">BOP</TabsTrigger>
+          <TabsTrigger value="sheets">Property Rates Sheet</TabsTrigger>
+          <TabsTrigger value="bop-sheets">BOP Sheet</TabsTrigger>
+          <TabsTrigger value="sms">SMS</TabsTrigger>
         </TabsList>
         <TabsContent value="sheets">
           <GoogleSheetIntegration 
@@ -110,6 +145,9 @@ export default function IntegrationsPage() {
             description="View and edit your connected Business Operating Permit (BOP) payments spreadsheet."
             emptyStateText="No BOP Spreadsheet Connected"
           />
+        </TabsContent>
+         <TabsContent value="sms">
+          <SmsFeatureInfo />
         </TabsContent>
       </Tabs>
     </>

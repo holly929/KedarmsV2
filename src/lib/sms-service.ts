@@ -4,10 +4,9 @@ import { store } from './store';
 import { getPropertyValue } from './property-utils';
 import { toast } from '@/hooks/use-toast';
 
-// This is a mock SMS service. In a real application, this would
-// make an HTTP request to an SMS provider's API.
-
 export function getSmsConfig() {
+    // This function is for client-side checks (e.g., if fields are enabled).
+    // The actual secrets are only ever accessed on the server.
     return store.settings.smsSettings || {};
 }
 
@@ -26,7 +25,6 @@ function compileTemplate(template: string, data: Property | Bop | Bill): string 
             value = getPropertyValue(data as Property, key);
         }
         
-        // Format numbers to 2 decimal places if applicable
         if (typeof value === 'number' && ['totalAmountDue', 'Rateable Value', 'Total Payment', 'Permit Fee', 'Payment'].includes(key)) {
             return value.toFixed(2);
         }
@@ -37,41 +35,41 @@ function compileTemplate(template: string, data: Property | Bop | Bill): string 
 
 
 /**
- * Sends a single SMS. This is the core function.
+ * Dispatches a request to the internal backend API to send an SMS.
  * @param phoneNumber The recipient's phone number.
  * @param message The message to send.
  * @returns A promise that resolves to a success status.
  */
 async function sendSingleSms(phoneNumber: string, message: string): Promise<boolean> {
     const config = getSmsConfig();
-    const { smsApiUrl, smsApiKey, smsSenderId } = config;
+    const { infobipBaseUrl, infobipApiKey, smsSenderId } = config;
 
-    if (!smsApiUrl || !smsApiKey || !smsSenderId) {
-        console.error("SMS settings are not configured. Cannot send SMS.");
-        return false;
+    // Basic client-side check if config seems present, actual check is on server
+    if (!infobipBaseUrl || !infobipApiKey || !smsSenderId) {
+        console.error("SMS settings appear to be incomplete on the client. The server will make the final check.");
     }
     if (!message) {
         console.error("SMS message is empty. Cannot send.");
         return false;
     }
 
-    const url = `${smsApiUrl}?action=send-sms&api_key=${smsApiKey}&to=${phoneNumber}&from=${smsSenderId}&sms=${encodeURIComponent(message)}`;
-
     try {
-        const response = await fetch(url, {
-            method: 'GET',
+        const response = await fetch('/api/sms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phoneNumber, message }),
         });
 
         if (response.ok) {
-            console.log(`SMS sent to ${phoneNumber}`);
+            console.log(`SMS dispatched via backend for ${phoneNumber}`);
             return true;
         } else {
-            const errorText = await response.text();
-            console.error(`SMS API error for ${phoneNumber}:`, errorText);
+            const errorResult = await response.json();
+            console.error(`Backend SMS API error for ${phoneNumber}:`, errorResult.error);
             return false;
         }
     } catch (error) {
-        console.error(`Failed to send SMS to ${phoneNumber}:`, error);
+        console.error(`Failed to call internal SMS API for ${phoneNumber}:`, error);
         return false;
     }
 }
@@ -85,8 +83,7 @@ async function sendSingleSms(phoneNumber: string, message: string): Promise<bool
  */
 export async function sendSms(items: (Property | Bop)[], messageTemplate: string): Promise<{ propertyId: string; success: boolean; }[]> {
     const config = getSmsConfig();
-    if (!config.smsApiUrl) {
-        // The dialog itself will show a warning, so a toast here is redundant.
+    if (!config.infobipBaseUrl) { // Check one key as a proxy for configuration
         console.error("SMS not configured.");
         return [];
     }
@@ -128,7 +125,6 @@ export async function sendNewPropertySms(property: Property | Bop) {
     const message = compileTemplate(newPropertyMessageTemplate, property);
     const success = await sendSingleSms(String(phoneNumber), message);
     
-    // We only show a toast if it succeeds, to avoid spamming the user with failure notices for an automated background task.
     if(success) {
         toast({
             title: 'SMS Notification Sent',

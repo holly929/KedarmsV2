@@ -23,6 +23,9 @@ import type { Property } from '@/lib/types';
 import { PrintableContent } from '@/components/bill-dialog';
 import { Loader2 } from 'lucide-react';
 import { store, saveStore } from '@/lib/store';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Server } from 'lucide-react';
+
 
 const generalFormSchema = z.object({
   systemName: z.string().min(3, 'System name must be at least 3 characters.'),
@@ -49,8 +52,8 @@ const integrationsFormSchema = z.object({
 });
 
 const smsFormSchema = z.object({
-  smsApiUrl: z.string().url("Please enter a valid API URL.").optional().or(z.literal('')),
-  smsApiKey: z.string().optional(),
+  infobipBaseUrl: z.string().optional().or(z.literal('')),
+  infobipApiKey: z.string().optional(),
   smsSenderId: z.string().min(3, "Sender ID must be at least 3 characters.").max(11, "Sender ID cannot exceed 11 characters.").optional().or(z.literal('')),
   enableSmsOnNewProperty: z.boolean().default(false),
   newPropertyMessageTemplate: z.string().max(320, "Message cannot exceed 2 SMS pages (320 chars).").optional(),
@@ -478,24 +481,31 @@ export default function SettingsPage() {
             <form onSubmit={smsForm.handleSubmit(onSmsSave)}>
               <Card>
                 <CardHeader>
-                  <CardTitle>SMS Settings</CardTitle>
-                  <CardDescription>Configure your SMS provider to send notifications to property owners.</CardDescription>
+                  <CardTitle>SMS Settings (Infobip)</CardTitle>
+                  <CardDescription>Configure your Infobip account to send SMS notifications.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                   <FormField control={smsForm.control} name="smsApiUrl" render={({ field }) => (
+                  <Alert variant="destructive">
+                      <Server className="h-4 w-4" />
+                      <AlertTitle>Important: Server-Side Configuration</AlertTitle>
+                      <AlertDescription>
+                          For security, your API credentials must be stored on the server. Update the settings below, then copy the corresponding values into your <code className="font-mono text-sm">.env.local</code> file in the project root. The app will restart to apply the changes.
+                      </AlertDescription>
+                  </Alert>
+                   <FormField control={smsForm.control} name="infobipBaseUrl" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>SMS Provider API URL</FormLabel>
-                        <FormControl><Input placeholder="e.g. https://api.sms-provider.com/sendsms" {...field} /></FormControl>
-                        <FormDescription>The endpoint URL for your SMS provider's API.</FormDescription>
+                        <FormLabel>Infobip Base URL</FormLabel>
+                        <FormControl><Input placeholder="e.g. your-account.api.infobip.com" {...field} /></FormControl>
+                        <FormDescription>Your Infobip account Base URL (don't include https://). Copy this value to <code className="font-mono text-sm">INFOBIP_BASE_URL</code> in your <code className="font-mono text-sm">.env.local</code> file.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                   <FormField control={smsForm.control} name="smsApiKey" render={({ field }) => (
+                   <FormField control={smsForm.control} name="infobipApiKey" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>API Key</FormLabel>
-                        <FormControl><Input type="password" placeholder="e.g. sk_xxxxxxxxxxxxxxxx" {...field} /></FormControl>
-                        <FormDescription>Your secret API key from your SMS provider.</FormDescription>
+                        <FormLabel>Infobip API Key</FormLabel>
+                        <FormControl><Input type="password" placeholder="Your secret API key" {...field} /></FormControl>
+                        <FormDescription>Copy this value to <code className="font-mono text-sm">INFOBIP_API_KEY</code> in your <code className="font-mono text-sm">.env.local</code> file.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -504,7 +514,7 @@ export default function SettingsPage() {
                       <FormItem>
                         <FormLabel>Sender ID</FormLabel>
                         <FormControl><Input placeholder="e.g. RateEase" {...field} /></FormControl>
-                        <FormDescription>The name that appears as the sender of the SMS (max 11 characters).</FormDescription>
+                        <FormDescription>The name that appears as the sender of the SMS (max 11 characters). Copy this to <code className="font-mono text-sm">INFOBIP_SENDER_ID</code> in <code className="font-mono text-sm">.env.local</code>.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

@@ -72,7 +72,15 @@ function getDefaultStore(): AppStore {
             },
             appearanceSettings: {},
             integrationsSettings: {},
-            smsSettings: {},
+            smsSettings: {
+                infobipBaseUrl: '',
+                infobipApiKey: '',
+                smsSenderId: '',
+                enableSmsOnNewProperty: false,
+                newPropertyMessageTemplate: "Dear {{Owner Name}}, your property ({{Property No}}) has been registered with the District Assembly. Thank you.",
+                enableSmsOnBillGenerated: false,
+                billGeneratedMessageTemplate: "Your bill of GHS {{Total Amount Due}} for property {{Property No}} for the year {{Year}} is ready. Please contact the assembly to arrange payment. Thank you.",
+            },
             billDisplaySettings: {},
         },
     };
@@ -99,6 +107,10 @@ function loadStore(): AppStore {
             const mergedSettings = {
                 ...defaultStore.settings,
                 ...parsedStore.settings,
+                smsSettings: { // ensure all sms settings are present
+                    ...defaultStore.settings.smsSettings,
+                    ...(parsedStore.settings?.smsSettings || {})
+                }
             };
             parsedStore.settings = mergedSettings;
             
