@@ -69,11 +69,9 @@ export default function BopBillingPage() {
   const [isSmsDialogOpen, setIsSmsDialogOpen] = React.useState(false);
   
   React.useEffect(() => {
-    if(bopData.length > 0) {
-      setLoading(false)
+    if (bopData.length >= 0) {
+      setLoading(false);
     }
-    const timer = setTimeout(() => setLoading(false), 2000); // Failsafe
-    return () => clearTimeout(timer);
   }, [bopData]);
 
   const handleViewBill = (bop: Bop) => {

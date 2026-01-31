@@ -68,13 +68,9 @@ export default function BillingPage() {
   const [isSmsDialogOpen, setIsSmsDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
-    if(properties.length > 0) {
-      setLoading(false)
+    if (properties.length >= 0) {
+      setLoading(false);
     }
-    // Also consider a timeout or a different condition to set loading to false
-    // if properties might legitimately be an empty array.
-    const timer = setTimeout(() => setLoading(false), 2000); // Failsafe
-    return () => clearTimeout(timer);
   }, [properties]);
 
 

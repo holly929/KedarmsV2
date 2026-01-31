@@ -8,8 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { usePropertyData } from '@/context/PropertyDataContext';
 import { useBopData } from '@/context/BopDataContext';
-import { useBillData } from '@/context/BillDataContext';
-import type { Payment, Property, Bop, Bill } from '@/lib/types';
+import type { Payment, Property, Bop } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useActivityLog } from '@/context/ActivityLogContext';
 
@@ -26,7 +25,6 @@ function CallbackClient() {
 
   const { updateProperty, properties } = usePropertyData();
   const { updateBop, bopData } = useBopData();
-  const { addBills } = useBillData();
 
   useEffect(() => {
     const paymentStatus = searchParams.get('status');
@@ -55,15 +53,6 @@ function CallbackClient() {
         updateProperty(updatedRecord);
         addLog('Payment Received', `GHS ${amount.toFixed(2)} for Property No: ${property['Property No']}`);
         
-        addBills([{
-            propertyId: billId,
-            propertySnapshot: updatedRecord,
-            generatedAt: new Date().toISOString(),
-            year: new Date().getFullYear(),
-            totalAmountDue: amount,
-            billType: 'property',
-        } as Omit<Bill, 'id'>]);
-
         setStatus('success');
         setMessage(`Payment of ${formatCurrency(amount)} for Property No: ${property['Property No']} was successful.`);
         toast({ title: 'Payment Successful', description: `Your payment of ${formatCurrency(amount)} has been recorded.` });
@@ -82,16 +71,6 @@ function CallbackClient() {
         updateBop(updatedRecord);
         addLog('Payment Received', `GHS ${amount.toFixed(2)} for Business: ${bop['Business Name']}`);
 
-
-        addBills([{
-            propertyId: billId,
-            propertySnapshot: updatedRecord,
-            generatedAt: new Date().toISOString(),
-            year: new Date().getFullYear(),
-            totalAmountDue: amount,
-            billType: 'bop',
-        } as Omit<Bill, 'id'>]);
-
         setStatus('success');
         setMessage(`Payment of ${formatCurrency(amount)} for Business: ${bop['Business Name']} was successful.`);
         toast({ title: 'Payment Successful', description: `Your payment of ${formatCurrency(amount)} has been recorded.` });
@@ -105,7 +84,7 @@ function CallbackClient() {
       setMessage('Payment failed or was cancelled.');
       toast({ variant: 'destructive', title: 'Payment Failed', description: 'The payment was not successful.' });
     }
-  }, [searchParams, properties, bopData, updateProperty, updateBop, addBills, toast, addLog]);
+  }, [searchParams, properties, bopData, updateProperty, updateBop, toast, addLog]);
 
   return (
     <div className="flex h-screen items-center justify-center">
