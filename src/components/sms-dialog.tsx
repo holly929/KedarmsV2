@@ -35,17 +35,23 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
   const form = useForm<z.infer<typeof smsFormSchema>>({
     resolver: zodResolver(smsFormSchema),
     defaultValues: {
-      message: "Dear {{Owner Name}}, this is a friendly reminder regarding your property ({{Property No}}). Please contact the District Assembly for more information.",
+      message: "",
     },
   });
 
   useEffect(() => {
     if (isOpen) {
-      form.reset();
+      const isBop = selectedProperties.length > 0 && getPropertyValue(selectedProperties[0], 'Business Name');
+
+      const defaultMessage = isBop
+        ? "Dear {{Owner Name}}, your BOP payment of GHS {{Amount Owed}} for '{{Business Name}}' is overdue as of {{Date}}. Please contact the District Assembly."
+        : "Dear {{Owner Name}}, your property rate payment of GHS {{Amount Owed}} for property '{{Property No}}' is overdue as of {{Date}}. Please contact the District Assembly.";
+
+      form.reset({ message: defaultMessage });
       setIsSending(false);
       setSentCount(0);
     }
-  }, [isOpen, form]);
+  }, [isOpen, form, selectedProperties]);
 
   const recipientCount = selectedProperties.filter(p => getPropertyValue(p, 'Phone Number')).length;
 

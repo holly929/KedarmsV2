@@ -8,6 +8,33 @@ import { toast } from '@/hooks/use-toast';
 function compileTemplate(template: string, data: Property | Bop | Bill): string {
     if (!template) return '';
     return template.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (match, key) => {
+        
+        if (key === 'Amount Owed') {
+            let amountOwed = 0;
+            if ('billType' in data && 'propertySnapshot' in data) { // It's a Bill
+                amountOwed = data.totalAmountDue;
+            } else if (getPropertyValue(data, 'Property No')) { // It's a Property
+                const p = data as Property;
+                const rateableValue = Number(getPropertyValue(p, 'Rateable Value')) || 0;
+                const rateImpost = Number(getPropertyValue(p, 'Rate Impost')) || 0;
+                const sanitation = Number(getPropertyValue(p, 'Sanitation Charged')) || 0;
+                const previousBalance = Number(getPropertyValue(p, 'Previous Balance')) || 0;
+                const payment = Number(getPropertyValue(p, 'Total Payment')) || 0;
+                const due = (rateableValue * rateImpost) + sanitation + previousBalance;
+                amountOwed = due > payment ? due - payment : 0;
+            } else { // It's a BOP
+                const b = data as Bop;
+                const permitFee = Number(getPropertyValue(b, 'Permit Fee')) || 0;
+                const payment = Number(getPropertyValue(b, 'Payment')) || 0;
+                amountOwed = permitFee > payment ? permitFee - payment : 0;
+            }
+            return amountOwed.toFixed(2);
+        }
+
+        if (key === 'Date') {
+            return new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+        
         let value: any;
         if ('propertySnapshot' in data) { // It's a Bill object
             const bill = data as Bill;
