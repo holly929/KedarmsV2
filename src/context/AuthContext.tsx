@@ -54,8 +54,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     localStorage.removeItem(USER_STORAGE_KEY);
     setUser(null);
-    // Hard redirect to ensure all state is cleared
-    window.location.href = '/';
   }, []);
 
   const updateAuthUser = (updatedUser: User) => {
