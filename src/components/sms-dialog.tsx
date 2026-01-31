@@ -42,7 +42,7 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
   useEffect(() => {
     if (isOpen) {
       const config = getSmsConfig();
-      setIsSmsConfigured(!!config.smsApiUrl && !!config.smsApiKey && !!config.smsSenderId);
+      setIsSmsConfigured(!!config.arkeselApiKey && !!config.arkeselSenderId);
       form.reset();
       setIsSending(false);
       setSentCount(0);

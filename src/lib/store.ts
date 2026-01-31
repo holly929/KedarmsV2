@@ -73,9 +73,8 @@ function getDefaultStore(): AppStore {
             appearanceSettings: {},
             integrationsSettings: {},
             smsSettings: {
-                infobipBaseUrl: '',
-                infobipApiKey: '',
-                smsSenderId: '',
+                arkeselApiKey: '',
+                arkeselSenderId: '',
                 enableSmsOnNewProperty: false,
                 newPropertyMessageTemplate: "Dear {{Owner Name}}, your property ({{Property No}}) has been registered with the District Assembly. Thank you.",
                 enableSmsOnBillGenerated: false,

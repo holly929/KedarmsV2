@@ -42,10 +42,10 @@ function compileTemplate(template: string, data: Property | Bop | Bill): string 
  */
 async function sendSingleSms(phoneNumber: string, message: string): Promise<boolean> {
     const config = getSmsConfig();
-    const { infobipBaseUrl, infobipApiKey, smsSenderId } = config;
+    const { arkeselApiKey, arkeselSenderId } = config;
 
     // Basic client-side check if config seems present, actual check is on server
-    if (!infobipBaseUrl || !infobipApiKey || !smsSenderId) {
+    if (!arkeselApiKey || !arkeselSenderId) {
         console.error("SMS settings appear to be incomplete on the client. The server will make the final check.");
     }
     if (!message) {
@@ -83,7 +83,7 @@ async function sendSingleSms(phoneNumber: string, message: string): Promise<bool
  */
 export async function sendSms(items: (Property | Bop)[], messageTemplate: string): Promise<{ propertyId: string; success: boolean; }[]> {
     const config = getSmsConfig();
-    if (!config.infobipBaseUrl) { // Check one key as a proxy for configuration
+    if (!config.arkeselApiKey) { // Check one key as a proxy for configuration
         console.error("SMS not configured.");
         return [];
     }
