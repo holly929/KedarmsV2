@@ -21,39 +21,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const checkUser = useCallback(() => {
+  useEffect(() => {
+    // Simplified loader: only reads from localStorage once on mount.
     try {
       const storedUserJson = localStorage.getItem(USER_STORAGE_KEY);
       if (storedUserJson) {
-        const storedUser = JSON.parse(storedUserJson);
-        const fullUser = store.users.find(u => u.id === storedUser.id);
-        setUser(fullUser || null);
-      } else {
-        setUser(null);
+        setUser(JSON.parse(storedUserJson));
       }
     } catch (e) {
       console.error("Could not parse user from localStorage", e);
       localStorage.removeItem(USER_STORAGE_KEY);
-      setUser(null);
     } finally {
       setLoading(false);
     }
   }, []);
-
-  useEffect(() => {
-    checkUser();
-
-    const handleStorageChange = (e: StorageEvent) => {
-        if (e.key === USER_STORAGE_KEY) {
-            checkUser();
-        }
-    }
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [checkUser]);
 
 
   const login = async (email: string, password: string): Promise<boolean> => {
