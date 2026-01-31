@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -16,12 +15,8 @@ const SummaryBillContext = createContext<SummaryBillContextType | undefined>(und
 
 export function SummaryBillProvider({ children }: { children: React.ReactNode }) {
     const { addLog } = useActivityLog();
-    const [workbook, setWorkbookState] = useState<{ [sheetName: string]: { data: SummaryBillData[], headers: string[] } }>({});
+    const [workbook, setWorkbookState] = useState<{ [sheetName: string]: { data: SummaryBillData[], headers: string[] } }>(store.summaryBillWorkbook || {});
     
-    useEffect(() => {
-        setWorkbookState(store.summaryBillWorkbook || {});
-    }, []);
-
     const setAndPersistWorkbook = (newWorkbook: { [sheetName: string]: { data: SummaryBillData[], headers: string[] } }) => {
         store.summaryBillWorkbook = newWorkbook;
         setWorkbookState(newWorkbook);
@@ -29,7 +24,7 @@ export function SummaryBillProvider({ children }: { children: React.ReactNode })
     };
 
     const deleteAllSummaryBills = () => {
-        const count = Object.values(store.summaryBillWorkbook).reduce((acc, sheet) => acc + sheet.data.length, 0);
+        const count = Object.values(store.summaryBillWorkbook || {}).reduce((acc, sheet) => acc + sheet.data.length, 0);
         setAndPersistWorkbook({});
         if (count > 0) {
             addLog('Cleared Summary Bills', `${count} records deleted from all sheets`);

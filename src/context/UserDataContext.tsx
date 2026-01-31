@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -18,13 +17,8 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
     const { toast } = useToast();
-    const [users, setUsersState] = useState<User[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        setUsersState(store.users);
-        setLoading(false);
-    }, []);
+    const [users, setUsersState] = useState<User[]>(store.users);
+    const [loading, setLoading] = useState(false);
 
     const setAndPersistUsers = (newUsers: User[]) => {
         store.users = newUsers;
