@@ -77,7 +77,7 @@ function DefaulterList<T extends Property | Bop>({ data, headers, isMobile, onDe
     React.useEffect(() => {
         setCurrentPage(1);
         setSelectedRows([]);
-    }, [filter]);
+    }, [filteredData]);
 
     const handleSelectAll = (checked: boolean) => {
         setSelectedRows(checked ? filteredData.map(row => row.id) : []);

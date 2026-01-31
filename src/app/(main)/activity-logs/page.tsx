@@ -56,7 +56,7 @@ export default function ActivityLogsPage() {
   
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [filter]);
+  }, [filteredData]);
 
   if (activityLogs.length === 0) {
     return (

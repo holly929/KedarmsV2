@@ -64,6 +64,12 @@ export default function UserManagementPage() {
     );
   }, [users, currentPage]);
 
+  React.useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+        setCurrentPage(totalPages);
+    }
+  }, [users.length, currentPage, totalPages]);
+
   const handleOpenDialog = (user: Partial<User> | null = null) => {
     setEditingUser(user);
     setIsDialogOpen(true);

@@ -109,7 +109,7 @@ export default function PropertiesPage() {
   
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [filter]);
+  }, [filteredData]);
 
 
   const handleViewBill = (property: Property) => {

@@ -108,7 +108,7 @@ export default function BopPage() {
   
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [filter]);
+  }, [filteredData]);
 
   const handleFile = (file: File | undefined) => {
     if (importStatus.inProgress) return;

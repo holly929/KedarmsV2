@@ -82,7 +82,7 @@ export default function BillsPage() {
   React.useEffect(() => {
     setCurrentPage(1);
     setSelectedRows([]);
-  }, [filterYear, filterType]);
+  }, [sortedData]);
   
   const handleViewBill = (bill: Bill) => {
     setViewingBill(bill);

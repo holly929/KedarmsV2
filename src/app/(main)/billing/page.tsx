@@ -160,7 +160,7 @@ export default function BillingPage() {
   
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, filter]);
+  }, [filteredData]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
