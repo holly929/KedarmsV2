@@ -1,14 +1,9 @@
 
+
 import type { Property, Bill, Bop } from './types';
 import { store } from './store';
 import { getPropertyValue } from './property-utils';
 import { toast } from '@/hooks/use-toast';
-
-export function getSmsConfig() {
-    // This function is for client-side checks (e.g., if fields are enabled).
-    // The actual secrets are only ever accessed on the server.
-    return store.settings.smsSettings || {};
-}
 
 function compileTemplate(template: string, data: Property | Bop | Bill): string {
     if (!template) return '';
@@ -41,13 +36,6 @@ function compileTemplate(template: string, data: Property | Bop | Bill): string 
  * @returns A promise that resolves to a success status.
  */
 async function sendSingleSms(phoneNumber: string, message: string): Promise<boolean> {
-    const config = getSmsConfig();
-    const { arkeselApiKey, arkeselSenderId } = config;
-
-    // Basic client-side check if config seems present, actual check is on server
-    if (!arkeselApiKey || !arkeselSenderId) {
-        console.error("SMS settings appear to be incomplete on the client. The server will make the final check.");
-    }
     if (!message) {
         console.error("SMS message is empty. Cannot send.");
         return false;
@@ -82,12 +70,6 @@ async function sendSingleSms(phoneNumber: string, message: string): Promise<bool
  * @returns An array of results for each attempt.
  */
 export async function sendSms(items: (Property | Bop)[], messageTemplate: string): Promise<{ propertyId: string; success: boolean; }[]> {
-    const config = getSmsConfig();
-    if (!config.arkeselApiKey) { // Check one key as a proxy for configuration
-        console.error("SMS not configured.");
-        return [];
-    }
-    
     const results = [];
 
     for (const item of items) {
@@ -109,7 +91,7 @@ export async function sendSms(items: (Property | Bop)[], messageTemplate: string
  * @param property The newly created property.
  */
 export async function sendNewPropertySms(property: Property | Bop) {
-    const config = getSmsConfig();
+    const config = store.settings.smsSettings || {};
     const { enableSmsOnNewProperty, newPropertyMessageTemplate } = config;
 
     if (!enableSmsOnNewProperty || !newPropertyMessageTemplate) {
@@ -141,7 +123,7 @@ export async function sendNewPropertySms(property: Property | Bop) {
  * @param bills An array of newly created bills.
  */
 export async function sendBillGeneratedSms(bills: Bill[]) {
-    const config = getSmsConfig();
+    const config = store.settings.smsSettings || {};
     const { enableSmsOnBillGenerated, billGeneratedMessageTemplate } = config;
 
     if (!enableSmsOnBillGenerated || !billGeneratedMessageTemplate) {

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -13,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { sendSms, getSmsConfig } from '@/lib/sms-service';
+import { sendSms } from '@/lib/sms-service';
 import { getPropertyValue } from '@/lib/property-utils';
 
 interface SmsDialogProps {
@@ -30,8 +31,7 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
   const { toast } = useToast();
   const [isSending, setIsSending] = useState(false);
   const [sentCount, setSentCount] = useState(0);
-  const [isSmsConfigured, setIsSmsConfigured] = useState(false);
-
+  
   const form = useForm<z.infer<typeof smsFormSchema>>({
     resolver: zodResolver(smsFormSchema),
     defaultValues: {
@@ -41,8 +41,6 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
 
   useEffect(() => {
     if (isOpen) {
-      const config = getSmsConfig();
-      setIsSmsConfigured(!!config.arkeselApiKey && !!config.arkeselSenderId);
       form.reset();
       setIsSending(false);
       setSentCount(0);
@@ -52,15 +50,6 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
   const recipientCount = selectedProperties.filter(p => getPropertyValue(p, 'Phone Number')).length;
 
   async function onSubmit(data: z.infer<typeof smsFormSchema>) {
-    if (!isSmsConfigured) {
-        toast({
-            variant: 'destructive',
-            title: 'SMS Not Configured',
-            description: 'Please configure SMS settings on the Settings page first.',
-        });
-        return;
-    }
-    
     setIsSending(true);
     setSentCount(0);
 
@@ -79,7 +68,7 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
       toast({
         variant: 'destructive',
         title: 'SMS Sending Failed',
-        description: `Could not send SMS to any of the ${recipientCount} valid recipients. Check settings or phone numbers.`,
+        description: `Could not send SMS to any of the ${recipientCount} valid recipients. Check SMS settings or phone numbers.`,
       });
     } else if (recipientCount === 0) {
        toast({
@@ -125,23 +114,18 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
                       {...field}
                       rows={6}
                       placeholder="Type your message here..."
-                      disabled={isSending || !isSmsConfigured}
+                      disabled={isSending}
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            {!isSmsConfigured && (
-                <p className="text-sm text-destructive font-medium text-center">
-                    SMS is not configured. Please set it up in the Settings page.
-                </p>
-            )}
             <DialogFooter className="pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSending}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSending || recipientCount === 0 || !isSmsConfigured}>
+              <Button type="submit" disabled={isSending || recipientCount === 0}>
                 {isSending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -52,8 +53,6 @@ const integrationsFormSchema = z.object({
 });
 
 const smsFormSchema = z.object({
-  arkeselApiKey: z.string().optional(),
-  arkeselSenderId: z.string().min(3, "Sender ID must be at least 3 characters.").max(11, "Sender ID cannot exceed 11 characters.").optional().or(z.literal('')),
   enableSmsOnNewProperty: z.boolean().default(false),
   newPropertyMessageTemplate: z.string().max(320, "Message cannot exceed 2 SMS pages (320 chars).").optional(),
   enableSmsOnBillGenerated: z.boolean().default(false),
@@ -488,27 +487,9 @@ export default function SettingsPage() {
                       <Server className="h-4 w-4" />
                       <AlertTitle>Important: Server-Side Configuration</AlertTitle>
                       <AlertDescription>
-                          For security, your API credentials must be stored on the server. Update the settings below, then copy the corresponding values into your <code className="font-mono text-sm">.env.local</code> file in the project root. The app will restart to apply the changes.
+                          For SMS functionality to work, your credentials must be stored securely on the server. Please create a <code className="font-mono text-sm">.env.local</code> file in your project&apos;s root directory and add your <code className="font-mono text-sm">ARKESEL_API_KEY</code> and <code className="font-mono text-sm">ARKESEL_SENDER_ID</code>. The app will restart automatically to apply these changes.
                       </AlertDescription>
                   </Alert>
-                   <FormField control={smsForm.control} name="arkeselApiKey" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Arkesel API Key</FormLabel>
-                        <FormControl><Input type="password" placeholder="Your secret API key" {...field} /></FormControl>
-                        <FormDescription>Copy this value to <code className="font-mono text-sm">ARKESEL_API_KEY</code> in your <code className="font-mono text-sm">.env.local</code> file.</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                   <FormField control={smsForm.control} name="arkeselSenderId" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Sender ID</FormLabel>
-                        <FormControl><Input placeholder="e.g. RateEase" {...field} /></FormControl>
-                        <FormDescription>The name that appears as the sender of the SMS (max 11 characters). Copy this to <code className="font-mono text-sm">ARKESEL_SENDER_ID</code> in <code className="font-mono text-sm">.env.local</code>.</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                   <div className="border-t pt-6 space-y-4">
                      <h3 className="text-lg font-medium">Automatic SMS Notifications</h3>
                      <FormField control={smsForm.control} name="enableSmsOnNewProperty" render={({ field }) => (

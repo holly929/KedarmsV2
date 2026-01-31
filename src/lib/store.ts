@@ -1,4 +1,5 @@
 
+
 // This file acts as a centralized in-memory database for the application.
 // All data contexts will read from and write to this single source of truth,
 // ensuring that data is shared and consistent across all user sessions
@@ -73,9 +74,7 @@ function getDefaultStore(): AppStore {
             appearanceSettings: {},
             integrationsSettings: {},
             smsSettings: {
-                arkeselApiKey: '',
-                arkeselSenderId: '',
-                enableSmsOnNewProperty: false,
+                enableSmsOnNewProperty: true,
                 newPropertyMessageTemplate: "Dear {{Owner Name}}, your property ({{Property No}}) has been registered with the District Assembly. Thank you.",
                 enableSmsOnBillGenerated: false,
                 billGeneratedMessageTemplate: "Your bill of GHS {{Total Amount Due}} for property {{Property No}} for the year {{Year}} is ready. Please contact the assembly to arrange payment. Thank you.",
