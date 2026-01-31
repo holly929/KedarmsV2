@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -41,16 +40,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { AuthProvider, useAuth } from '@/context/AuthContext';
-import { PropertyProvider } from '@/context/PropertyDataContext';
-import { PermissionsProvider, usePermissions } from '@/context/PermissionsContext';
+import { useAuth } from '@/context/AuthContext';
+import { usePermissions } from '@/context/PermissionsContext';
 import { ProfileDialog } from '@/components/profile-dialog';
-import { BillProvider } from '@/context/BillDataContext';
-import { BopProvider } from '@/context/BopDataContext';
 import { store } from '@/lib/store';
-import { UserProvider } from '@/context/UserDataContext';
-import { ActivityLogProvider, useActivityLog } from '@/context/ActivityLogContext';
-import { SummaryBillProvider } from '@/context/SummaryBillContext';
+import { useActivityLog } from '@/context/ActivityLogContext';
 
 
 const navItems = [
@@ -220,7 +214,7 @@ function Header({ systemName, supportEmail, onProfileOpen, filteredNavItems }: {
 }
 
 
-function MainLayout({
+export default function MainLayout({
   children
 }: {
   children: React.ReactNode;
@@ -277,23 +271,5 @@ function MainLayout({
         </div>
       <ProfileDialog isOpen={isProfileDialogOpen} onOpenChange={setIsProfileDialogOpen} />
     </>
-  );
-}
-
-export default function LayoutWithProviders({ children }: { children: React.ReactNode }) {
-  return (
-    <PermissionsProvider>
-      <ActivityLogProvider>
-        <PropertyProvider>
-          <BopProvider>
-            <SummaryBillProvider>
-              <BillProvider>
-                <MainLayout>{children}</MainLayout>
-              </BillProvider>
-            </SummaryBillProvider>
-          </BopProvider>
-        </PropertyProvider>
-      </ActivityLogProvider>
-    </PermissionsProvider>
   );
 }

@@ -5,6 +5,12 @@ import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/context/AuthContext';
 import { UserProvider } from '@/context/UserDataContext';
+import { PermissionsProvider } from '@/context/PermissionsContext';
+import { ActivityLogProvider } from '@/context/ActivityLogContext';
+import { PropertyProvider } from '@/context/PropertyDataContext';
+import { BopProvider } from '@/context/BopDataContext';
+import { SummaryBillProvider } from '@/context/SummaryBillContext';
+import { BillProvider } from '@/context/BillDataContext';
 
 export const metadata: Metadata = {
   title: 'RateEase',
@@ -34,8 +40,20 @@ export default function RootLayout({
         >
           <UserProvider>
             <AuthProvider>
-              {children}
-              <Toaster />
+              <PermissionsProvider>
+                <ActivityLogProvider>
+                  <PropertyProvider>
+                    <BopProvider>
+                      <SummaryBillProvider>
+                        <BillProvider>
+                          {children}
+                          <Toaster />
+                        </BillProvider>
+                      </SummaryBillProvider>
+                    </BopProvider>
+                  </PropertyProvider>
+                </ActivityLogProvider>
+              </PermissionsProvider>
             </AuthProvider>
           </UserProvider>
         </ThemeProvider>
