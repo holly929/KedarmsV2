@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useActivityLog } from '@/context/ActivityLogContext';
+import { useActivityLogState } from '@/context/ActivityLogContext';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,7 +31,7 @@ const formatTimestamp = (isoString: string) => {
 
 export default function ActivityLogsPage() {
   useRequirePermission();
-  const { activityLogs } = useActivityLog();
+  const activityLogs = useActivityLogState();
   const isMobile = useIsMobile();
   const [filter, setFilter] = React.useState('');
   const [currentPage, setCurrentPage] = React.useState(1);

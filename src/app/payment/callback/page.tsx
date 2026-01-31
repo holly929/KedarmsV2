@@ -10,7 +10,7 @@ import { usePropertyData } from '@/context/PropertyDataContext';
 import { useBopData } from '@/context/BopDataContext';
 import type { Payment, Property, Bop } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { useActivityLog } from '@/context/ActivityLogContext';
+import { useActivityLogDispatch } from '@/context/ActivityLogContext';
 
 const formatCurrency = (value: number) => `GHS ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -18,7 +18,7 @@ function CallbackClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const { addLog } = useActivityLog();
+  const addLog = useActivityLogDispatch();
 
   const [status, setStatus] = useState<'processing' | 'success' | 'failed'>('processing');
   const [message, setMessage] = useState('Processing your payment...');

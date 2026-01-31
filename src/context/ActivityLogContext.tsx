@@ -1,29 +1,21 @@
 
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
-import type { ActivityLog, User } from '@/lib/types';
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import type { ActivityLog } from '@/lib/types';
 import { store, saveStore } from '@/lib/store';
 import { useAuth } from './AuthContext';
 
-interface ActivityLogContextType {
-    activityLogs: ActivityLog[];
-    addLog: (action: string, details?: string) => void;
-}
-
-const ActivityLogContext = createContext<ActivityLogContextType | undefined>(undefined);
+// Context for the data state
+const ActivityLogStateContext = createContext<ActivityLog[] | undefined>(undefined);
+// Context for the dispatch function
+const ActivityLogDispatchContext = createContext<((action: string, details?: string) => void) | undefined>(undefined);
 
 export function ActivityLogProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
     const [activityLogs, setActivityLogsState] = useState<ActivityLog[]>(store.activityLogs);
 
-    const setAndPersistLogs = (newLogs: ActivityLog[]) => {
-        store.activityLogs = newLogs;
-        setActivityLogsState(newLogs);
-        saveStore();
-    };
-
-    const addLog = (action: string, details?: string) => {
+    const addLog = useCallback((action: string, details?: string) => {
         if (!user) {
             console.warn("Attempted to add a log without a logged-in user.");
             return;
@@ -39,21 +31,44 @@ export function ActivityLogProvider({ children }: { children: React.ReactNode })
             details,
         };
 
-        const updatedLogs = [newLog, ...store.activityLogs];
-        setAndPersistLogs(updatedLogs);
-    };
+        setActivityLogsState(prevLogs => {
+            const updatedLogs = [newLog, ...prevLogs];
+            store.activityLogs = updatedLogs;
+            saveStore();
+            return updatedLogs;
+        });
+    }, [user]);
 
     return (
-        <ActivityLogContext.Provider value={{ activityLogs, addLog }}>
-            {children}
-        </ActivityLogContext.Provider>
+        <ActivityLogStateContext.Provider value={activityLogs}>
+            <ActivityLogDispatchContext.Provider value={addLog}>
+                {children}
+            </ActivityLogDispatchContext.Provider>
+        </ActivityLogStateContext.Provider>
     );
 }
 
-export function useActivityLog() {
-    const context = useContext(ActivityLogContext);
+// Hook for components that need to read the logs state
+export function useActivityLogState() {
+    const context = useContext(ActivityLogStateContext);
     if (context === undefined) {
-        throw new Error('useActivityLog must be used within an ActivityLogProvider');
+        throw new Error('useActivityLogState must be used within an ActivityLogProvider');
     }
     return context;
+}
+
+// Hook for components that only need to dispatch a new log action
+export function useActivityLogDispatch() {
+    const context = useContext(ActivityLogDispatchContext);
+    if (context === undefined) {
+        throw new Error('useActivityLogDispatch must be used within an ActivityLogProvider');
+    }
+    return context;
+}
+
+// This hook remains for any component that might need both, but its usage is now limited.
+export function useActivityLog() {
+    const activityLogs = useActivityLogState();
+    const addLog = useActivityLogDispatch();
+    return { activityLogs, addLog };
 }

@@ -41,7 +41,7 @@ import {
 import { useRequirePermission } from '@/hooks/useRequirePermission';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useActivityLog } from '@/context/ActivityLogContext';
+import { useActivityLogDispatch } from '@/context/ActivityLogContext';
 
 const ROWS_PER_PAGE = 10;
 
@@ -49,7 +49,7 @@ export default function UserManagementPage() {
   useRequirePermission();
   const { users, addUser, updateUser, deleteUser, loading } = useUserData();
   const { toast } = useToast();
-  const { addLog } = useActivityLog();
+  const addLog = useActivityLogDispatch();
   
   const [editingUser, setEditingUser] = React.useState<Partial<User> | null>(null);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);

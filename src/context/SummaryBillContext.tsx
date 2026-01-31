@@ -1,9 +1,10 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { Bop as SummaryBillData } from '@/lib/types'; // Re-using Bop as it is a flexible key-value store
 import { store, saveStore } from '@/lib/store';
-import { useActivityLog } from './ActivityLogContext';
+import { useActivityLogDispatch } from './ActivityLogContext';
 
 interface SummaryBillContextType {
     workbook: { [sheetName: string]: { data: SummaryBillData[], headers: string[] } };
@@ -14,7 +15,7 @@ interface SummaryBillContextType {
 const SummaryBillContext = createContext<SummaryBillContextType | undefined>(undefined);
 
 export function SummaryBillProvider({ children }: { children: React.ReactNode }) {
-    const { addLog } = useActivityLog();
+    const addLog = useActivityLogDispatch();
     const [workbook, setWorkbookState] = useState<{ [sheetName: string]: { data: SummaryBillData[], headers: string[] } }>(store.summaryBillWorkbook || {});
     
     const setAndPersistWorkbook = (newWorkbook: { [sheetName: string]: { data: SummaryBillData[], headers: string[] } }) => {

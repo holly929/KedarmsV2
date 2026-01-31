@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -44,7 +45,7 @@ import { useAuth } from '@/context/AuthContext';
 import { usePermissions } from '@/context/PermissionsContext';
 import { ProfileDialog } from '@/components/profile-dialog';
 import { store } from '@/lib/store';
-import { useActivityLog } from '@/context/ActivityLogContext';
+import { useActivityLogDispatch } from '@/context/ActivityLogContext';
 
 
 const navItems = [
@@ -166,7 +167,7 @@ MobileNav.displayName = 'MobileNav';
 
 function Header({ systemName, supportEmail, onProfileOpen, filteredNavItems }: { systemName: string, supportEmail: string, onProfileOpen: () => void, filteredNavItems: any[] }) {
   const { logout } = useAuth();
-  const { addLog } = useActivityLog();
+  const addLog = useActivityLogDispatch();
 
   const handleLogout = () => {
     addLog('User Logout');

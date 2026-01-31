@@ -6,7 +6,7 @@ import type { Bill } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { sendBillGeneratedSms } from '@/lib/sms-service';
 import { store, saveStore } from '@/lib/store';
-import { useActivityLog } from './ActivityLogContext';
+import { useActivityLogDispatch } from './ActivityLogContext';
 
 interface BillContextType {
     bills: Bill[];
@@ -17,7 +17,7 @@ const BillContext = createContext<BillContextType | undefined>(undefined);
 
 export function BillProvider({ children }: { children: React.ReactNode }) {
     const { toast } = useToast();
-    const { addLog } = useActivityLog();
+    const addLog = useActivityLogDispatch();
     const [bills, setBillsState] = useState<Bill[]>(store.bills);
 
     const setAndPersistBills = (newBills: Bill[]) => {

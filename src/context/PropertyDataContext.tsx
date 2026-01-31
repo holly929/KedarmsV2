@@ -6,7 +6,7 @@ import type { Property } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { sendNewPropertySms } from '@/lib/sms-service';
 import { store, saveStore } from '@/lib/store';
-import { useActivityLog } from './ActivityLogContext';
+import { useActivityLogDispatch } from './ActivityLogContext';
 
 interface PropertyContextType {
     properties: Property[];
@@ -23,7 +23,7 @@ const PropertyContext = createContext<PropertyContextType | undefined>(undefined
 
 export function PropertyProvider({ children }: { children: React.ReactNode }) {
     const { toast } = useToast();
-    const { addLog } = useActivityLog();
+    const addLog = useActivityLogDispatch();
     const [properties, setPropertiesState] = useState<Property[]>(store.properties);
     const [headers, setHeadersState] = useState<string[]>(store.propertyHeaders);
     

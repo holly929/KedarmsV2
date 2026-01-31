@@ -6,7 +6,7 @@ import type { Bop } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { sendNewPropertySms } from '@/lib/sms-service';
 import { store, saveStore } from '@/lib/store';
-import { useActivityLog } from './ActivityLogContext';
+import { useActivityLogDispatch } from './ActivityLogContext';
 
 interface BopContextType {
     bopData: Bop[];
@@ -23,7 +23,7 @@ const BopContext = createContext<BopContextType | undefined>(undefined);
 
 export function BopProvider({ children }: { children: React.ReactNode }) {
     const { toast } = useToast();
-    const { addLog } = useActivityLog();
+    const addLog = useActivityLogDispatch();
     const [bopData, setBopDataState] = useState<Bop[]>(store.bops);
     const [headers, setHeadersState] = useState<string[]>(store.bopHeaders);
     
