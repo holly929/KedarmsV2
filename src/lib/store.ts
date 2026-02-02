@@ -76,7 +76,7 @@ function getDefaultStore(): AppStore {
             smsSettings: {
                 enableSmsOnNewProperty: true,
                 newPropertyMessageTemplate: "Dear {{Owner Name}}, your property ({{Property No}}) has been registered with the District Assembly. Thank you.",
-                enableSmsOnBillGenerated: false,
+                enableSmsOnBillGenerated: true,
                 billGeneratedMessageTemplate: "Your bill of GHS {{Total Amount Due}} for property {{Property No}} for the year {{Year}} is ready. Please contact the assembly to arrange payment. Thank you.",
             },
             billDisplaySettings: {},
