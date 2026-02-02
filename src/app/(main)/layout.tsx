@@ -231,9 +231,23 @@ export default function MainLayout({
 
   React.useEffect(() => {
     const generalSettings = store.settings.generalSettings;
+    const appearanceSettings = store.settings.appearanceSettings;
+
     if (generalSettings) {
-        setSystemName(generalSettings.systemName || 'RateEase');
+        const newSystemName = generalSettings.systemName || 'RateEase';
+        setSystemName(newSystemName);
+        document.title = newSystemName;
         setSupportEmail(generalSettings.contactEmail || '');
+    }
+
+    if (appearanceSettings && appearanceSettings.assemblyLogo) {
+        let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
+        if (!link) {
+            link = document.createElement('link');
+            link.rel = 'icon';
+            document.head.appendChild(link);
+        }
+        link.href = appearanceSettings.assemblyLogo;
     }
   }, []);
 
