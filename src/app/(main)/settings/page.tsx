@@ -85,6 +85,27 @@ const mockPropertyForPreview: Property = {
   'Previous Balance': 200, 'Total Payment': 100,
 };
 
+const PlaceholderGuide = ({ common, property, bop }: { common: string[], property: string[], bop: string[] }) => {
+    const renderPlaceholders = (placeholders: string[]) => (
+        <div className="flex flex-wrap gap-1">
+            {placeholders.map(p => (
+                <code key={p} className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-xs font-semibold">
+                    {`{{${p}}}`}
+                </code>
+            ))}
+        </div>
+    );
+
+    return (
+        <div className="text-xs text-muted-foreground space-y-2 rounded-lg border bg-background/50 p-3 mt-2">
+            <p className="font-bold mb-1">Available Placeholders:</p>
+            {common.length > 0 && <div className="space-y-1"><span>Common:</span> {renderPlaceholders(common)}</div>}
+            {property.length > 0 && <div className="space-y-1"><span>For Properties:</span> {renderPlaceholders(property)}</div>}
+            {bop.length > 0 && <div className="space-y-1"><span>For BOPs:</span> {renderPlaceholders(bop)}</div>}
+        </div>
+    );
+};
+
 export default function SettingsPage() {
   useRequirePermission();
   const { headers } = usePropertyData();
@@ -508,10 +529,13 @@ export default function SettingsPage() {
                             <FormLabel>New Property/BOP Message Template</FormLabel>
                             <FormControl><Textarea placeholder="Enter your message here" {...field} className="min-h-[100px]"/></FormControl>
                             <FormDescription>
-                                Use placeholders like{' '}
-                                <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm">{'{{Owner Name}}'}</code> or{' '}
-                                <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm">{'{{Property No}}'}</code> / <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm">{'{{Business Name}}'}</code>.
+                                Use placeholders to customize your message.
                             </FormDescription>
+                             <PlaceholderGuide
+                                common={['Owner Name', 'Phone Number', 'Town', 'Date']}
+                                property={['Property No', 'Property Type', 'Suburb']}
+                                bop={['Business Name']}
+                            />
                             <FormMessage />
                         </FormItem>
                     )} />
@@ -532,12 +556,14 @@ export default function SettingsPage() {
                         <FormItem>
                             <FormLabel>Bill Generated Message Template</FormLabel>
                             <FormControl><Textarea placeholder="Enter your message here" {...field} className="min-h-[100px]"/></FormControl>
-                            <FormDescription>
-                                Use placeholders like{' '}
-                                <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm">{'{{Owner Name}}'}</code>,{' '}
-                                <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm">{'{{Total Amount Due}}'}</code>, or{' '}
-                                <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm">{'{{Year}}'}</code>.
+                             <FormDescription>
+                                Use placeholders to customize your message.
                             </FormDescription>
+                             <PlaceholderGuide
+                                common={['Owner Name', 'Amount Owed', 'Date', 'Year']}
+                                property={['Property No', 'Town', 'Suburb']}
+                                bop={['Business Name']}
+                            />
                             <FormMessage />
                         </FormItem>
                     )} />
