@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -61,6 +62,19 @@ export default function NewPropertyPage() {
             'created_at': new Date(),
         },
     });
+    
+    const watchedValues = form.watch();
+    const totalAmountPayable = React.useMemo(() => {
+        const rateableValue = Number(watchedValues['Rateable Value']) || 0;
+        const rateImpost = Number(watchedValues['Rate Impost']) || 0;
+        const sanitationCharged = Number(watchedValues['Sanitation Charged']) || 0;
+        const previousBalance = Number(watchedValues['Previous Balance']) || 0;
+        const totalPayment = Number(watchedValues['Total Payment']) || 0;
+
+        const totalBill = (rateableValue * rateImpost) + sanitationCharged + previousBalance;
+        const payable = totalBill - totalPayment;
+        return payable;
+    }, [watchedValues]);
 
     function onSubmit(data: z.infer<typeof propertyFormSchema>) {
         try {
@@ -266,6 +280,14 @@ export default function NewPropertyPage() {
                                 <FormMessage />
                             </FormItem>
                         )} />
+                    </div>
+                     <div className="mt-6 bg-muted/50 p-4 rounded-lg">
+                        <div className="flex justify-between items-center">
+                            <span className="text-lg font-semibold">Total Amount Payable:</span>
+                            <span className="text-2xl font-bold font-mono">
+                                GHS {totalAmountPayable.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                        </div>
                     </div>
                   </div>
                   

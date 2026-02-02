@@ -62,6 +62,13 @@ export function EditBopDialog({
     }
   });
 
+  const watchedValues = form.watch();
+  const totalAmountPayable = React.useMemo(() => {
+    const permitFee = Number(watchedValues['Permit Fee']) || 0;
+    const payment = Number(watchedValues['Payment']) || 0;
+    return permitFee - payment;
+  }, [watchedValues]);
+
   useEffect(() => {
     if (bop && isOpen) {
        const normalizedData = {
@@ -159,6 +166,14 @@ export function EditBopDialog({
                                 <FormMessage />
                             </FormItem>
                         )} />
+                    </div>
+                     <div className="mt-6 bg-muted/50 p-4 rounded-lg">
+                        <div className="flex justify-between items-center">
+                            <span className="text-lg font-semibold">Total Amount Payable:</span>
+                            <span className="text-2xl font-bold font-mono">
+                                GHS {totalAmountPayable.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                        </div>
                     </div>
                   </div>
                 </div>

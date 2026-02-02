@@ -250,7 +250,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <BillRow label="TOTAL BILL" value={formatAmount(totalBill)} isBold />
                     <BillRow label="TOTAL PAYMENT" value={formatAmount(totalPayment)} />
                     <div className="flex justify-between p-1 border-b border-black items-center font-bold" style={accentStyle}>
-                        <span>TOTAL AMOUNT DUE</span>
+                        <span>TOTAL AMOUNT PAYABLE</span>
                         <span className="text-right" style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountDue)}</span>
                     </div>
                 </div>
@@ -295,7 +295,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <BillRow label="PERMIT FEE" value={formatAmount(permitFee)} />
                     <BillRow label="PAYMENT" value={formatAmount(payment)} />
                     <div className="flex justify-between p-1 border-b border-black items-center font-bold" style={accentStyle}>
-                        <span>TOTAL AMOUNT DUE</span>
+                        <span>TOTAL AMOUNT PAYABLE</span>
                         <span className="text-right" style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountDue)}</span>
                     </div>
                 </div>
@@ -433,5 +433,3 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
     </Dialog>
   );
 }
-
-    

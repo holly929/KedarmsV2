@@ -1,6 +1,7 @@
 
 'use client';
 
+import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -47,6 +48,13 @@ export default function NewBopPage() {
             'created_at': new Date(),
         },
     });
+
+    const watchedValues = form.watch();
+    const totalAmountPayable = React.useMemo(() => {
+        const permitFee = Number(watchedValues['Permit Fee']) || 0;
+        const payment = Number(watchedValues['Payment']) || 0;
+        return permitFee - payment;
+    }, [watchedValues]);
 
     function onSubmit(data: z.infer<typeof bopFormSchema>) {
         try {
@@ -186,6 +194,14 @@ export default function NewBopPage() {
                                 <FormMessage />
                             </FormItem>
                         )} />
+                    </div>
+                     <div className="mt-6 bg-muted/50 p-4 rounded-lg">
+                        <div className="flex justify-between items-center">
+                            <span className="text-lg font-semibold">Total Amount Payable:</span>
+                            <span className="text-2xl font-bold font-mono">
+                                GHS {totalAmountPayable.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                        </div>
                     </div>
                   </div>
                   
