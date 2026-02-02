@@ -209,6 +209,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
       const totalPayment = getNumber('Total Payment');
       const amountCharged = (rateableValue != null && rateImpost != null) ? rateableValue * rateImpost : null;
       const totalThisYear = (amountCharged ?? 0) + (sanitationCharged ?? 0);
+      const totalBill = totalThisYear + (previousBalance || 0);
 
       return (
         <>
@@ -246,6 +247,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <BillRow label="UNASSESSED RATE" value="..." />
                     <BillRow label="TOTAL THIS YEAR" value={formatAmount(totalThisYear)} isBold />
                     <BillRow label="PREVIOUS BALANCE" value={formatAmount(previousBalance)} />
+                    <BillRow label="TOTAL BILL" value={formatAmount(totalBill)} isBold />
                     <BillRow label="TOTAL PAYMENT" value={formatAmount(totalPayment)} />
                     <div className="flex justify-between p-1 border-b border-black items-center font-bold" style={accentStyle}>
                         <span>TOTAL AMOUNT DUE</span>
@@ -259,6 +261,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <div className="p-1 border-b border-black">...</div>
                     <div className="p-1 border-b border-black">{formatAmount(totalThisYear)}</div>
                     <div className="p-1 border-b border-black">{formatAmount(previousBalance)}</div>
+                    <div className="p-1 border-b border-black">{formatAmount(totalBill)}</div>
                     <div className="p-1 border-b border-black">{formatAmount(totalPayment)}</div>
                     <div className="p-1 border-b border-black flex items-center justify-end" style={accentStyle}>
                         <span style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountDue)}</span>
@@ -430,3 +433,5 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
     </Dialog>
   );
 }
+
+    
