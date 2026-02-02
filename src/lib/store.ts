@@ -139,5 +139,16 @@ export function saveStore() {
     }
 }
 
+// This function is for the restore functionality.
+export function forceSaveStore(data: any) {
+    if (typeof window !== 'undefined') {
+        try {
+            window.localStorage.setItem(STORE_KEY, JSON.stringify(data));
+        } catch (e) {
+            console.error("Failed to force save store to localStorage", e);
+        }
+    }
+}
+
 // Re-export store to be used by contexts
 export { store };

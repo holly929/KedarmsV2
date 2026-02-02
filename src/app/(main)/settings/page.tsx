@@ -22,10 +22,20 @@ import { PERMISSION_PAGES, usePermissions, UserRole, PermissionPage } from '@/co
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { Property } from '@/lib/types';
 import { PrintableContent } from '@/components/bill-dialog';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Server, Download, UploadCloud } from 'lucide-react';
 import { store, saveStore } from '@/lib/store';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Server } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 
 const generalFormSchema = z.object({
@@ -111,6 +121,8 @@ export default function SettingsPage() {
   const { headers } = usePropertyData();
   const { permissions, updatePermissions } = usePermissions();
   const [loading, setLoading] = useState(true);
+  const [restoreFile, setRestoreFile] = useState<File | null>(null);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
 
   // Local state for UI previews
   const [billFields, setBillFields] = useState<Record<string, boolean>>({});
@@ -161,13 +173,102 @@ export default function SettingsPage() {
     appearance: watchedAppearanceForm
   };
 
+    const handleBackup = () => {
+        try {
+            const fullStoreData = window.localStorage.getItem('rateease.store');
+            if (!fullStoreData) {
+                throw new Error("No data found to back up.");
+            }
+            
+            const blob = new Blob([fullStoreData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            const timestamp = new Date().toISOString().slice(0, 19).replace('T', '_').replace(/:/g, '-');
+            link.download = `rateease-backup-${timestamp}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            toast({
+                title: 'Backup Successful',
+                description: 'Your data backup file has been downloaded.',
+            });
+        } catch (error) {
+            console.error("Backup failed", error);
+            const errorMessage = error instanceof Error ? error.message : 'Could not create the backup file.';
+            toast({
+                variant: 'destructive',
+                title: 'Backup Failed',
+                description: errorMessage,
+            });
+        }
+    };
+
+    const handleFileSelectForRestore = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.type === 'application/json') {
+                setRestoreFile(file);
+                setRestoreError(null);
+            } else {
+                setRestoreFile(null);
+                setRestoreError('Invalid file type. Please select a .json file.');
+            }
+        }
+    };
+
+    const handleRestore = () => {
+        if (!restoreFile) {
+            setRestoreError('Please select a backup file first.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const text = e.target?.result as string;
+                const restoredStore = JSON.parse(text);
+
+                if (restoredStore && restoredStore.properties !== undefined && restoredStore.users !== undefined && restoredStore.settings !== undefined) {
+                    window.localStorage.setItem('rateease.store', JSON.stringify(restoredStore));
+                    toast({
+                        title: 'Restore Successful',
+                        description: 'Application will now reload to apply the restored data.',
+                    });
+                    
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+
+                } else {
+                    throw new Error('The selected file does not appear to be a valid RateEase backup file.');
+                }
+            } catch (error: any) {
+                const message = error.message || 'Failed to read or parse the backup file.';
+                setRestoreError(message);
+                toast({
+                    variant: 'destructive',
+                    title: 'Restore Failed',
+                    description: message,
+                });
+            }
+        };
+        reader.onerror = () => {
+            const message = 'Failed to read the selected file.';
+            setRestoreError(message);
+            toast({ variant: 'destructive', title: 'File Error', description: message });
+        }
+        reader.readAsText(restoreFile);
+    };
+
   const saveData = (key: keyof typeof store.settings, data: any, friendlyName: string) => {
     store.settings[key] = data;
     saveStore();
     toast({ title: 'Settings Saved', description: `${friendlyName} settings have been updated.` });
     
-    if (key === 'generalSettings') {
-        window.dispatchEvent(new Event('storage'));
+    if (key === 'generalSettings' || key === 'appearanceSettings') {
+        setTimeout(() => window.location.reload(), 500);
     }
   };
 
@@ -230,12 +331,13 @@ export default function SettingsPage() {
     <>
       <h1 className="text-3xl font-bold tracking-tight font-headline">Settings</h1>
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-6">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
           <TabsTrigger value="permissions">Permissions</TabsTrigger>
           <TabsTrigger value="integrations">Integrations</TabsTrigger>
           <TabsTrigger value="sms">SMS</TabsTrigger>
+          <TabsTrigger value="backup">Backup & Restore</TabsTrigger>
         </TabsList>
         
         <TabsContent value="general">
@@ -575,6 +677,70 @@ export default function SettingsPage() {
               </Card>
             </form>
           </Form>
+        </TabsContent>
+        
+        <TabsContent value="backup">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Backup & Restore</CardTitle>
+                    <CardDescription>
+                       Download all application data to a file for safekeeping, or restore from a backup file.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-8">
+                    <Alert>
+                        <Server className="h-4 w-4" />
+                        <AlertTitle>How It Works</AlertTitle>
+                        <AlertDescription>
+                           This tool creates a local JSON file of all your data (properties, users, settings, etc.). You can save this file anywhere, including your Google Drive. Restoring from this file will overwrite all current data.
+                        </AlertDescription>
+                    </Alert>
+
+                    <div className="p-6 border rounded-lg bg-background/50">
+                        <h3 className="text-lg font-medium">Download Backup</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            Create a complete backup of your system. Keep this file in a safe place.
+                        </p>
+                        <Button onClick={handleBackup} className="mt-4">
+                            <Download className="mr-2 h-4 w-4" />
+                            Download Backup File
+                        </Button>
+                    </div>
+
+                    <div className="p-6 border rounded-lg border-destructive/50">
+                        <h3 className="text-lg font-medium text-destructive">Restore from Backup</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                           This will overwrite all data in the application with the content from your backup file. This action cannot be undone.
+                        </p>
+                        <div className="flex items-center flex-wrap gap-4 mt-4">
+                            <Input type="file" accept=".json" onChange={handleFileSelectForRestore} className="max-w-sm" />
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" disabled={!restoreFile}>
+                                        <UploadCloud className="mr-2 h-4 w-4" />
+                                        Restore Data
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will replace all current application data with the contents of the selected backup file. All unsaved changes will be lost.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleRestore}>
+                                            Yes, restore from backup
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                        {restoreError && <p className="text-sm font-medium text-destructive mt-3">{restoreError}</p>}
+                    </div>
+                </CardContent>
+            </Card>
         </TabsContent>
 
       </Tabs>
