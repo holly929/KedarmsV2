@@ -97,18 +97,18 @@ async function sendSingleSms(phoneNumber: string, message: string): Promise<bool
  * @returns An array of results for each attempt.
  */
 export async function sendSms(items: (Property | Bop)[], messageTemplate: string): Promise<{ propertyId: string; success: boolean; }[]> {
-    const results = [];
-
-    for (const item of items) {
+    const smsPromises = items.map(async (item) => {
         const phoneNumber = getPropertyValue(item, 'Phone Number');
         if (phoneNumber && String(phoneNumber).trim()) {
             const message = compileTemplate(messageTemplate, item);
             const success = await sendSingleSms(String(phoneNumber), message);
-            results.push({ propertyId: item.id, success });
+            return { propertyId: item.id, success };
         } else {
-             results.push({ propertyId: item.id, success: false });
+            return { propertyId: item.id, success: false };
         }
-    }
+    });
+
+    const results = await Promise.all(smsPromises);
     return results;
 }
 
@@ -157,17 +157,17 @@ export async function sendBillGeneratedSms(bills: Bill[]) {
         return;
     }
 
-    let sentCount = 0;
-    for (const bill of bills) {
+    const smsPromises = bills.map(bill => {
         const phoneNumber = getPropertyValue(bill.propertySnapshot, 'Phone Number');
         if (phoneNumber && String(phoneNumber).trim()) {
             const message = compileTemplate(billGeneratedMessageTemplate, bill);
-            const success = await sendSingleSms(String(phoneNumber), message);
-            if (success) {
-                sentCount++;
-            }
+            return sendSingleSms(String(phoneNumber), message);
         }
-    }
+        return Promise.resolve(false);
+    });
+    
+    const results = await Promise.all(smsPromises);
+    const sentCount = results.filter(success => success).length;
 
     if (sentCount > 0) {
         toast({

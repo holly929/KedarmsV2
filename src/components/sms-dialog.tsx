@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -30,7 +28,6 @@ const smsFormSchema = z.object({
 export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialogProps) {
   const { toast } = useToast();
   const [isSending, setIsSending] = useState(false);
-  const [sentCount, setSentCount] = useState(0);
   
   const form = useForm<z.infer<typeof smsFormSchema>>({
     resolver: zodResolver(smsFormSchema),
@@ -49,7 +46,6 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
 
       form.reset({ message: defaultMessage });
       setIsSending(false);
-      setSentCount(0);
     }
   }, [isOpen, form, selectedProperties]);
 
@@ -57,16 +53,9 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
 
   async function onSubmit(data: z.infer<typeof smsFormSchema>) {
     setIsSending(true);
-    setSentCount(0);
 
     const results = await sendSms(selectedProperties, data.message);
     const successfulSends = results.filter(r => r.success).length;
-    
-    // This is a more realistic simulation of batch sending progress
-    for (let i = 0; i <= successfulSends; i++) {
-        await new Promise(resolve => setTimeout(resolve, 50));
-        setSentCount(i);
-    }
 
     setIsSending(false);
     
@@ -135,7 +124,7 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
                 {isSending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sending... ({sentCount}/{recipientCount})
+                    Sending...
                   </>
                 ) : (
                   `Send to ${recipientCount} recipients`
