@@ -7,13 +7,13 @@ import { toast } from '@/hooks/use-toast';
 
 function compileTemplate(template: string, data: Property | Bop | Bill): string {
     if (!template) return '';
-    return template.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (match, key) => {
+    const compiled = template.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (match, key) => {
         
         if (key === 'Amount Owed') {
             let amountOwed = 0;
             if ('billType' in data && 'propertySnapshot' in data) { // It's a Bill
                 amountOwed = data.totalAmountDue;
-            } else if (getPropertyValue(data, 'Property No')) { // It's a Property
+            } else if ('Property No' in data || getPropertyValue(data, 'Property No')) { // It's a Property
                 const p = data as Property;
                 const rateableValue = Number(getPropertyValue(p, 'Rateable Value')) || 0;
                 const rateImpost = Number(getPropertyValue(p, 'Rate Impost')) || 0;
@@ -34,6 +34,14 @@ function compileTemplate(template: string, data: Property | Bop | Bill): string 
         if (key === 'Date') {
             return new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
         }
+
+        if (key === 'Year') {
+            return new Date().getFullYear().toString();
+        }
+
+        if (key === 'Assembly Name') {
+            return store.settings.generalSettings?.assemblyName || 'The District Assembly';
+        }
         
         let value: any;
         if ('propertySnapshot' in data) { // It's a Bill object
@@ -53,6 +61,7 @@ function compileTemplate(template: string, data: Property | Bop | Bill): string 
         
         return value !== null && value !== undefined ? String(value) : '';
     });
+    return compiled;
 }
 
 
@@ -60,12 +69,13 @@ function compileTemplate(template: string, data: Property | Bop | Bill): string 
  * Dispatches a request to the internal backend API to send an SMS.
  * @param phoneNumber The recipient's phone number.
  * @param message The message to send.
- * @returns A promise that resolves to a success status.
+ * @returns A promise that resolves to an object with success status and optional error.
  */
-async function sendSingleSms(phoneNumber: string, message: string): Promise<boolean> {
+async function sendSingleSms(phoneNumber: string, message: string): Promise<{ success: boolean; error?: string }> {
     if (!message) {
-        console.error("SMS message is empty. Cannot send.");
-        return false;
+        const error = 'SMS message is empty. Cannot send.';
+        console.error(error);
+        return { success: false, error };
     }
 
     try {
@@ -77,34 +87,37 @@ async function sendSingleSms(phoneNumber: string, message: string): Promise<bool
 
         if (response.ok) {
             console.log(`SMS dispatched via backend for ${phoneNumber}`);
-            return true;
+            return { success: true };
         } else {
             const errorResult = await response.json();
-            console.error(`Backend SMS API error for ${phoneNumber}:`, errorResult.error);
-            return false;
+            const errorMessage = errorResult.error || 'An unknown error occurred.';
+            console.error(`Backend SMS API error for ${phoneNumber}:`, errorMessage);
+            return { success: false, error: errorMessage };
         }
     } catch (error) {
+        const errorMessage = 'Could not connect to the SMS service.';
         console.error(`Failed to call internal SMS API for ${phoneNumber}:`, error);
-        return false;
+        return { success: false, error: errorMessage };
     }
 }
 
+
 /**
  * Sends SMS to multiple properties with a custom message.
- * Used for bulk messaging from the Billing page.
+ * Used for bulk messaging.
  * @param items An array of properties or BOPs to send SMS to.
  * @param messageTemplate The custom message template.
  * @returns An array of results for each attempt.
  */
-export async function sendSms(items: (Property | Bop)[], messageTemplate: string): Promise<{ propertyId: string; success: boolean; }[]> {
+export async function sendSms(items: (Property | Bop)[], messageTemplate: string): Promise<{ propertyId: string; success: boolean; error?: string }[]> {
     const smsPromises = items.map(async (item) => {
         const phoneNumber = getPropertyValue(item, 'Phone Number');
         if (phoneNumber && String(phoneNumber).trim()) {
             const message = compileTemplate(messageTemplate, item);
-            const success = await sendSingleSms(String(phoneNumber), message);
-            return { propertyId: item.id, success };
+            const result = await sendSingleSms(String(phoneNumber), message);
+            return { propertyId: item.id, ...result };
         } else {
-            return { propertyId: item.id, success: false };
+            return { propertyId: item.id, success: false, error: 'No phone number' };
         }
     });
 
@@ -132,14 +145,19 @@ export async function sendNewPropertySms(property: Property | Bop) {
     }
 
     const message = compileTemplate(newPropertyMessageTemplate, property);
-    const success = await sendSingleSms(String(phoneNumber), message);
+    const result = await sendSingleSms(String(phoneNumber), message);
     
-    if(success) {
+    if(result.success) {
         toast({
             title: 'SMS Notification Sent',
             description: `A welcome message was sent to ${phoneNumber}.`,
         });
     } else {
+        toast({
+            variant: 'destructive',
+            title: 'SMS Sending Failed',
+            description: result.error || `Could not send SMS to ${phoneNumber}.`,
+        });
         console.error(`Failed to send automated new property SMS to ${phoneNumber}.`);
     }
 }
@@ -163,16 +181,25 @@ export async function sendBillGeneratedSms(bills: Bill[]) {
             const message = compileTemplate(billGeneratedMessageTemplate, bill);
             return sendSingleSms(String(phoneNumber), message);
         }
-        return Promise.resolve(false);
+        return Promise.resolve({ success: false, error: 'No phone number' });
     });
     
     const results = await Promise.all(smsPromises);
-    const sentCount = results.filter(success => success).length;
+    const sentCount = results.filter(r => r.success).length;
+    const failedResults = results.filter(r => !r.success && r.error !== 'No phone number');
 
     if (sentCount > 0) {
         toast({
             title: 'Bill Notifications Sent',
-            description: `Sent ${sentCount} SMS messages to property owners.`,
+            description: `Dispatched ${sentCount} SMS messages to property/business owners.`,
+        });
+    }
+
+    if (failedResults.length > 0) {
+        toast({
+            variant: 'destructive',
+            title: `${failedResults.length} SMS Notifications Failed`,
+            description: `First error: ${failedResults[0].error}`,
         });
     }
 }

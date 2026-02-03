@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -14,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { sendSms } from '@/lib/sms-service';
 import { getPropertyValue } from '@/lib/property-utils';
+import { getBopBillStatus, getBillStatus } from '@/lib/billing-utils';
 
 interface SmsDialogProps {
   isOpen: boolean;
@@ -38,11 +40,24 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
 
   useEffect(() => {
     if (isOpen) {
-      const isBop = selectedProperties.length > 0 && getPropertyValue(selectedProperties[0], 'Business Name');
+      const firstItem = selectedProperties[0];
+      let isBop = false;
+      let isDefaulter = false;
 
-      const defaultMessage = isBop
-        ? "Dear {{Owner Name}}, your BOP payment of GHS {{Amount Owed}} for '{{Business Name}}' is overdue as of {{Date}}. Please contact the District Assembly."
-        : "Dear {{Owner Name}}, your property rate payment of GHS {{Amount Owed}} for property '{{Property No}}' is overdue as of {{Date}}. Please contact the District Assembly.";
+      if (firstItem) {
+          isBop = !!getPropertyValue(firstItem, 'Business Name');
+          const status = isBop ? getBopBillStatus(firstItem as Bop) : getBillStatus(firstItem as Property);
+          isDefaulter = status === 'Overdue' || status === 'Pending';
+      }
+
+      let defaultMessage = "";
+      if (isDefaulter) {
+         defaultMessage = isBop
+            ? "Dear {{Owner Name}}, your BOP payment of GHS {{Amount Owed}} for '{{Business Name}}' is overdue as of {{Date}}. Please contact the District Assembly."
+            : "Dear {{Owner Name}}, your property rate payment of GHS {{Amount Owed}} for property '{{Property No}}' is overdue as of {{Date}}. Please contact the assembly to arrange payment.";
+      } else {
+        defaultMessage = "Dear {{Owner Name}}, this is a notification from the District Assembly regarding your property: {{Property No}}. Thank you.";
+      }
 
       form.reset({ message: defaultMessage });
       setIsSending(false);
@@ -56,26 +71,36 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
 
     const results = await sendSms(selectedProperties, data.message);
     const successfulSends = results.filter(r => r.success).length;
+    const failedSends = results.filter(r => !r.success && r.error !== 'No phone number');
 
     setIsSending(false);
     
-    if (successfulSends === 0 && recipientCount > 0) {
-      toast({
-        variant: 'destructive',
-        title: 'SMS Sending Failed',
-        description: `Could not send SMS to any of the ${recipientCount} valid recipients. Check SMS settings or phone numbers.`,
-      });
-    } else if (recipientCount === 0) {
+    if (successfulSends > 0) {
        toast({
-        variant: 'destructive',
-        title: 'No Recipients',
-        description: `None of the selected items have a valid phone number.`,
-      });
-    } else {
-      toast({
         title: 'SMS Sending Complete',
-        description: `Successfully sent ${successfulSends} out of ${recipientCount} possible messages.`,
+        description: `Successfully dispatched ${successfulSends} messages.`,
       });
+    }
+
+    if (failedSends.length > 0) {
+         toast({
+            variant: 'destructive',
+            title: `${failedSends.length} Messages Failed`,
+            description: `Could not send messages. First error: ${failedSends[0].error}`,
+        });
+    }
+    
+    if (successfulSends === 0 && failedSends.length === 0) {
+        const noNumberCount = selectedProperties.length - recipientCount;
+        let description = `None of the selected items have a valid phone number.`;
+        if (noNumberCount > 0) {
+            description = `The ${recipientCount} selected recipients do not have a valid phone number.`
+        }
+         toast({
+            variant: 'destructive',
+            title: 'No Recipients',
+            description: description,
+        });
     }
 
     if (successfulSends > 0) {

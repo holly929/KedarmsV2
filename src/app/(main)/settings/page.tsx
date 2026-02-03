@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -16,13 +16,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { usePropertyData } from '@/context/PropertyDataContext';
+import { useBopData } from '@/context/BopDataContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
 import { PERMISSION_PAGES, usePermissions, UserRole, PermissionPage } from '@/context/PermissionsContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { Property } from '@/lib/types';
+import type { Property, Bop } from '@/lib/types';
 import { PrintableContent } from '@/components/bill-dialog';
-import { Loader2, Server, Download, UploadCloud } from 'lucide-react';
+import { Loader2, Server, Download, UploadCloud, MessageSquare } from 'lucide-react';
 import { store, saveStore } from '@/lib/store';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -36,6 +37,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { getPropertyValue } from '@/lib/property-utils';
+import { sendSms } from '@/lib/sms-service';
 
 
 const generalFormSchema = z.object({
@@ -67,6 +70,10 @@ const smsFormSchema = z.object({
   newPropertyMessageTemplate: z.string().max(320, "Message cannot exceed 2 SMS pages (320 chars).").optional(),
   enableSmsOnBillGenerated: z.boolean().default(false),
   billGeneratedMessageTemplate: z.string().max(320, "Message cannot exceed 2 SMS pages (320 chars).").optional(),
+});
+
+const newYearSmsFormSchema = z.object({
+  message: z.string().min(10, "Message must be at least 10 characters.").max(480, "Message is too long."),
 });
 
 type AppearanceSettings = z.infer<typeof appearanceFormSchema>;
@@ -118,15 +125,35 @@ const PlaceholderGuide = ({ common, property, bop }: { common: string[], propert
 
 export default function SettingsPage() {
   useRequirePermission();
-  const { headers } = usePropertyData();
+  const { properties } = usePropertyData();
+  const { bopData } = useBopData();
   const { permissions, updatePermissions } = usePermissions();
   const [loading, setLoading] = useState(true);
+  const [isSendingNewYearSms, setIsSendingNewYearSms] = useState(false);
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const [restoreError, setRestoreError] = useState<string | null>(null);
 
   // Local state for UI previews
   const [billFields, setBillFields] = useState<Record<string, boolean>>({});
   const [localPermissions, setLocalPermissions] = useState(permissions);
+
+  const allContacts = useMemo(() => {
+    const contactsMap = new Map<string, Property | Bop>();
+    
+    properties.forEach(p => {
+        const phone = getPropertyValue(p, 'Phone Number');
+        if (phone) contactsMap.set(String(phone).trim(), p);
+    });
+
+    bopData.forEach(b => {
+        const phone = getPropertyValue(b, 'Phone Number');
+        if (phone && !contactsMap.has(String(phone).trim())) {
+            contactsMap.set(String(phone).trim(), b);
+        }
+    });
+
+    return Array.from(contactsMap.values());
+  }, [properties, bopData]);
 
   const generalForm = useForm<z.infer<typeof generalFormSchema>>({
     resolver: zodResolver(generalFormSchema),
@@ -146,6 +173,13 @@ export default function SettingsPage() {
   const smsForm = useForm<z.infer<typeof smsFormSchema>>({
     resolver: zodResolver(smsFormSchema),
     defaultValues: store.settings.smsSettings,
+  });
+
+  const newYearSmsForm = useForm<z.infer<typeof newYearSmsFormSchema>>({
+    resolver: zodResolver(newYearSmsFormSchema),
+    defaultValues: {
+        message: "Happy New Year from {{Assembly Name}}! This is a friendly reminder that your Property Rate/BOP for {{Year}} is due. Please contact the assembly to make payment. Thank you."
+    },
   });
 
   const resetForms = useCallback(() => {
@@ -305,6 +339,39 @@ export default function SettingsPage() {
   function onSmsSave(data: z.infer<typeof smsFormSchema>) {
     saveData('smsSettings', data, 'SMS');
   }
+
+  async function onSendNewYearSms(data: z.infer<typeof newYearSmsFormSchema>) {
+    setIsSendingNewYearSms(true);
+    const results = await sendSms(allContacts, data.message);
+    const successfulSends = results.filter(r => r.success).length;
+    const failedSends = results.filter(r => !r.success && r.error !== 'No phone number');
+
+    setIsSendingNewYearSms(false);
+
+     if (successfulSends > 0) {
+       toast({
+        title: 'SMS Campaign Sent',
+        description: `Successfully dispatched ${successfulSends} messages.`,
+      });
+    }
+
+    if (failedSends.length > 0) {
+         toast({
+            variant: 'destructive',
+            title: `${failedSends.length} Messages Failed`,
+            description: `Could not send messages. First error: ${failedSends[0].error}`,
+        });
+    }
+
+    if (successfulSends === 0 && failedSends.length === 0) {
+         toast({
+            variant: 'destructive',
+            title: 'No Recipients',
+            description: `Could not find any contacts with a valid phone number.`,
+        });
+    }
+  }
+
 
   const onPermissionsSave = () => {
     updatePermissions(localPermissions);
@@ -597,7 +664,7 @@ export default function SettingsPage() {
           </Form>
         </TabsContent>
         
-        <TabsContent value="sms">
+        <TabsContent value="sms" className="space-y-6">
           <Form {...smsForm}>
             <form onSubmit={smsForm.handleSubmit(onSmsSave)}>
               <Card>
@@ -676,6 +743,60 @@ export default function SettingsPage() {
                 </CardFooter>
               </Card>
             </form>
+          </Form>
+
+          <Form {...newYearSmsForm}>
+             <form onSubmit={newYearSmsForm.handleSubmit(onSendNewYearSms)}>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Annual New Year Reminder</CardTitle>
+                        <CardDescription>
+                            Manually send a bulk SMS reminder to all property and BOP owners. This is useful for New Year greetings or payment reminders.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                         <FormField control={newYearSmsForm.control} name="message" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>New Year Reminder Message</FormLabel>
+                                <FormControl><Textarea placeholder="Enter your message here" {...field} className="min-h-[100px]"/></FormControl>
+                                <FormDescription>
+                                    This message will be sent to all contacts with a phone number.
+                                </FormDescription>
+                                <PlaceholderGuide
+                                    common={['Owner Name', 'Date', 'Year', 'Assembly Name']}
+                                    property={[]}
+                                    bop={[]}
+                                />
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                    </CardContent>
+                    <CardFooter className="border-t px-6 py-4">
+                         <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button disabled={isSendingNewYearSms || allContacts.length === 0}>
+                                     {isSendingNewYearSms ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MessageSquare className="mr-2 h-4 w-4" />}
+                                     Send to All ({allContacts.length})
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    You are about to send a bulk SMS to {allContacts.length} recipients. This action cannot be undone. Please confirm the message is correct before proceeding.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => onSendNewYearSms(newYearSmsForm.getValues())}>
+                                    Yes, Send SMS
+                                </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </CardFooter>
+                </Card>
+             </form>
           </Form>
         </TabsContent>
         
