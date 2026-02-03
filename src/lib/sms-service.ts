@@ -85,13 +85,14 @@ async function sendSingleSms(phoneNumber: string, message: string): Promise<{ su
             body: JSON.stringify({ phoneNumber, message }),
         });
 
-        if (response.ok) {
+        const result = await response.json();
+
+        if (response.ok && result.success === true) {
             console.log(`SMS dispatched via backend for ${phoneNumber}`);
             return { success: true };
         } else {
-            const errorResult = await response.json();
-            const errorMessage = errorResult.error || 'An unknown error occurred.';
-            console.error(`Backend SMS API error for ${phoneNumber}:`, errorMessage);
+            const errorMessage = result.error || `An unknown error occurred (status: ${response.status}).`;
+            console.error(`Backend SMS API error for ${phoneNumber}:`, errorMessage, result.details);
             return { success: false, error: errorMessage };
         }
     } catch (error) {
