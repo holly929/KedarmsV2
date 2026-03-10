@@ -164,32 +164,38 @@ export default function LicensePage() {
         let currentIndex = 0;
         
         const processChunk = () => {
-          if (currentIndex >= dataRows.length) {
-              setLicenseData(allNewData, finalHeaders);
-              setCurrentPage(1);
-              toast({ title: 'Import Successful', description: `${allNewData.length} records have been loaded.` });
-              setImportStatus({ inProgress: false, total: 0, processed: 0 });
-              return;
-          }
+          try {
+            if (currentIndex >= dataRows.length) {
+                setLicenseData(allNewData, finalHeaders);
+                setCurrentPage(1);
+                toast({ title: 'Import Successful', description: `${allNewData.length} records have been loaded.` });
+                setImportStatus({ inProgress: false, total: 0, processed: 0 });
+                return;
+            }
 
-          const nextIndex = Math.min(currentIndex + IMPORT_CHUNK_SIZE, dataRows.length);
-          const chunk = dataRows.slice(currentIndex, nextIndex);
-          
-          const chunkData: License[] = chunk.map((row, chunkIndex) => {
-              if (!row || row.every(cell => cell === null || String(cell).trim() === '')) return null;
-              const rowIndex = currentIndex + chunkIndex;
-              const rowData: { [key: string]: any } = { id: `license-imported-${Date.now()}-${rowIndex}` };
-              validHeadersWithIndices.forEach(({ header, index }) => {
-                  rowData[header] = row[index];
-              });
-              return rowData as License;
-          }).filter((row): row is License => row !== null);
-          
-          allNewData.push(...chunkData);
-          setImportStatus(prev => ({ ...prev, processed: nextIndex }));
-          currentIndex = nextIndex;
-          
-          setTimeout(processChunk, 0);
+            const nextIndex = Math.min(currentIndex + IMPORT_CHUNK_SIZE, dataRows.length);
+            const chunk = dataRows.slice(currentIndex, nextIndex);
+            
+            const chunkData: License[] = chunk.map((row, chunkIndex) => {
+                if (!row || row.every(cell => cell === null || String(cell).trim() === '')) return null;
+                const rowIndex = currentIndex + chunkIndex;
+                const rowData: { [key: string]: any } = { id: `license-imported-${Date.now()}-${rowIndex}` };
+                validHeadersWithIndices.forEach(({ header, index }) => {
+                    rowData[header] = row[index];
+                });
+                return rowData as License;
+            }).filter((row): row is License => row !== null);
+            
+            allNewData.push(...chunkData);
+            setImportStatus(prev => ({ ...prev, processed: nextIndex }));
+            currentIndex = nextIndex;
+            
+            setTimeout(processChunk, 0);
+          } catch (chunkError: any) {
+            console.error("Error processing chunk:", chunkError);
+            toast({ variant: 'destructive', title: 'Processing Error', description: 'An error occurred while reading the data rows.' });
+            setImportStatus({ inProgress: false, total: 0, processed: 0 });
+          }
         }
         
         processChunk();
