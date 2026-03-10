@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -17,11 +16,12 @@ import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { usePropertyData } from '@/context/PropertyDataContext';
 import { useBopData } from '@/context/BopDataContext';
+import { useLicenseData } from '@/context/LicenseDataContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
 import { PERMISSION_PAGES, usePermissions, UserRole, PermissionPage } from '@/context/PermissionsContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { Property, Bop } from '@/lib/types';
+import type { Property, Bop, License } from '@/lib/types';
 import { PrintableContent } from '@/components/bill-dialog';
 import { Loader2, Server, Download, UploadCloud, MessageSquare } from 'lucide-react';
 import { store, saveStore } from '@/lib/store';
@@ -91,7 +91,7 @@ const permissionPageLabels: Record<PermissionPage, string> = {
   'dashboard': 'Dashboard', 'properties': 'Properties', 'billing': 'Billing', 'bills': 'Bills',
   'reports': 'Reports', 'users': 'User Management', 'settings': 'Settings', 'integrations': 'Integrations',
   'bop': 'BOP Data', 'bop-billing': 'BOP Billing', 'defaulters': 'Defaulters', 'payment': 'Payment', 'activity-logs': 'Activity Logs',
-  'summary-bill': 'Summary Bill'
+  'summary-bill': 'Summary Bill', 'license': 'License Data', 'license-billing': 'License Billing'
 };
 
 const mockPropertyForPreview: Property = {
@@ -102,7 +102,7 @@ const mockPropertyForPreview: Property = {
   'Previous Balance': 200, 'Total Payment': 100,
 };
 
-const PlaceholderGuide = ({ common, property, bop }: { common: string[], property: string[], bop: string[] }) => {
+const PlaceholderGuide = ({ common, property, bop, license }: { common: string[], property: string[], bop: string[], license: string[] }) => {
     const renderPlaceholders = (placeholders: string[]) => (
         <div className="flex flex-wrap gap-1">
             {placeholders.map(p => (
@@ -119,6 +119,7 @@ const PlaceholderGuide = ({ common, property, bop }: { common: string[], propert
             {common.length > 0 && <div className="space-y-1"><span>Common:</span> {renderPlaceholders(common)}</div>}
             {property.length > 0 && <div className="space-y-1"><span>For Properties:</span> {renderPlaceholders(property)}</div>}
             {bop.length > 0 && <div className="space-y-1"><span>For BOPs:</span> {renderPlaceholders(bop)}</div>}
+            {license.length > 0 && <div className="space-y-1"><span>For Licenses:</span> {renderPlaceholders(license)}</div>}
         </div>
     );
 };
@@ -127,6 +128,7 @@ export default function SettingsPage() {
   useRequirePermission();
   const { properties } = usePropertyData();
   const { bopData } = useBopData();
+  const { licenseData } = useLicenseData();
   const { permissions, updatePermissions } = usePermissions();
   const [loading, setLoading] = useState(true);
   const [isSendingNewYearSms, setIsSendingNewYearSms] = useState(false);
@@ -138,7 +140,7 @@ export default function SettingsPage() {
   const [localPermissions, setLocalPermissions] = useState(permissions);
 
   const allContacts = useMemo(() => {
-    const contactsMap = new Map<string, Property | Bop>();
+    const contactsMap = new Map<string, Property | Bop | License>();
     
     properties.forEach(p => {
         const phone = getPropertyValue(p, 'Phone Number');
@@ -152,8 +154,15 @@ export default function SettingsPage() {
         }
     });
 
+    licenseData.forEach(l => {
+        const phone = getPropertyValue(l, 'Phone Number');
+        if (phone && !contactsMap.has(String(phone).trim())) {
+            contactsMap.set(String(phone).trim(), l);
+        }
+    });
+
     return Array.from(contactsMap.values());
-  }, [properties, bopData]);
+  }, [properties, bopData, licenseData]);
 
   const generalForm = useForm<z.infer<typeof generalFormSchema>>({
     resolver: zodResolver(generalFormSchema),
@@ -178,7 +187,7 @@ export default function SettingsPage() {
   const newYearSmsForm = useForm<z.infer<typeof newYearSmsFormSchema>>({
     resolver: zodResolver(newYearSmsFormSchema),
     defaultValues: {
-        message: "Happy New Year from {{Assembly Name}}! This is a friendly reminder that your Property Rate/BOP for {{Year}} is due. Please contact the assembly to make payment. Thank you."
+        message: "Happy New Year from {{Assembly Name}}! This is a friendly reminder that your Property Rate/BOP/License for {{Year}} is due. Please contact the assembly to make payment. Thank you."
     },
   });
 
@@ -541,7 +550,7 @@ export default function SettingsPage() {
                                       <FormControl><Input type="color" className="p-1 h-10 w-14" {...field} /></FormControl>
                                       <Input type="text" placeholder="#F1F5F9" {...field} />
                                   </div>
-                                  <FormDescription>Used for highlighting rows like 'Total Amount Due'.</FormDescription>
+                                  <FormDescription>Used for highlighting rows like 'Total Amount Payable'.</FormDescription>
                                   <FormMessage />
                               </FormItem>
                           )} />
@@ -685,9 +694,9 @@ export default function SettingsPage() {
                      <FormField control={smsForm.control} name="enableSmsOnNewProperty" render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                             <div className="space-y-0.5">
-                                <FormLabel className="text-base">SMS on New Property/BOP</FormLabel>
+                                <FormLabel className="text-base">SMS on New Property/BOP/License</FormLabel>
                                 <FormDescription>
-                                    Automatically send a welcome SMS when a new property or business is added.
+                                    Automatically send a welcome SMS when a new property, business, or hotel is added.
                                 </FormDescription>
                             </div>
                              <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
@@ -695,7 +704,7 @@ export default function SettingsPage() {
                     )} />
                     <FormField control={smsForm.control} name="newPropertyMessageTemplate" render={({ field }) => (
                         <FormItem>
-                            <FormLabel>New Property/BOP Message Template</FormLabel>
+                            <FormLabel>New Record Message Template</FormLabel>
                             <FormControl><Textarea placeholder="Enter your message here" {...field} className="min-h-[100px]"/></FormControl>
                             <FormDescription>
                                 Use placeholders to customize your message.
@@ -704,6 +713,7 @@ export default function SettingsPage() {
                                 common={['Owner Name', 'Phone Number', 'Town', 'Date']}
                                 property={['Property No', 'Property Type', 'Suburb']}
                                 bop={['Business Name']}
+                                license={['Name of Hotel/Guest House', 'S/N']}
                             />
                             <FormMessage />
                         </FormItem>
@@ -715,7 +725,7 @@ export default function SettingsPage() {
                             <div className="space-y-0.5">
                                 <FormLabel className="text-base">SMS on Bill Generation</FormLabel>
                                 <FormDescription>
-                                    Automatically send an SMS when a new bill is generated for a property or BOP.
+                                    Automatically send an SMS when a new bill is generated.
                                 </FormDescription>
                             </div>
                              <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
@@ -732,6 +742,7 @@ export default function SettingsPage() {
                                 common={['Owner Name', 'Amount Owed', 'Date', 'Year']}
                                 property={['Property No', 'Town', 'Suburb']}
                                 bop={['Business Name']}
+                                license={['Name of Hotel/Guest House', 'S/N']}
                             />
                             <FormMessage />
                         </FormItem>
@@ -751,7 +762,7 @@ export default function SettingsPage() {
                     <CardHeader>
                         <CardTitle>Annual New Year Reminder</CardTitle>
                         <CardDescription>
-                            Manually send a bulk SMS reminder to all property and BOP owners. This is useful for New Year greetings or payment reminders.
+                            Manually send a bulk SMS reminder to all owners. This is useful for New Year greetings or payment reminders.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -766,6 +777,7 @@ export default function SettingsPage() {
                                     common={['Owner Name', 'Date', 'Year', 'Assembly Name']}
                                     property={[]}
                                     bop={[]}
+                                    license={[]}
                                 />
                                 <FormMessage />
                             </FormItem>

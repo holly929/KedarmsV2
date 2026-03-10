@@ -6,7 +6,7 @@ import { useReactToPrint } from 'react-to-print';
 import JsBarcode from 'jsbarcode';
 import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import type { Property, Bop, Bill } from '@/lib/types';
+import type { Property, Bop, License, Bill } from '@/lib/types';
 import { Printer, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getPropertyValue } from '@/lib/property-utils';
@@ -67,8 +67,8 @@ const BillRow = ({ label, value, isBold = false }: { label: string; value: strin
 
 export const PrintableContent = React.forwardRef<HTMLDivElement, { 
     property?: Property;
-    data?: Property | Bop;
-    billType?: 'property' | 'bop';
+    data?: Property | Bop | License;
+    billType?: 'property' | 'bop' | 'license';
     settings: { general?: GeneralSettings, appearance?: AppearanceSettings }; 
     isCompact?: boolean; 
     displaySettings?: Record<string, boolean>;
@@ -121,7 +121,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     
     const getNumber = (key: string): number | null => {
         if (!data) return null;
-        const value = getPropertyValue(data as Property, key);
+        const value = getPropertyValue(data as any, key);
         if (value === null || value === undefined || String(value).trim() === '') return null;
         const cleanedValue = String(value).replace(/[^0-9.-]/g, '');
         if (cleanedValue === '') return null;
@@ -133,7 +133,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     
     const formatValue = useCallback((valueKey: string) => {
         if (!data) return '...';
-        const val = getPropertyValue(data as Property, valueKey);
+        const val = getPropertyValue(data as any, valueKey);
         return val != null && val !== '' ? String(val) : '...';
     }, [data]);
     
@@ -162,12 +162,12 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     };
 
     // Calculations
-    const { totalAmountDue, barcodeValue } = useMemo(() => {
+    const { totalAmountPayable, barcodeValue } = useMemo(() => {
         let finalAmount = 0;
         let finalBarcode = '';
 
         if (!data) {
-            return { totalAmountDue: 0, barcodeValue: '' };
+            return { totalAmountPayable: 0, barcodeValue: '' };
         }
 
         if (billType === 'property') {
@@ -186,7 +186,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             const amount = formatAmount(finalAmount);
             const year = new Date().getFullYear();
             finalBarcode = `${propertyNo}|${ownerName}|${amount}|${year}`;
-        } else { // BOP
+        } else if (billType === 'bop') {
             const bop = data as Bop;
             const permitFee = getNumber('Permit Fee');
             const payment = getNumber('Payment');
@@ -196,8 +196,19 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             const amount = formatAmount(finalAmount);
             const year = new Date().getFullYear();
             finalBarcode = `${bop.id}|${businessName}|${amount}|${year}`;
+        } else { // License
+            const license = data as License;
+            const propertyRate = getNumber('Property Rate');
+            const arrears = getNumber('Arrears');
+            const payment = getNumber('Payment');
+            finalAmount = (propertyRate || 0) + (arrears || 0) - (payment || 0);
+
+            const hotelName = (formatValue('Name of Hotel/Guest House') || '').substring(0, 20);
+            const amount = formatAmount(finalAmount);
+            const year = new Date().getFullYear();
+            finalBarcode = `${license.id}|${hotelName}|${amount}|${year}`;
         }
-        return { totalAmountDue: finalAmount, barcodeValue: finalBarcode };
+        return { totalAmountPayable: finalAmount, barcodeValue: finalBarcode };
     }, [data, billType, formatValue, formatAmount]);
 
 
@@ -251,7 +262,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <BillRow label="TOTAL PAYMENT" value={formatAmount(totalPayment)} />
                     <div className="flex justify-between p-1 border-b border-black items-center font-bold" style={accentStyle}>
                         <span>TOTAL AMOUNT PAYABLE</span>
-                        <span className="text-right" style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountDue)}</span>
+                        <span className="text-right" style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountPayable)}</span>
                     </div>
                 </div>
                 <div className="w-[33%] text-right font-bold">
@@ -264,7 +275,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <div className="p-1 border-b border-black">{formatAmount(totalBill)}</div>
                     <div className="p-1 border-b border-black">{formatAmount(totalPayment)}</div>
                     <div className="p-1 border-b border-black flex items-center justify-end" style={accentStyle}>
-                        <span style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountDue)}</span>
+                        <span style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountPayable)}</span>
                     </div>
                 </div>
             </div>
@@ -296,7 +307,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <BillRow label="PAYMENT" value={formatAmount(payment)} />
                     <div className="flex justify-between p-1 border-b border-black items-center font-bold" style={accentStyle}>
                         <span>TOTAL AMOUNT PAYABLE</span>
-                        <span className="text-right" style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountDue)}</span>
+                        <span className="text-right" style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountPayable)}</span>
                     </div>
                 </div>
                 <div className="w-[33%] text-right font-bold">
@@ -304,7 +315,52 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <div className="p-1 border-b border-black">{formatAmount(permitFee)}</div>
                     <div className="p-1 border-b border-black">{formatAmount(payment)}</div>
                     <div className="p-1 border-b border-black flex items-center justify-end" style={accentStyle}>
-                        <span style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountDue)}</span>
+                        <span style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountPayable)}</span>
+                    </div>
+                </div>
+            </div>
+        </>
+      )
+    }
+
+    const renderLicenseBill = () => {
+      const propertyRate = getNumber('Property Rate');
+      const arrears = getNumber('Arrears');
+      const payment = getNumber('Payment');
+      const totalAmountDue = (propertyRate || 0) + (arrears || 0);
+
+      return (
+        <>
+            <div className="flex border-b-2 border-black">
+                <div className="w-[67%] border-r-2 border-black">
+                    <DetailRow label="S/N" valueKey="S/N" />
+                    <DetailRow label="HOTEL/GUEST HOUSE" valueKey="Name of Hotel/Guest House" />
+                    <DetailRow label="PHONE NUMBER" valueKey="Phone Number" />
+                </div>
+                <div className="w-[33%]">
+                    <div className="font-bold text-center p-1">AMOUNT (GH&#8373;)</div>
+                </div>
+            </div>
+            <div className="flex">
+                <div className="w-[67%] border-r-2 border-black">
+                    <div className="font-bold text-center p-1 border-b-2 border-black">BILLING DETAILS</div>
+                    <BillRow label="PROPERTY RATE" value={formatAmount(propertyRate)} />
+                    <BillRow label="ARREARS" value={formatAmount(arrears)} />
+                    <BillRow label="AMOUNT DUE" value={formatAmount(totalAmountDue)} isBold />
+                    <BillRow label="PAYMENT" value={formatAmount(payment)} />
+                    <div className="flex justify-between p-1 border-b border-black items-center font-bold" style={accentStyle}>
+                        <span>TOTAL AMOUNT PAYABLE</span>
+                        <span className="text-right" style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountPayable)}</span>
+                    </div>
+                </div>
+                <div className="w-[33%] text-right font-bold">
+                    <div className="p-1 border-b-2 border-black flex items-end justify-end">FINANCIAL DETAILS</div>
+                    <div className="p-1 border-b border-black">{formatAmount(propertyRate)}</div>
+                    <div className="p-1 border-b border-black">{formatAmount(arrears)}</div>
+                    <div className="p-1 border-b border-black">{formatAmount(totalAmountDue)}</div>
+                    <div className="p-1 border-b border-black">{formatAmount(payment)}</div>
+                    <div className="p-1 border-b border-black flex items-center justify-end" style={accentStyle}>
+                        <span style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountPayable)}</span>
                     </div>
                 </div>
             </div>
@@ -332,7 +388,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                 <div className="w-1/2 text-center">
                     <h1 className="font-bold tracking-wide" style={{ fontSize: `${finalFontSize * 1.5}px` }}>{settings.general?.assemblyName?.toUpperCase() || 'DISTRICT ASSEMBLY'}</h1>
                     <h2 className="font-bold tracking-wide" style={{ fontSize: `${finalFontSize * 1.3}px` }}>
-                      {billType === 'property' ? 'PROPERTY RATE BILL' : 'B.O.P. BILL'}
+                      {billType === 'property' ? 'PROPERTY RATE BILL' : billType === 'bop' ? 'B.O.P. BILL' : 'LICENSE BILL'}
                     </h2>
                     <p style={{ fontSize: `${finalFontSize * 0.9}px` }}>{settings.general?.postalAddress}</p>
                     <p style={{ fontSize: `${finalFontSize * 0.9}px` }}>TEL: {settings.general?.contactPhone}</p>
@@ -343,7 +399,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             </header>
             
             <main className="border-t-2 border-b-2 border-black flex-grow">
-                {billType === 'property' ? renderPropertyBill() : renderBopBill()}
+                {billType === 'property' ? renderPropertyBill() : billType === 'bop' ? renderBopBill() : renderLicenseBill()}
             </main>
             
             <footer className="mt-auto pt-2">

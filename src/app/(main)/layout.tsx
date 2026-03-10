@@ -25,6 +25,7 @@ import {
   CreditCard,
   History,
   ClipboardList,
+  Hotel,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
@@ -54,6 +55,8 @@ const navItems = [
   { href: '/billing', icon: ReceiptText, label: 'Billing' },
   { href: '/bop', icon: Store, label: 'BOP Data' },
   { href: '/bop-billing', icon: ReceiptText, label: 'BOP Billing' },
+  { href: '/license', icon: Hotel, label: 'License Data' },
+  { href: '/license-billing', icon: ReceiptText, label: 'License Billing' },
   { href: '/summary-bill', icon: ClipboardList, label: 'Summary Bill' },
   { href: '/bills', icon: BookCopy, label: 'Bills' },
   { href: '/defaulters', icon: AlertCircle, label: 'Defaulters' },

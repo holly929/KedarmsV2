@@ -39,6 +39,20 @@ export type Bop = {
   [key: string]: any;
 }
 
+export type License = {
+  id: string;
+  'S/N'?: string;
+  'Name of Hotel/Guest House'?: string;
+  'Property Rate'?: number;
+  'Arrears'?: number;
+  'Amount Due'?: number;
+  'Payment'?: number;
+  'Phone Number'?: string;
+  created_at?: string;
+  payments?: Payment[];
+  [key: string]: any;
+}
+
 export type BillStatus = 'Paid' | 'Pending' | 'Overdue' | 'Unbilled';
 
 export type PropertyWithStatus = Property & {
@@ -49,20 +63,24 @@ export type BopWithStatus = Bop & {
   status: BillStatus;
 };
 
+export type LicenseWithStatus = License & {
+  status: BillStatus;
+};
+
 export type Bill = {
   id: string;
   propertyId: string;
-  propertySnapshot: Property | Bop; // This will be a JSONB field in Supabase
+  propertySnapshot: Property | Bop | License;
   generatedAt: string; // ISO Date string
   year: number;
   totalAmountDue: number;
   created_at?: string;
-  billType: 'property' | 'bop';
+  billType: 'property' | 'bop' | 'license';
 };
 
 export type PaymentBill = {
-  type: 'property' | 'bop';
-  data: Property | Bop;
+  type: 'property' | 'bop' | 'license';
+  data: Property | Bop | License;
 }
 
 export type RevenueData = {

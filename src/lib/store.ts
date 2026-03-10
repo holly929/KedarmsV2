@@ -1,11 +1,10 @@
 
-
 // This file acts as a centralized in-memory database for the application.
 // All data contexts will read from and write to this single source of truth,
 // ensuring that data is shared and consistent across all user sessions
 // within the same server process.
 
-import type { Property, Bop, Bill, User, Payment, ActivityLog } from './types';
+import type { Property, Bop, License, Bill, User, Payment, ActivityLog } from './types';
 import { PERMISSION_PAGES, type RolePermissions, type UserRole } from '@/context/PermissionsContext';
 
 const STORE_KEY = 'rateease.store';
@@ -25,14 +24,17 @@ const defaultPermissions: RolePermissions = {
   Admin: {
     dashboard: true, properties: true, billing: true, bop: true, 'bop-billing': true, bills: true, defaulters: true, reports: true,
     users: true, settings: true, 'integrations': true, payment: true, 'activity-logs': true, 'summary-bill': true,
+    license: true, 'license-billing': true,
   },
   'Data Entry': {
     dashboard: true, properties: true, billing: true, bop: true, 'bop-billing': true, bills: true, defaulters: true, reports: true,
     users: false, settings: false, 'integrations': true, payment: true, 'activity-logs': false, 'summary-bill': true,
+    license: true, 'license-billing': true,
   },
   Viewer: {
     dashboard: true, properties: false, billing: false, bop: false, 'bop-billing': false, bills: false, defaulters: false, reports: false,
     users: false, settings: false, 'integrations': false, payment: true, 'activity-logs': false, 'summary-bill': false,
+    license: false, 'license-billing': false,
   },
 };
 
@@ -44,6 +46,8 @@ interface AppStore {
     propertyHeaders: string[];
     bops: Bop[];
     bopHeaders: string[];
+    licenses: License[];
+    licenseHeaders: string[];
     summaryBillWorkbook: { [sheetName: string]: { data: Bop[], headers: string[] } };
     bills: Bill[];
     users: User[];
@@ -58,6 +62,8 @@ function getDefaultStore(): AppStore {
         propertyHeaders: ['Owner Name', 'Property No', 'Town', 'Rateable Value', 'Total Payment'],
         bops: [],
         bopHeaders: ['Business Name', 'Owner Name', 'Phone Number', 'Town', 'Permit Fee', 'Payment'],
+        licenses: [],
+        licenseHeaders: ['S/N', 'Name of Hotel/Guest House', 'Property Rate', 'Arrears', 'Amount Due', 'Payment'],
         summaryBillWorkbook: {},
         bills: [],
         users: [defaultAdminUser],
@@ -75,9 +81,9 @@ function getDefaultStore(): AppStore {
             integrationsSettings: {},
             smsSettings: {
                 enableSmsOnNewProperty: true,
-                newPropertyMessageTemplate: "Dear {{Owner Name}}, your property ({{Property No}}) has been registered with the District Assembly. Thank you.",
+                newPropertyMessageTemplate: "Dear {{Owner Name}}, your property/license ({{Property No}}{{Name of Hotel/Guest House}}) has been registered with the District Assembly. Thank you.",
                 enableSmsOnBillGenerated: true,
-                billGeneratedMessageTemplate: "Your bill of GHS {{Total Amount Due}} for property {{Property No}} for the year {{Year}} is ready. Please contact the assembly to arrange payment. Thank you.",
+                billGeneratedMessageTemplate: "Your bill of GHS {{Amount Owed}} for {{Property No}}{{Name of Hotel/Guest House}} for the year {{Year}} is ready. Please contact the assembly to arrange payment. Thank you.",
             },
             billDisplaySettings: {},
         },
