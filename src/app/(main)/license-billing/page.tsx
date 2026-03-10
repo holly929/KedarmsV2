@@ -50,6 +50,12 @@ import { EditLicenseDialog } from '@/components/edit-license-dialog';
 
 const ROWS_PER_PAGE = 15;
 
+const formatCurrency = (value: any) => {
+    const num = Number(String(value || 0).replace(/,/g, ''));
+    if (isNaN(num)) return '0.00';
+    return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
 export default function LicenseBillingPage() {
   const { toast } = useToast();
   const router = useRouter();
@@ -227,13 +233,18 @@ export default function LicenseBillingPage() {
                 <TableCell>
                   <Badge variant={statusVariant(row.status)}>{row.status}</Badge>
                 </TableCell>
-                {headers.map((header, cellIndex) => (
-                  <TableCell key={cellIndex} className={cellIndex === 0 ? 'font-medium' : ''}>
-                    {typeof getPropertyValue(row, header) === 'object' && getPropertyValue(row, header) !== null
-                      ? 'View Details'
-                      : String(getPropertyValue(row, header) ?? '')}
-                  </TableCell>
-                ))}
+                {headers.map((header, cellIndex) => {
+                  const value = getPropertyValue(row, header);
+                  const isCurrency = ['License Fee', 'Bop Amount', 'Arrears', 'Payment', 'Amount Due', 'Property Rate', 'Total Payment'].some(key => header.toLowerCase().includes(key.toLowerCase()));
+                  
+                  return (
+                    <TableCell key={cellIndex} className={cellIndex === 0 ? 'font-medium' : ''}>
+                      {typeof value === 'object' && value !== null
+                        ? 'View Details'
+                        : isCurrency ? `GHS ${formatCurrency(value)}` : String(value ?? '')}
+                    </TableCell>
+                  );
+                })}
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -244,7 +255,7 @@ export default function LicenseBillingPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      {getPropertyValue(row, 'Name of Hotel/Guest House') && getPropertyValue(row, 'Property Rate') ? (
+                      {getPropertyValue(row, 'Name of Hotel/Guest House') && (getPropertyValue(row, 'License Fee') || getPropertyValue(row, 'Property Rate')) ? (
                         <>
                         <DropdownMenuItem onSelect={() => handleViewBill(row)}>
                           <View className="mr-2 h-4 w-4" />
@@ -307,7 +318,7 @@ export default function LicenseBillingPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                {getPropertyValue(row, 'Name of Hotel/Guest House') && getPropertyValue(row, 'Property Rate') ? (
+                {getPropertyValue(row, 'Name of Hotel/Guest House') && (getPropertyValue(row, 'License Fee') || getPropertyValue(row, 'Property Rate')) ? (
                   <>
                   <DropdownMenuItem onSelect={() => handleViewBill(row)}>
                     <View className="mr-2 h-4 w-4" /> View Bill
@@ -338,11 +349,13 @@ export default function LicenseBillingPage() {
             </div>
             {headers.slice(1).map(header => {
               const value = getPropertyValue(row, header);
-              if (header.toLowerCase() === 'id' || !value) return null;
+              if (header.toLowerCase() === 'id' || value === undefined || value === null) return null;
+              const isCurrency = ['License Fee', 'Bop Amount', 'Arrears', 'Payment', 'Amount Due', 'Property Rate', 'Total Payment'].some(key => header.toLowerCase().includes(key.toLowerCase()));
+              
               return (
                 <div key={header} className="flex justify-between items-center text-xs">
                   <span className="font-semibold text-muted-foreground">{header}</span>
-                  <span className="text-right">{typeof value === 'object' && value !== null ? 'View Details' : String(value)}</span>
+                  <span className="text-right">{typeof value === 'object' && value !== null ? 'View Details' : isCurrency ? `GHS ${formatCurrency(value)}` : String(value)}</span>
                 </div>
               );
             })}

@@ -51,7 +51,7 @@ export function getBopBillStatus(bop: Bop): BillStatus {
 }
 
 export function getLicenseBillStatus(license: License): BillStatus {
-  const licenseFee = Number(getPropertyValue(license, 'Property Rate')) || 0;
+  const licenseFee = Number(getPropertyValue(license, 'License Fee')) || 0;
   const bopAmt = Number(getPropertyValue(license, 'Bop Amount')) || 0;
   const arrears = Number(getPropertyValue(license, 'Arrears')) || 0;
   const payment = Number(getPropertyValue(license, 'Payment')) || 0;

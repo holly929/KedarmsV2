@@ -26,7 +26,7 @@ const licenseFormSchema = z.object({
   'S/N': z.string().optional(),
   'Name of Hotel/Guest House': z.string().min(3, 'Name is required.'),
   'Phone Number': z.string().optional(),
-  'Property Rate': z.coerce.number().min(0, 'License Fee must be a positive number.'),
+  'License Fee': z.coerce.number().min(0, 'License Fee must be a positive number.'),
   'Bop Amount': z.coerce.number().min(0).default(0),
   'Arrears': z.coerce.number().min(0).default(0),
   'Payment': z.coerce.number().min(0, 'Payment must be a positive number.'),
@@ -47,7 +47,7 @@ export default function NewLicensePage() {
             'S/N': '',
             'Name of Hotel/Guest House': '',
             'Phone Number': '',
-            'Property Rate': 0,
+            'License Fee': 0,
             'Bop Amount': 0,
             'Arrears': 0,
             'Payment': 0,
@@ -57,7 +57,7 @@ export default function NewLicensePage() {
 
     const watchedValues = form.watch();
     const totalAmountDue = React.useMemo(() => {
-        const rate = Number(watchedValues['Property Rate']) || 0;
+        const rate = Number(watchedValues['License Fee']) || 0;
         const bopAmt = Number(watchedValues['Bop Amount']) || 0;
         const arrears = Number(watchedValues['Arrears']) || 0;
         return rate + bopAmt + arrears;
@@ -231,7 +231,7 @@ export default function NewLicensePage() {
                   <div className="border-t pt-4 mt-4">
                     <h3 className="text-lg font-medium">Billing Details</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
-                        <FormField control={form.control} name="Property Rate" render={({ field }) => (
+                        <FormField control={form.control} name="License Fee" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>License Fee (GHS)</FormLabel>
                                 <FormControl><Input type="number" step="10" {...field} /></FormControl>

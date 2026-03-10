@@ -123,19 +123,32 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
         if (!data) return null;
         const value = getPropertyValue(data as any, key);
         if (value === null || value === undefined || String(value).trim() === '') return null;
-        const cleanedValue = String(value).replace(/[^0-9.-]/g, '');
+        
+        // Handle comma formatted numbers
+        const cleanedValue = String(value).replace(/,/g, '').replace(/[^0-9.-]/g, '');
         if (cleanedValue === '') return null;
         const num = Number(cleanedValue);
         return isNaN(num) ? null : num;
     };
 
-    const formatAmount = useCallback((amount: number | null) => (amount != null ? amount.toFixed(2) : '0.00'), []);
+    const formatAmount = useCallback((amount: number | null) => {
+        if (amount === null) return '0.00';
+        return amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }, []);
     
     const formatValue = useCallback((valueKey: string) => {
         if (!data) return '...';
         const val = getPropertyValue(data as any, valueKey);
-        return val != null && val !== '' ? String(val) : '...';
-    }, [data]);
+        if (val === null || val === undefined || String(val).trim() === '') return '...';
+        
+        // If it's a number key, format it
+        if (['License Fee', 'Bop Amount', 'Arrears', 'Payment', 'Rateable Value', 'Rate Impost', 'Total Payment', 'Permit Fee', 'Sanitation Charged', 'Previous Balance'].includes(valueKey)) {
+            const num = Number(String(val).replace(/,/g, ''));
+            return isNaN(num) ? String(val) : formatAmount(num);
+        }
+        
+        return String(val);
+    }, [data, formatAmount]);
     
     const normalizeDisplayKey = (key: string): string => {
         return (key || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
@@ -199,7 +212,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             finalBarcode = `${bop.id}|${businessName}|${amount}|${year}`;
         } else { // License
             const license = data as License;
-            const licenseFee = getNumber('Property Rate');
+            const licenseFee = getNumber('License Fee'); 
             const bopAmt = getNumber('Bop Amount');
             const arrears = getNumber('Arrears');
             const payment = getNumber('Payment');
@@ -211,7 +224,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             finalBarcode = `${license.id}|${hotelName}|${amount}|${year}`;
         }
         return { totalAmountPayable: finalAmount, barcodeValue: finalBarcode };
-    }, [data, billType, formatValue, formatAmount]);
+    }, [data, billType, formatValue, formatAmount, getNumber]);
 
 
     const renderPropertyBill = () => {
@@ -332,7 +345,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     }
 
     const renderLicenseBill = () => {
-      const licenseFee = getNumber('Property Rate');
+      const licenseFee = getNumber('License Fee');
       const bopAmt = getNumber('Bop Amount');
       const arrears = getNumber('Arrears');
       const payment = getNumber('Payment');

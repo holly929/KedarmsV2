@@ -58,6 +58,12 @@ import { LicensePaymentHistoryDialog } from '@/components/license-payment-histor
 const ROWS_PER_PAGE = 15;
 const IMPORT_CHUNK_SIZE = 200;
 
+const formatCurrency = (value: any) => {
+    const num = Number(String(value || 0).replace(/,/g, ''));
+    if (isNaN(num)) return '0.00';
+    return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
 export default function LicensePage() {
   const { toast } = useToast();
   const router = useRouter();
@@ -136,7 +142,7 @@ export default function LicensePage() {
         const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
         if (rows.length === 0) throw new Error("No data found in the spreadsheet.");
 
-        // More robust header detection: Find first row with at least 3 non-empty cells
+        // Robust header detection
         let headerRowIndex = rows.findIndex(row => {
             const populatedCells = (row || []).filter(cell => cell !== null && String(cell).trim() !== '').length;
             return populatedCells >= 3;
@@ -181,7 +187,14 @@ export default function LicensePage() {
                 const rowIndex = currentIndex + chunkIndex;
                 const rowData: { [key: string]: any } = { id: `license-imported-${Date.now()}-${rowIndex}` };
                 validHeadersWithIndices.forEach(({ header, index }) => {
-                    rowData[header] = row[index];
+                    let val = row[index];
+                    // Clean numeric strings
+                    if (['License Fee', 'Bop Amount', 'Arrears', 'Payment', 'Amount Due', 'Property Rate'].some(key => header.toLowerCase().includes(key.toLowerCase()))) {
+                        if (typeof val === 'string') {
+                            val = Number(val.replace(/,/g, '')) || 0;
+                        }
+                    }
+                    rowData[header] = val;
                 });
                 return rowData as License;
             }).filter((row): row is License => row !== null);
@@ -283,13 +296,18 @@ export default function LicensePage() {
           {paginatedData.length > 0 ? (
             paginatedData.map((row) => (
               <TableRow key={row.id}>
-                {headers.map((header, cellIndex) => (
-                  <TableCell key={cellIndex} className={cellIndex === 0 ? 'font-medium' : ''}>
-                    {typeof getPropertyValue(row, header) === 'object' && getPropertyValue(row, header) !== null
-                      ? 'View Payments'
-                      : String(getPropertyValue(row, header) ?? '')}
-                  </TableCell>
-                ))}
+                {headers.map((header, cellIndex) => {
+                  const value = getPropertyValue(row, header);
+                  const isCurrency = ['License Fee', 'Bop Amount', 'Arrears', 'Payment', 'Amount Due', 'Property Rate', 'Total Payment'].some(key => header.toLowerCase().includes(key.toLowerCase()));
+                  
+                  return (
+                    <TableCell key={cellIndex} className={cellIndex === 0 ? 'font-medium' : ''}>
+                      {typeof value === 'object' && value !== null
+                        ? 'View Payments'
+                        : isCurrency ? `GHS ${formatCurrency(value)}` : String(value ?? '')}
+                    </TableCell>
+                  );
+                })}
                 {!isViewer && 
                   <TableCell>
                     <DropdownMenu>
@@ -364,14 +382,16 @@ export default function LicensePage() {
           <CardContent className="space-y-2 text-sm pl-6 pr-6 pb-4">
             {headers.slice(1).map(header => {
               const value = getPropertyValue(row, header);
-              if (header.toLowerCase() === 'id' || !value) return null;
+              if (header.toLowerCase() === 'id' || value === undefined || value === null) return null;
+              const isCurrency = ['License Fee', 'Bop Amount', 'Arrears', 'Payment', 'Amount Due', 'Property Rate', 'Total Payment'].some(key => header.toLowerCase().includes(key.toLowerCase()));
+              
               return (
                 <div key={header} className="flex justify-between items-center text-xs">
                   <span className="font-semibold text-muted-foreground">{header}</span>
                   <span className="text-right">
                     {typeof value === 'object' && value !== null
                       ? 'View Payments'
-                      : String(value)}
+                      : isCurrency ? `GHS ${formatCurrency(value)}` : String(value)}
                   </span>
                 </div>
               );

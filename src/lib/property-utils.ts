@@ -3,7 +3,7 @@ import type { Property, License } from '@/lib/types';
 
 const STANDARD_ALIASES: Record<string, string[]> = {
     'Owner Name': ['Owner Name', 'Name of Owner', 'Rate Payer', 'ownername'],
-    'Phone Number': ['Phone Number', 'Phone', 'Telephone', 'phonenumber'],
+    'Phone Number': ['Phone Number', 'Phone', 'Telephone', 'phonenumber', 'Phone No'],
     'Town': ['Town'],
     'Suburb': ['Suburb'],
     'Property No': ['Property No', 'Property Number', 'propertyno'],
@@ -15,10 +15,13 @@ const STANDARD_ALIASES: Record<string, string[]> = {
     'Sanitation Charged': ['Sanitation Charged', 'Sanitation', 'sanitationcharged'],
     'Previous Balance': ['Previous Balance', 'Prev Balance', 'Arrears', 'previousbalance', 'Arrears BF'],
     'Total Payment': ['Total Payment', 'Amount Paid', 'Payment', 'totalpayment'],
-    'S/N': ['S/N', 'SN', 'Serial Number'],
-    'Name of Hotel/Guest House': ['Name of Hotel/Guest House', 'Hotel Name', 'Guest House Name', 'Business Name'],
-    'Property Rate': ['Property Rate', 'License Fee', 'Rate'],
-    'Amount Due': ['Amount Due', 'Total Amount Due', 'Amount Owed'],
+    'S/N': ['S/N', 'SN', 'Serial Number', 'Serial No'],
+    'Name of Hotel/Guest House': ['Name of Hotel/Guest House', 'Hotel Name', 'Guest House Name', 'Business Name', 'Name'],
+    'License Fee': ['License Fee', 'Property Rate', 'Rate', 'License', 'License Amount'],
+    'Bop Amount': ['Bop Amount', 'BOP', 'Bop Fee', 'BOP Amount'],
+    'Arrears': ['Arrears', 'Previous Balance', 'Arrears BF', 'Prev Balance'],
+    'Payment': ['Payment', 'Amount Paid', 'Paid', 'Total Payment'],
+    'Amount Due': ['Amount Due', 'Total Amount Due', 'Amount Owed', 'Total Due'],
 };
 
 /**
