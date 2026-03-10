@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect } from 'react';
@@ -25,7 +24,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { getPropertyValue } from '@/lib/property-utils';
 
 interface EditLicenseDialogProps {
@@ -36,7 +35,7 @@ interface EditLicenseDialogProps {
 }
 
 const licenseFormSchema = z.object({
-  'Record Type': z.enum(['License', 'BOP']),
+  'Record Type': z.array(z.string()).min(1, 'Select at least one record type.'),
   'S/N': z.string().optional(),
   'Name of Hotel/Guest House': z.string().min(3, 'Name is required.'),
   'Phone Number': z.string().optional(),
@@ -44,6 +43,8 @@ const licenseFormSchema = z.object({
   'Arrears': z.coerce.number().min(0, 'Arrears must be a positive number.'),
   'Payment': z.coerce.number().min(0, 'Payment must be a positive number.'),
 });
+
+const RECORD_TYPES = ['License', 'BOP'];
 
 export function EditLicenseDialog({
   license,
@@ -55,7 +56,7 @@ export function EditLicenseDialog({
   const form = useForm<z.infer<typeof licenseFormSchema>>({
     resolver: zodResolver(licenseFormSchema),
     defaultValues: {
-        'Record Type': 'License',
+        'Record Type': ['License'],
         'S/N': '',
         'Name of Hotel/Guest House': '',
         'Phone Number': '',
@@ -80,8 +81,11 @@ export function EditLicenseDialog({
 
   useEffect(() => {
     if (license && isOpen) {
+       const recordTypeStr = getPropertyValue(license, 'Record Type') || 'License';
+       const recordTypeArray = recordTypeStr.split(',').map((s: string) => s.trim()).filter(Boolean);
+
        const normalizedData = {
-        'Record Type': getPropertyValue(license, 'Record Type') || 'License',
+        'Record Type': recordTypeArray.length > 0 ? recordTypeArray : ['License'],
         'S/N': getPropertyValue(license, 'S/N'),
         'Name of Hotel/Guest House': getPropertyValue(license, 'Name of Hotel/Guest House'),
         'Phone Number': getPropertyValue(license, 'Phone Number'),
@@ -104,7 +108,12 @@ export function EditLicenseDialog({
 
   function onSubmit(data: z.infer<typeof licenseFormSchema>) {
     if (license) {
-      onLicenseUpdate({ ...license, ...data, 'Amount Due': totalAmountDue });
+      onLicenseUpdate({ 
+        ...license, 
+        ...data, 
+        'Record Type': data['Record Type'].join(', '),
+        'Amount Due': totalAmountDue 
+      } as any);
       onOpenChange(false);
     }
   }
@@ -122,20 +131,49 @@ export function EditLicenseDialog({
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <FormField control={form.control} name="Record Type" render={({ field }) => (
+                    <FormField
+                      control={form.control}
+                      name="Record Type"
+                      render={() => (
                         <FormItem>
-                          <FormLabel>Record Type</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="License">License</SelectItem>
-                              <SelectItem value="BOP">BOP</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="mb-2">
+                            <FormLabel>Record Type</FormLabel>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            {RECORD_TYPES.map((item) => (
+                              <FormField
+                                key={item}
+                                control={form.control}
+                                name="Record Type"
+                                render={({ field }) => {
+                                  return (
+                                    <FormItem
+                                      key={item}
+                                      className="flex flex-row items-start space-x-3 space-y-0"
+                                    >
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(item)}
+                                          onCheckedChange={(checked) => {
+                                            return checked
+                                              ? field.onChange([...field.value, item])
+                                              : field.onChange(
+                                                  field.value?.filter(
+                                                    (value) => value !== item
+                                                  )
+                                                )
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormLabel className="font-normal cursor-pointer">
+                                        {item}
+                                      </FormLabel>
+                                    </FormItem>
+                                  )
+                                }}
+                              />
+                            ))}
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}

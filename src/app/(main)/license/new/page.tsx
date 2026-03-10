@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -8,9 +7,9 @@ import * as z from 'zod';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useLicenseData } from '@/context/LicenseDataContext';
@@ -22,7 +21,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 const licenseFormSchema = z.object({
-  'Record Type': z.enum(['License', 'BOP']),
+  'Record Type': z.array(z.string()).min(1, 'Select at least one record type.'),
   'S/N': z.string().optional(),
   'Name of Hotel/Guest House': z.string().min(3, 'Name is required.'),
   'Phone Number': z.string().optional(),
@@ -32,6 +31,7 @@ const licenseFormSchema = z.object({
   'created_at': z.date().optional(),
 });
 
+const RECORD_TYPES = ['License', 'BOP'];
 
 export default function NewLicensePage() {
     useRequirePermission();
@@ -41,7 +41,7 @@ export default function NewLicensePage() {
     const form = useForm<z.infer<typeof licenseFormSchema>>({
         resolver: zodResolver(licenseFormSchema),
         defaultValues: {
-            'Record Type': 'License',
+            'Record Type': ['License'],
             'S/N': '',
             'Name of Hotel/Guest House': '',
             'Phone Number': '',
@@ -68,13 +68,14 @@ export default function NewLicensePage() {
         try {
             const finalData = {
                 ...data,
+                'Record Type': data['Record Type'].join(', '),
                 'Amount Due': totalAmountDue,
                 created_at: data.created_at?.toISOString() ?? new Date().toISOString(),
             };
-            addLicense(finalData);
+            addLicense(finalData as any);
             toast({
                 title: 'Record Added',
-                description: `The ${data['Record Type']} record for ${data['Name of Hotel/Guest House']} has been successfully created.`,
+                description: `The record for ${data['Name of Hotel/Guest House']} has been successfully created.`,
             });
             router.push('/license');
         } catch (error) {
@@ -107,20 +108,49 @@ export default function NewLicensePage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <FormField control={form.control} name="Record Type" render={({ field }) => (
+                    <FormField
+                      control={form.control}
+                      name="Record Type"
+                      render={() => (
                         <FormItem>
-                          <FormLabel>Record Type</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="License">License</SelectItem>
-                              <SelectItem value="BOP">BOP</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="mb-2">
+                            <FormLabel>Record Type</FormLabel>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            {RECORD_TYPES.map((item) => (
+                              <FormField
+                                key={item}
+                                control={form.control}
+                                name="Record Type"
+                                render={({ field }) => {
+                                  return (
+                                    <FormItem
+                                      key={item}
+                                      className="flex flex-row items-start space-x-3 space-y-0"
+                                    >
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(item)}
+                                          onCheckedChange={(checked) => {
+                                            return checked
+                                              ? field.onChange([...field.value, item])
+                                              : field.onChange(
+                                                  field.value?.filter(
+                                                    (value) => value !== item
+                                                  )
+                                                )
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormLabel className="font-normal cursor-pointer">
+                                        {item}
+                                      </FormLabel>
+                                    </FormItem>
+                                  )
+                                }}
+                              />
+                            ))}
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
