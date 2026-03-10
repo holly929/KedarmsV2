@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -58,11 +57,20 @@ import { LicensePaymentHistoryDialog } from '@/components/license-payment-histor
 const ROWS_PER_PAGE = 15;
 const IMPORT_CHUNK_SIZE = 200;
 
-const formatCurrency = (value: any) => {
-    const num = Number(String(value || 0).replace(/,/g, ''));
-    if (isNaN(num)) return '0.00';
-    return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-};
+const formatValue = (value: any, header: string) => {
+    if (value === undefined || value === null || String(value).trim() === '') return '';
+    
+    const skipFormatting = ['S/N', 'Phone Number', 'ID', 'Hotel', 'Guest House', 'Name', 'Record Type'];
+    const isCurrencyHeader = !skipFormatting.some(k => header.toLowerCase().includes(k.toLowerCase()));
+
+    const num = typeof value === 'number' ? value : Number(String(value).replace(/,/g, ''));
+    
+    if (!isNaN(num) && isCurrencyHeader) {
+        return `GHS ${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    
+    return String(value);
+}
 
 export default function LicensePage() {
   const { toast } = useToast();
@@ -188,12 +196,6 @@ export default function LicensePage() {
                 const rowData: { [key: string]: any } = { id: `license-imported-${Date.now()}-${rowIndex}` };
                 validHeadersWithIndices.forEach(({ header, index }) => {
                     let val = row[index];
-                    // Clean numeric strings
-                    if (['License Fee', 'Bop Amount', 'Arrears', 'Payment', 'Amount Due', 'Property Rate'].some(key => header.toLowerCase().includes(key.toLowerCase()))) {
-                        if (typeof val === 'string') {
-                            val = Number(val.replace(/,/g, '')) || 0;
-                        }
-                    }
                     rowData[header] = val;
                 });
                 return rowData as License;
@@ -296,18 +298,13 @@ export default function LicensePage() {
           {paginatedData.length > 0 ? (
             paginatedData.map((row) => (
               <TableRow key={row.id}>
-                {headers.map((header, cellIndex) => {
-                  const value = getPropertyValue(row, header);
-                  const isCurrency = ['License Fee', 'Bop Amount', 'Arrears', 'Payment', 'Amount Due', 'Property Rate', 'Total Payment'].some(key => header.toLowerCase().includes(key.toLowerCase()));
-                  
-                  return (
-                    <TableCell key={cellIndex} className={cellIndex === 0 ? 'font-medium' : ''}>
-                      {typeof value === 'object' && value !== null
-                        ? 'View Payments'
-                        : isCurrency ? `GHS ${formatCurrency(value)}` : String(value ?? '')}
-                    </TableCell>
-                  );
-                })}
+                {headers.map((header, cellIndex) => (
+                  <TableCell key={cellIndex} className={cellIndex === 0 ? 'font-medium' : ''}>
+                    {typeof getPropertyValue(row, header) === 'object' && getPropertyValue(row, header) !== null
+                      ? 'View Payments'
+                      : formatValue(getPropertyValue(row, header), header)}
+                  </TableCell>
+                ))}
                 {!isViewer && 
                   <TableCell>
                     <DropdownMenu>
@@ -383,15 +380,13 @@ export default function LicensePage() {
             {headers.slice(1).map(header => {
               const value = getPropertyValue(row, header);
               if (header.toLowerCase() === 'id' || value === undefined || value === null) return null;
-              const isCurrency = ['License Fee', 'Bop Amount', 'Arrears', 'Payment', 'Amount Due', 'Property Rate', 'Total Payment'].some(key => header.toLowerCase().includes(key.toLowerCase()));
-              
               return (
                 <div key={header} className="flex justify-between items-center text-xs">
                   <span className="font-semibold text-muted-foreground">{header}</span>
                   <span className="text-right">
                     {typeof value === 'object' && value !== null
                       ? 'View Payments'
-                      : isCurrency ? `GHS ${formatCurrency(value)}` : String(value)}
+                      : formatValue(value, header)}
                   </span>
                 </div>
               );

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -124,7 +123,6 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
         const value = getPropertyValue(data as any, key);
         if (value === null || value === undefined || String(value).trim() === '') return null;
         
-        // Handle comma formatted numbers
         const cleanedValue = String(value).replace(/,/g, '').replace(/[^0-9.-]/g, '');
         if (cleanedValue === '') return null;
         const num = Number(cleanedValue);
@@ -141,10 +139,17 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
         const val = getPropertyValue(data as any, valueKey);
         if (val === null || val === undefined || String(val).trim() === '') return '...';
         
-        // If it's a number key, format it
-        if (['License Fee', 'Bop Amount', 'Arrears', 'Payment', 'Rateable Value', 'Rate Impost', 'Total Payment', 'Permit Fee', 'Sanitation Charged', 'Previous Balance'].includes(valueKey)) {
+        const numericKeys = ['License Fee', 'Bop Amount', 'Arrears', 'Payment', 'Rateable Value', 'Rate Impost', 'Total Payment', 'Permit Fee', 'Sanitation Charged', 'Previous Balance', 'Amount Due', 'Property Rate'];
+        
+        if (numericKeys.includes(valueKey) || !isNaN(Number(String(val).replace(/,/g, '')))) {
+            const skipKeys = ['Property No', 'Account Number', 'Phone', 'S/N'];
+            if (skipKeys.some(k => valueKey.includes(k))) return String(val);
+
             const num = Number(String(val).replace(/,/g, ''));
-            return isNaN(num) ? String(val) : formatAmount(num);
+            if (!isNaN(num)) {
+                if (valueKey.toLowerCase().includes('impost')) return String(val);
+                return formatAmount(num);
+            }
         }
         
         return String(val);
@@ -184,7 +189,6 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
         }
 
         if (billType === 'property') {
-            const property = data as Property;
             const rateableValue = getNumber('Rateable Value');
             const rateImpost = getNumber('Rate Impost');
             const sanitationCharged = getNumber('Sanitation Charged');
@@ -200,7 +204,6 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             const year = new Date().getFullYear();
             finalBarcode = `${propertyNo}|${ownerName}|${amount}|${year}`;
         } else if (billType === 'bop') {
-            const bop = data as Bop;
             const permitFee = getNumber('Permit Fee');
             const arrears = getNumber('Arrears');
             const payment = getNumber('Payment');
@@ -209,19 +212,18 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             const businessName = (formatValue('Business Name') || '').substring(0, 20);
             const amount = formatAmount(finalAmount);
             const year = new Date().getFullYear();
-            finalBarcode = `${bop.id}|${businessName}|${amount}|${year}`;
+            finalBarcode = `${data.id}|${businessName}|${amount}|${year}`;
         } else { // License
-            const license = data as License;
-            const licenseFee = getNumber('License Fee'); 
-            const bopAmt = getNumber('Bop Amount');
-            const arrears = getNumber('Arrears');
-            const payment = getNumber('Payment');
-            finalAmount = (licenseFee || 0) + (bopAmt || 0) + (arrears || 0) - (payment || 0);
+            const licenseFee = getNumber('License Fee') || getNumber('Property Rate') || 0; 
+            const bopAmt = getNumber('Bop Amount') || 0;
+            const arrears = getNumber('Arrears') || 0;
+            const payment = getNumber('Payment') || 0;
+            finalAmount = (licenseFee + bopAmt + arrears) - payment;
 
             const hotelName = (formatValue('Name of Hotel/Guest House') || '').substring(0, 20);
             const amount = formatAmount(finalAmount);
             const year = new Date().getFullYear();
-            finalBarcode = `${license.id}|${hotelName}|${amount}|${year}`;
+            finalBarcode = `${data.id}|${hotelName}|${amount}|${year}`;
         }
         return { totalAmountPayable: finalAmount, barcodeValue: finalBarcode };
     }, [data, billType, formatValue, formatAmount, getNumber]);
@@ -302,7 +304,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
       const permitFee = getNumber('Permit Fee');
       const arrears = getNumber('Arrears');
       const payment = getNumber('Payment');
-      const totalAmountDue = (permitFee || 0) + (arrears || 0);
+      const totalDue = (permitFee || 0) + (arrears || 0);
 
       return (
         <>
@@ -322,7 +324,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <div className="font-bold text-center p-1 border-b-2 border-black">BILLING DETAILS</div>
                     <BillRow label="PERMIT FEE (LICENSE)" value={formatAmount(permitFee)} />
                     <BillRow label="ARREARS" value={formatAmount(arrears)} />
-                    <BillRow label="AMOUNT DUE" value={formatAmount(totalAmountDue)} isBold />
+                    <BillRow label="AMOUNT DUE" value={formatAmount(totalDue)} isBold />
                     <BillRow label="PAYMENT" value={formatAmount(payment)} />
                     <div className="flex justify-between p-1 border-b border-black items-center font-bold" style={accentStyle}>
                         <span>TOTAL AMOUNT PAYABLE</span>
@@ -333,7 +335,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <div className="p-1 border-b-2 border-black flex items-end justify-end">FINANCIAL DETAILS</div>
                     <div className="p-1 border-b border-black">{formatAmount(permitFee)}</div>
                     <div className="p-1 border-b border-black">{formatAmount(arrears)}</div>
-                    <div className="p-1 border-b border-black">{formatAmount(totalAmountDue)}</div>
+                    <div className="p-1 border-b border-black">{formatAmount(totalDue)}</div>
                     <div className="p-1 border-b border-black">{formatAmount(payment)}</div>
                     <div className="p-1 border-b border-black flex items-center justify-end" style={accentStyle}>
                         <span style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountPayable)}</span>
@@ -345,11 +347,11 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     }
 
     const renderLicenseBill = () => {
-      const licenseFee = getNumber('License Fee');
-      const bopAmt = getNumber('Bop Amount');
-      const arrears = getNumber('Arrears');
-      const payment = getNumber('Payment');
-      const totalAmountDue = (licenseFee || 0) + (bopAmt || 0) + (arrears || 0);
+      const licenseFee = getNumber('License Fee') || getNumber('Property Rate') || 0;
+      const bopAmt = getNumber('Bop Amount') || 0;
+      const arrears = getNumber('Arrears') || 0;
+      const payment = getNumber('Payment') || 0;
+      const totalDue = (licenseFee + bopAmt + arrears);
 
       return (
         <>
@@ -369,7 +371,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <BillRow label="LICENSE FEE" value={formatAmount(licenseFee)} />
                     <BillRow label="BOP AMOUNT" value={formatAmount(bopAmt)} />
                     <BillRow label="ARREARS" value={formatAmount(arrears)} />
-                    <BillRow label="AMOUNT DUE" value={formatAmount(totalAmountDue)} isBold />
+                    <BillRow label="AMOUNT DUE" value={formatAmount(totalDue)} isBold />
                     <BillRow label="PAYMENT" value={formatAmount(payment)} />
                     <div className="flex justify-between p-1 border-b border-black items-center font-bold" style={accentStyle}>
                         <span>TOTAL AMOUNT PAYABLE</span>
@@ -381,7 +383,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <div className="p-1 border-b border-black">{formatAmount(licenseFee)}</div>
                     <div className="p-1 border-b border-black">{formatAmount(bopAmt)}</div>
                     <div className="p-1 border-b border-black">{formatAmount(arrears)}</div>
-                    <div className="p-1 border-b border-black">{formatAmount(totalAmountDue)}</div>
+                    <div className="p-1 border-b border-black">{formatAmount(totalDue)}</div>
                     <div className="p-1 border-b border-black">{formatAmount(payment)}</div>
                     <div className="p-1 border-b border-black flex items-center justify-end" style={accentStyle}>
                         <span style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountPayable)}</span>

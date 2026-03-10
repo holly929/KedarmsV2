@@ -13,18 +13,18 @@ function compileTemplate(template: string, data: Property | Bop | Bill): string 
                 amountOwed = data.totalAmountDue;
             } else if ('Property No' in data || getPropertyValue(data, 'Property No')) { // It's a Property
                 const p = data as Property;
-                const rateableValue = Number(getPropertyValue(p, 'Rateable Value')) || 0;
-                const rateImpost = Number(getPropertyValue(p, 'Rate Impost')) || 0;
-                const sanitation = Number(getPropertyValue(p, 'Sanitation Charged')) || 0;
-                const previousBalance = Number(getPropertyValue(p, 'Previous Balance')) || 0;
-                const payment = Number(getPropertyValue(p, 'Total Payment')) || 0;
+                const rateableValue = Number(String(getPropertyValue(p, 'Rateable Value') || 0).replace(/,/g, '')) || 0;
+                const rateImpost = Number(String(getPropertyValue(p, 'Rate Impost') || 0).replace(/,/g, '')) || 0;
+                const sanitation = Number(String(getPropertyValue(p, 'Sanitation Charged') || 0).replace(/,/g, '')) || 0;
+                const previousBalance = Number(String(getPropertyValue(p, 'Previous Balance') || 0).replace(/,/g, '')) || 0;
+                const payment = Number(String(getPropertyValue(p, 'Total Payment') || 0).replace(/,/g, '')) || 0;
                 const due = (rateableValue * rateImpost) + sanitation + previousBalance;
                 amountOwed = due > payment ? due - payment : 0;
-            } else { // It's a BOP
-                const b = data as Bop;
-                const permitFee = Number(getPropertyValue(b, 'Permit Fee')) || 0;
-                const payment = Number(getPropertyValue(b, 'Payment')) || 0;
-                amountOwed = permitFee - payment;
+            } else { // It's a BOP or License
+                const fee = Number(String(getPropertyValue(data as any, 'Permit Fee') || getPropertyValue(data as any, 'License Fee') || 0).replace(/,/g, '')) || 0;
+                const arrears = Number(String(getPropertyValue(data as any, 'Arrears') || 0).replace(/,/g, '')) || 0;
+                const payment = Number(String(getPropertyValue(data as any, 'Payment') || 0).replace(/,/g, '')) || 0;
+                amountOwed = (fee + arrears) - payment;
             }
             return amountOwed.toFixed(2);
         }
@@ -53,11 +53,11 @@ function compileTemplate(template: string, data: Property | Bop | Bill): string 
             value = getPropertyValue(data as Property, key);
         }
         
-        // Robust number formatting for any numeric value in placeholders
+        // Robust number formatting for placeholders
         if (value !== undefined && value !== null) {
             const num = Number(String(value).replace(/,/g, ''));
-            if (!isNaN(num) && typeof value !== 'string') {
-                // Keep rate impost as is if it has more precision, otherwise 2 decimals
+            // If it's a valid number and NOT explicitly a non-currency field
+            if (!isNaN(num) && !['Property No', 'Account Number', 'Phone', 'S/N'].some(k => key.includes(k))) {
                 if (key.toLowerCase().includes('impost')) return String(value);
                 return num.toFixed(2);
             }

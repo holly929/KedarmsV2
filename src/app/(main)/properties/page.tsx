@@ -59,13 +59,23 @@ const ROWS_PER_PAGE = 15;
 const IMPORT_CHUNK_SIZE = 200;
 
 const formatValue = (value: any, header: string) => {
-    if (value === undefined || value === null) return '';
-    if (typeof value === 'number') {
-        if (header.toLowerCase().includes('rate impost')) {
-            return value.toString();
-        }
-        return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (value === undefined || value === null || String(value).trim() === '') return '';
+    
+    // Fields that should NEVER be formatted as currency
+    const skipFormatting = ['Property No', 'Account Number', 'Valuation List No.', 'Phone Number', 'S/N', 'ID', 'Town', 'Suburb', 'Owner', 'Type'];
+    const isCurrencyHeader = !skipFormatting.some(k => header.toLowerCase().includes(k.toLowerCase()));
+    const isRateImpost = header.toLowerCase().includes('rate impost');
+
+    if (isRateImpost) {
+        return String(value);
     }
+
+    const num = typeof value === 'number' ? value : Number(String(value).replace(/,/g, ''));
+    
+    if (!isNaN(num) && isCurrencyHeader) {
+        return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    
     return String(value);
 }
 
