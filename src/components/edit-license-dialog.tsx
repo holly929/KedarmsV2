@@ -41,6 +41,7 @@ const licenseFormSchema = z.object({
   'Name of Hotel/Guest House': z.string().min(3, 'Name is required.'),
   'Phone Number': z.string().optional(),
   'Property Rate': z.coerce.number().min(0, 'License Fee must be a positive number.'),
+  'Bop Amount': z.coerce.number().min(0).default(0),
   'Arrears': z.coerce.number().min(0, 'Arrears must be a positive number.'),
   'Payment': z.coerce.number().min(0, 'Payment must be a positive number.'),
 });
@@ -62,6 +63,7 @@ export function EditLicenseDialog({
         'Name of Hotel/Guest House': '',
         'Phone Number': '',
         'Property Rate': 0,
+        'Bop Amount': 0,
         'Arrears': 0,
         'Payment': 0,
     }
@@ -71,8 +73,9 @@ export function EditLicenseDialog({
   
   const totalAmountDue = React.useMemo(() => {
     const rate = Number(watchedValues['Property Rate']) || 0;
+    const bopAmt = Number(watchedValues['Bop Amount']) || 0;
     const arrears = Number(watchedValues['Arrears']) || 0;
-    return rate + arrears;
+    return rate + bopAmt + arrears;
   }, [watchedValues]);
 
   const totalAmountPayable = React.useMemo(() => {
@@ -91,6 +94,7 @@ export function EditLicenseDialog({
         'Name of Hotel/Guest House': getPropertyValue(license, 'Name of Hotel/Guest House'),
         'Phone Number': getPropertyValue(license, 'Phone Number'),
         'Property Rate': getPropertyValue(license, 'Property Rate'),
+        'Bop Amount': getPropertyValue(license, 'Bop Amount') || 0,
         'Arrears': getPropertyValue(license, 'Arrears') || 0,
         'Payment': getPropertyValue(license, 'Payment'),
       };
@@ -210,10 +214,17 @@ export function EditLicenseDialog({
                   
                   <div className="border-t pt-4 mt-4">
                     <h3 className="text-lg font-medium">Billing Details</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
                         <FormField control={form.control} name="Property Rate" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>License Fee (GHS)</FormLabel>
+                                <FormControl><Input type="number" step="10" {...field} value={field.value ?? ''}/></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                        <FormField control={form.control} name="Bop Amount" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>BOP Amount (GHS)</FormLabel>
                                 <FormControl><Input type="number" step="10" {...field} value={field.value ?? ''}/></FormControl>
                                 <FormMessage />
                             </FormItem>

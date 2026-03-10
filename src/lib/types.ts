@@ -45,7 +45,8 @@ export type License = {
   'Record Type'?: string; // Stored as "License", "BOP", or "License, BOP"
   'S/N'?: string;
   'Name of Hotel/Guest House'?: string;
-  'Property Rate'?: number;
+  'Property Rate'?: number; // License Fee
+  'Bop Amount'?: number;
   'Arrears'?: number;
   'Amount Due'?: number;
   'Payment'?: number;

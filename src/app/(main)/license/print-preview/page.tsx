@@ -156,9 +156,10 @@ export default function BulkLicensePrintPage() {
 
     const newBills: Omit<Bill, 'id'>[] = renderedLicenses.map(l => {
         const rate = Number(l['Property Rate']) || 0;
+        const bopAmt = Number(l['Bop Amount']) || 0;
         const arrears = Number(l['Arrears']) || 0;
         const payment = Number(l['Payment']) || 0;
-        const totalAmountDue = rate + arrears - payment;
+        const totalAmountDue = rate + bopAmt + arrears - payment;
 
         return {
             propertyId: l.id,

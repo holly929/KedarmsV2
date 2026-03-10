@@ -199,10 +199,11 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             finalBarcode = `${bop.id}|${businessName}|${amount}|${year}`;
         } else { // License
             const license = data as License;
-            const propertyRate = getNumber('Property Rate');
+            const licenseFee = getNumber('Property Rate');
+            const bopAmt = getNumber('Bop Amount');
             const arrears = getNumber('Arrears');
             const payment = getNumber('Payment');
-            finalAmount = (propertyRate || 0) + (arrears || 0) - (payment || 0);
+            finalAmount = (licenseFee || 0) + (bopAmt || 0) + (arrears || 0) - (payment || 0);
 
             const hotelName = (formatValue('Name of Hotel/Guest House') || '').substring(0, 20);
             const amount = formatAmount(finalAmount);
@@ -331,10 +332,11 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     }
 
     const renderLicenseBill = () => {
-      const propertyRate = getNumber('Property Rate');
+      const licenseFee = getNumber('Property Rate');
+      const bopAmt = getNumber('Bop Amount');
       const arrears = getNumber('Arrears');
       const payment = getNumber('Payment');
-      const totalAmountDue = (propertyRate || 0) + (arrears || 0);
+      const totalAmountDue = (licenseFee || 0) + (bopAmt || 0) + (arrears || 0);
 
       return (
         <>
@@ -351,7 +353,8 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             <div className="flex">
                 <div className="w-[67%] border-r-2 border-black">
                     <div className="font-bold text-center p-1 border-b-2 border-black">BILLING DETAILS</div>
-                    <BillRow label="LICENSE FEE" value={formatAmount(propertyRate)} />
+                    <BillRow label="LICENSE FEE" value={formatAmount(licenseFee)} />
+                    <BillRow label="BOP AMOUNT" value={formatAmount(bopAmt)} />
                     <BillRow label="ARREARS" value={formatAmount(arrears)} />
                     <BillRow label="AMOUNT DUE" value={formatAmount(totalAmountDue)} isBold />
                     <BillRow label="PAYMENT" value={formatAmount(payment)} />
@@ -362,7 +365,8 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                 </div>
                 <div className="w-[33%] text-right font-bold">
                     <div className="p-1 border-b-2 border-black flex items-end justify-end">FINANCIAL DETAILS</div>
-                    <div className="p-1 border-b border-black">{formatAmount(propertyRate)}</div>
+                    <div className="p-1 border-b border-black">{formatAmount(licenseFee)}</div>
+                    <div className="p-1 border-b border-black">{formatAmount(bopAmt)}</div>
                     <div className="p-1 border-b border-black">{formatAmount(arrears)}</div>
                     <div className="p-1 border-b border-black">{formatAmount(totalAmountDue)}</div>
                     <div className="p-1 border-b border-black">{formatAmount(payment)}</div>
