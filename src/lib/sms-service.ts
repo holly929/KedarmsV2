@@ -1,5 +1,3 @@
-
-
 import type { Property, Bill, Bop } from './types';
 import { store } from './store';
 import { getPropertyValue } from './property-utils';
@@ -26,7 +24,7 @@ function compileTemplate(template: string, data: Property | Bop | Bill): string 
                 const b = data as Bop;
                 const permitFee = Number(getPropertyValue(b, 'Permit Fee')) || 0;
                 const payment = Number(getPropertyValue(b, 'Payment')) || 0;
-                amountOwed = permitFee > payment ? permitFee - payment : 0;
+                amountOwed = permitFee - payment;
             }
             return amountOwed.toFixed(2);
         }
@@ -55,8 +53,14 @@ function compileTemplate(template: string, data: Property | Bop | Bill): string 
             value = getPropertyValue(data as Property, key);
         }
         
-        if (typeof value === 'number' && ['totalAmountDue', 'Rateable Value', 'Total Payment', 'Permit Fee', 'Payment'].includes(key)) {
-            return value.toFixed(2);
+        // Robust number formatting for any numeric value in placeholders
+        if (value !== undefined && value !== null) {
+            const num = Number(String(value).replace(/,/g, ''));
+            if (!isNaN(num) && typeof value !== 'string') {
+                // Keep rate impost as is if it has more precision, otherwise 2 decimals
+                if (key.toLowerCase().includes('impost')) return String(value);
+                return num.toFixed(2);
+            }
         }
         
         return value !== null && value !== undefined ? String(value) : '';
@@ -92,7 +96,7 @@ async function sendSingleSms(phoneNumber: string, message: string): Promise<{ su
             return { success: true };
         } else {
             const errorMessage = result.error || `An unknown error occurred (status: ${response.status}).`;
-            console.error(`Backend SMS API error for ${phoneNumber}:`, errorMessage, result.details);
+            console.error(`Backend SMS API error for ${phoneNumber}:`, errorMessage);
             return { success: false, error: errorMessage };
         }
     } catch (error) {

@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -58,6 +57,17 @@ import { Progress } from '@/components/ui/progress';
 
 const ROWS_PER_PAGE = 15;
 const IMPORT_CHUNK_SIZE = 200;
+
+const formatValue = (value: any, header: string) => {
+    if (value === undefined || value === null) return '';
+    if (typeof value === 'number') {
+        if (header.toLowerCase().includes('rate impost')) {
+            return value.toString();
+        }
+        return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    return String(value);
+}
 
 export default function PropertiesPage() {
   const { toast } = useToast();
@@ -294,7 +304,7 @@ export default function PropertiesPage() {
                   <TableCell key={cellIndex} className={cellIndex === 0 ? 'font-medium' : ''}>
                     {typeof getPropertyValue(row, header) === 'object' && getPropertyValue(row, header) !== null
                       ? 'View Details'
-                      : String(getPropertyValue(row, header) ?? '')}
+                      : formatValue(getPropertyValue(row, header), header)}
                   </TableCell>
                 ))}
                 {!isViewer && 
@@ -383,11 +393,11 @@ export default function PropertiesPage() {
           <CardContent className="space-y-2 text-sm pl-6 pr-6 pb-4">
             {headers.slice(1).map(header => {
               const value = getPropertyValue(row, header);
-              if (header.toLowerCase() === 'id' || !value) return null;
+              if (header.toLowerCase() === 'id' || value === undefined || value === null) return null;
               return (
                 <div key={header} className="flex justify-between items-center text-xs">
                   <span className="font-semibold text-muted-foreground">{header}</span>
-                  <span className="text-right">{typeof value === 'object' && value !== null ? 'View Details' : String(value)}</span>
+                  <span className="text-right">{typeof value === 'object' && value !== null ? 'View Details' : formatValue(value, header)}</span>
                 </div>
               );
             })}

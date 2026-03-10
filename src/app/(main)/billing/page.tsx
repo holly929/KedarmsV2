@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -35,7 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/tabs';
 import type { Property } from '@/lib/types';
 import type { PropertyWithStatus, BillStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -48,6 +47,17 @@ import { getPropertyValue } from '@/lib/property-utils';
 import { SmsDialog } from '@/components/sms-dialog';
 
 const ROWS_PER_PAGE = 15;
+
+const formatValue = (value: any, header: string) => {
+    if (value === undefined || value === null) return '';
+    if (typeof value === 'number') {
+        if (header.toLowerCase().includes('rate impost')) {
+            return value.toString();
+        }
+        return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    return String(value);
+}
 
 export default function BillingPage() {
   const { toast } = useToast();
@@ -231,7 +241,7 @@ export default function BillingPage() {
                   <TableCell key={cellIndex} className={cellIndex === 0 ? 'font-medium' : ''}>
                     {typeof getPropertyValue(row, header) === 'object' && getPropertyValue(row, header) !== null
                       ? 'View Details'
-                      : String(getPropertyValue(row, header) ?? '')}
+                      : formatValue(getPropertyValue(row, header), header)}
                   </TableCell>
                 ))}
                 <TableCell>
@@ -338,14 +348,14 @@ export default function BillingPage() {
             </div>
             {headers.slice(1).map(header => {
               const value = getPropertyValue(row, header);
-              if (header.toLowerCase() === 'id' || !value) return null;
+              if (header.toLowerCase() === 'id' || value === undefined || value === null) return null;
               return (
                 <div key={header} className="flex justify-between items-center text-xs">
                   <span className="font-semibold text-muted-foreground">{header}</span>
                   <span className="text-right">
                     {typeof value === 'object' && value !== null
                       ? 'View Details'
-                      : String(value)}
+                      : formatValue(value, header)}
                   </span>
                 </div>
               );
