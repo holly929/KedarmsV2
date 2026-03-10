@@ -10,7 +10,6 @@ import { Printer, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getPropertyValue } from '@/lib/property-utils';
 import { store } from '@/lib/store';
-import Image from 'next/image';
 
 interface BillDialogProps {
   bill: Bill | null;
@@ -403,13 +402,17 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
         <div className="border-[3px] border-black p-1 relative h-full flex flex-col">
           <div className="absolute inset-0 z-0 flex items-center justify-center opacity-20 pointer-events-none">
               {settings.appearance?.ghanaLogo && (
-                  <Image src={settings.appearance.ghanaLogo} alt="Watermark" width={400} height={400} style={{objectFit: 'contain'}} />
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={settings.appearance.ghanaLogo} alt="Watermark" width={400} height={400} style={{objectFit: 'contain'}} />
               )}
           </div>
           <div className="relative z-10 flex flex-col flex-grow">
             <header className="flex justify-between items-start mb-2">
                 <div className="w-1/4 flex justify-start items-center">
-                    {settings.appearance?.ghanaLogo && <Image src={settings.appearance.ghanaLogo} alt="Ghana Coat of Arms" className="object-contain" width={isCompact ? 60: 70} height={isCompact ? 60: 70} />}
+                    {settings.appearance?.ghanaLogo && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={settings.appearance.ghanaLogo} alt="Ghana Coat of Arms" style={{ objectFit: 'contain', width: isCompact ? '60px' : '70px', height: 'auto' }} />
+                    )}
                 </div>
                 <div className="w-1/2 text-center">
                     <h1 className="font-bold tracking-wide" style={{ fontSize: `${finalFontSize * 1.5}px` }}>{settings.general?.assemblyName?.toUpperCase() || 'DISTRICT ASSEMBLY'}</h1>
@@ -420,7 +423,10 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <p style={{ fontSize: `${finalFontSize * 0.9}px` }}>TEL: {settings.general?.contactPhone}</p>
                 </div>
                 <div className="w-1/4 flex justify-end items-center">
-                    {settings.appearance?.assemblyLogo && <Image src={settings.appearance.assemblyLogo} alt="Assembly Logo" className="object-contain" width={isCompact ? 60: 70} height={isCompact ? 60: 70} />}
+                    {settings.appearance?.assemblyLogo && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={settings.appearance.assemblyLogo} alt="Assembly Logo" style={{ objectFit: 'contain', width: isCompact ? '60px' : '70px', height: 'auto' }} />
+                    )}
                 </div>
             </header>
             
@@ -438,7 +444,8 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <div className="flex-1 text-center">
                         <div className="mx-auto flex items-center justify-center" style={{ minHeight: isCompact ? '30px' : '40px' }}>
                             {settings.appearance?.signature && (
-                                <Image src={settings.appearance.signature} alt="Signature" className="max-h-[64px] max-w-full object-contain" width={128} height={64} data-ai-hint="signature" />
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img src={settings.appearance.signature} alt="Signature" className="max-h-[64px] max-w-full object-contain" width={128} height={64} />
                             )}
                         </div>
                         <p className="border-t-2 border-black max-w-[12rem] mx-auto mt-1 pt-1 font-bold">
@@ -467,7 +474,6 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
   useEffect(() => {
     if (isOpen) {
       setIsLoading(true);
-      // Simulate loading settings - in a real app this might be async
       setSettings({
           general: store.settings.generalSettings || {},
           appearance: store.settings.appearanceSettings || {},

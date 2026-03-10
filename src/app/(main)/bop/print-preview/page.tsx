@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -183,11 +182,6 @@ export default function BulkBopPrintPage() {
 
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
-    pageStyle: `@media print { 
-        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .print-page-break { page-break-after: always; } 
-        .no-print { display: none; } 
-    }`,
     onAfterPrint: () => recordBills(),
   });
 
@@ -312,7 +306,8 @@ export default function BulkBopPrintPage() {
          </div>
       </main>
       
-      <div className="invisible h-0 overflow-hidden print:visible print:h-auto print:overflow-visible">
+      {/* Hidden print container - positioned off-screen to keep it rendered in DOM */}
+      <div className="absolute -left-[9999px] top-0 pointer-events-none">
         <BillSheet ref={componentRef} bops={renderedBops} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} />
       </div>
     </div>

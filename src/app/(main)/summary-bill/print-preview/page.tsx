@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
@@ -6,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useReactToPrint } from 'react-to-print';
 import Link from 'next/link';
 import { ArrowLeft, Loader2, Printer } from 'lucide-react';
-import Image from 'next/image';
 
 import type { Bop as SummaryBillData } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -60,13 +58,19 @@ const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
       <div className="h-full flex flex-col">
         <header className="mb-4 pb-4">
             <div className="flex justify-between items-center text-center">
-                {settings.appearance?.ghanaLogo ? <Image src={settings.appearance.ghanaLogo} alt="Ghana Coat of Arms" className="object-contain" width={80} height={80} /> : <div className="w-[80px]"></div>}
+                {settings.appearance?.ghanaLogo ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={settings.appearance.ghanaLogo} alt="Ghana Coat of Arms" style={{ objectFit: 'contain', width: '80px', height: 'auto' }} />
+                ) : <div className="w-[80px]"></div>}
                 <div>
                     <h1 className="font-bold tracking-wide text-2xl">{settings.general?.assemblyName?.toUpperCase() || 'DISTRICT ASSEMBLY'}</h1>
                     <p className="text-sm">{settings.general?.postalAddress}</p>
                     <p className="text-sm">TEL: {settings.general?.contactPhone}</p>
                 </div>
-                {settings.appearance?.assemblyLogo ? <Image src={settings.appearance.assemblyLogo} alt="Assembly Logo" className="object-contain" width={80} height={80} /> : <div className="w-[80px]"></div>}
+                {settings.appearance?.assemblyLogo ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img src={settings.appearance.assemblyLogo} alt="Assembly Logo" style={{ objectFit: 'contain', width: '80px', height: 'auto' }} />
+                ) : <div className="w-[80px]"></div>}
             </div>
             <h2 className="font-bold tracking-wide text-xl text-center mt-4 border-y-2 border-black py-2">
                 SUMMARY BILL - {sheetName.toUpperCase()}
@@ -97,7 +101,8 @@ const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
                  <div className="w-1/3 text-center">
                     <div className="mx-auto flex items-center justify-center h-16">
                         {settings.appearance?.signature && (
-                            <Image src={settings.appearance.signature} alt="Signature" className="max-h-full max-w-full object-contain" width={150} height={60} data-ai-hint="signature" />
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img src={settings.appearance.signature} alt="Signature" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
                         )}
                     </div>
                     <p className="border-t-2 border-black max-w-[12rem] mx-auto mt-1 pt-1 font-bold">
@@ -147,11 +152,6 @@ export default function SummaryBillPrintPage() {
 
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
-    pageStyle: `@media print { 
-        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .print-page-break { page-break-after: always; } 
-        .no-print { display: none; } 
-    }`,
   });
   
   const sheetNames = Object.keys(workbook);
@@ -228,7 +228,8 @@ export default function SummaryBillPrintPage() {
          </div>
       </main>
 
-      <div className="invisible h-0 overflow-hidden print:visible print:h-auto print:overflow-visible">
+      {/* Hidden print container - positioned off-screen to keep it rendered in DOM */}
+      <div className="absolute -left-[9999px] top-0 pointer-events-none">
           {sheetsToRender.length > 0 && (
             <div ref={componentRef}>
                 {sheetsToRender.map((sheet, index) => (
