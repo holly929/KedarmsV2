@@ -109,7 +109,7 @@ export default function PropertiesPage() {
   
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [filteredData]);
+  }, [properties, filter]);
 
 
   const handleViewBill = (property: Property) => {
@@ -134,14 +134,25 @@ export default function PropertiesPage() {
     reader.onload = (e) => {
       try {
         const fileData = e.target?.result;
-        const workbook = XLSX.read(fileData, { type: 'binary', cellDates: true });
+        if (!fileData) throw new Error("Could not read file content.");
+
+        const workbook = XLSX.read(fileData, { type: 'array', cellDates: true });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         
         const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
         if (rows.length === 0) throw new Error("No data found in the spreadsheet.");
 
-        let headerRowIndex = rows.findIndex(row => row.some(cell => cell !== null && String(cell).trim() !== ''));
+        // More robust header detection: Find first row with at least 3 non-empty cells
+        let headerRowIndex = rows.findIndex(row => {
+            const populatedCells = (row || []).filter(cell => cell !== null && String(cell).trim() !== '').length;
+            return populatedCells >= 3;
+        });
+
+        if (headerRowIndex === -1) {
+            headerRowIndex = rows.findIndex(row => (row || []).some(cell => cell !== null && String(cell).trim() !== ''));
+        }
+
         if (headerRowIndex === -1) throw new Error("No header row found in the spreadsheet.");
 
         const headerRow = rows[headerRowIndex];
@@ -149,10 +160,10 @@ export default function PropertiesPage() {
 
         const validHeadersWithIndices = headerRow
           .map((header, index) => ({ header: String(header || '').trim(), index }))
-          .filter(h => h.header && !h.header.toLowerCase().startsWith('__empty'));
+          .filter(h => h.header && !h.header.toLowerCase().startsWith('__empty') && h.header.toLowerCase() !== 'id');
         
         const newHeaders = validHeadersWithIndices.map(h => h.header);
-        if (newHeaders.length === 0) throw new Error("No valid headers found.");
+        if (newHeaders.length === 0) throw new Error("No valid headers found in the selected row.");
 
         setImportStatus(prev => ({ ...prev, total: dataRows.length }));
         
@@ -172,7 +183,7 @@ export default function PropertiesPage() {
           const chunk = dataRows.slice(currentIndex, nextIndex);
           
           const chunkData: Property[] = chunk.map((row, chunkIndex) => {
-              if (row.every(cell => cell === null || String(cell).trim() === '')) return null;
+              if (!row || row.every(cell => cell === null || String(cell).trim() === '')) return null;
               const rowIndex = currentIndex + chunkIndex;
               const rowData: { [key: string]: any } = { id: `imported-${Date.now()}-${rowIndex}` };
               validHeadersWithIndices.forEach(({ header, index }) => {
@@ -199,7 +210,7 @@ export default function PropertiesPage() {
         toast({ variant: 'destructive', title: 'File Read Error', description: 'Could not read the selected file.' });
         setImportStatus({ inProgress: false, total: 0, processed: 0 });
     }
-    reader.readAsBinaryString(file);
+    reader.readAsArrayBuffer(file);
   };
   
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {

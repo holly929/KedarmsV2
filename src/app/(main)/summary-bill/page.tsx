@@ -112,7 +112,7 @@ function GoogleSheetIntegrationView() {
         ) : (
           <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center h-[calc(100vh-30rem)]">
             <BookCopy className="h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">No Summary Bill Spreadsheet Connected</h3>
+            <h3 className="mt-4 text-lg font-semibold">{emptyStateText}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               Please go to the <Button variant="link" asChild className="p-0 h-auto"><Link href="/settings">Settings</Link></Button> page to connect a Google Sheet.
             </p>
@@ -216,7 +216,9 @@ export default function SummaryBillPage() {
     reader.onload = (e) => {
       try {
         const fileData = e.target?.result;
-        const excelWorkbook = XLSX.read(fileData, { type: 'binary', cellDates: true });
+        if (!fileData) throw new Error("Could not read file content.");
+
+        const excelWorkbook = XLSX.read(fileData, { type: 'array', cellDates: true });
         const newWorkbook: { [sheetName: string]: { data: SummaryBillData[], headers: string[] } } = {};
         
         excelWorkbook.SheetNames.forEach(sheetName => {
@@ -225,7 +227,16 @@ export default function SummaryBillPage() {
             const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
             if (rows.length === 0) return;
 
-            let headerRowIndex = rows.findIndex(row => row.some(cell => cell !== null && String(cell).trim() !== ''));
+            // Robust header detection
+            let headerRowIndex = rows.findIndex(row => {
+                const populatedCells = (row || []).filter(cell => cell !== null && String(cell).trim() !== '').length;
+                return populatedCells >= 3;
+            });
+
+            if (headerRowIndex === -1) {
+                headerRowIndex = rows.findIndex(row => (row || []).some(cell => cell !== null && String(cell).trim() !== ''));
+            }
+
             if (headerRowIndex === -1) return;
 
             const headerRow = rows[headerRowIndex];
@@ -233,13 +244,13 @@ export default function SummaryBillPage() {
 
             const validHeadersWithIndices = headerRow
                 .map((header, index) => ({ header: String(header || '').trim(), index }))
-                .filter(h => h.header && !h.header.toLowerCase().startsWith('__empty'));
+                .filter(h => h.header && !h.header.toLowerCase().startsWith('__empty') && h.header.toLowerCase() !== 'id');
 
             const validHeaders = validHeadersWithIndices.map(h => h.header);
             if (validHeaders.length === 0) return;
 
             const sheetData = dataRows.map((row, rowIndex) => {
-                if (row.every(cell => cell === null || String(cell).trim() === '')) return null;
+                if (!row || row.every(cell => cell === null || String(cell).trim() === '')) return null;
                 
                 const rowData: { [key: string]: any } = { id: `summary-${sheetName}-${Date.now()}-${rowIndex}` };
                 validHeadersWithIndices.forEach(({ header, index }) => {
@@ -255,7 +266,7 @@ export default function SummaryBillPage() {
         });
 
         if (Object.keys(newWorkbook).length === 0) {
-          throw new Error("No readable sheets with data found in the file.");
+          throw new Error("No readable sheets with valid data found in the file.");
         }
 
         setWorkbook(newWorkbook);
@@ -273,7 +284,7 @@ export default function SummaryBillPage() {
         toast({ variant: 'destructive', title: 'File Read Error', description: 'Could not read the selected file.' });
         setImportStatus({ inProgress: false });
     }
-    reader.readAsBinaryString(file);
+    reader.readAsArrayBuffer(file);
   };
   
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
