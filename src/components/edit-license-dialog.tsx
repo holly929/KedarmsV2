@@ -25,6 +25,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getPropertyValue } from '@/lib/property-utils';
 
 interface EditLicenseDialogProps {
@@ -35,6 +36,7 @@ interface EditLicenseDialogProps {
 }
 
 const licenseFormSchema = z.object({
+  'Record Type': z.enum(['License', 'BOP']),
   'S/N': z.string().optional(),
   'Name of Hotel/Guest House': z.string().min(3, 'Name is required.'),
   'Phone Number': z.string().optional(),
@@ -53,6 +55,7 @@ export function EditLicenseDialog({
   const form = useForm<z.infer<typeof licenseFormSchema>>({
     resolver: zodResolver(licenseFormSchema),
     defaultValues: {
+        'Record Type': 'License',
         'S/N': '',
         'Name of Hotel/Guest House': '',
         'Phone Number': '',
@@ -78,6 +81,7 @@ export function EditLicenseDialog({
   useEffect(() => {
     if (license && isOpen) {
        const normalizedData = {
+        'Record Type': getPropertyValue(license, 'Record Type') || 'License',
         'S/N': getPropertyValue(license, 'S/N'),
         'Name of Hotel/Guest House': getPropertyValue(license, 'Name of Hotel/Guest House'),
         'Phone Number': getPropertyValue(license, 'Phone Number'),
@@ -109,15 +113,33 @@ export function EditLicenseDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Edit License Record</DialogTitle>
+          <DialogTitle>Edit Record</DialogTitle>
           <DialogDescription>
-            Update the hotel or guest house license details below.
+            Update the record details below.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField control={form.control} name="Record Type" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Record Type</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="License">License</SelectItem>
+                              <SelectItem value="BOP">BOP</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <FormField control={form.control} name="S/N" render={({ field }) => (
                         <FormItem>
                           <FormLabel>S/N</FormLabel>

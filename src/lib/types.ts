@@ -41,6 +41,7 @@ export type Bop = {
 
 export type License = {
   id: string;
+  'Record Type'?: 'License' | 'BOP';
   'S/N'?: string;
   'Name of Hotel/Guest House'?: string;
   'Property Rate'?: number;

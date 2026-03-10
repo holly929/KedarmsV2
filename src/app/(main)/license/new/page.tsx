@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useLicenseData } from '@/context/LicenseDataContext';
@@ -21,6 +22,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 const licenseFormSchema = z.object({
+  'Record Type': z.enum(['License', 'BOP']),
   'S/N': z.string().optional(),
   'Name of Hotel/Guest House': z.string().min(3, 'Name is required.'),
   'Phone Number': z.string().optional(),
@@ -39,6 +41,7 @@ export default function NewLicensePage() {
     const form = useForm<z.infer<typeof licenseFormSchema>>({
         resolver: zodResolver(licenseFormSchema),
         defaultValues: {
+            'Record Type': 'License',
             'S/N': '',
             'Name of Hotel/Guest House': '',
             'Phone Number': '',
@@ -70,8 +73,8 @@ export default function NewLicensePage() {
             };
             addLicense(finalData);
             toast({
-                title: 'License Record Added',
-                description: `The record for ${data['Name of Hotel/Guest House']} has been successfully created.`,
+                title: 'Record Added',
+                description: `The ${data['Record Type']} record for ${data['Name of Hotel/Guest House']} has been successfully created.`,
             });
             router.push('/license');
         } catch (error) {
@@ -79,7 +82,7 @@ export default function NewLicensePage() {
             toast({
                 variant: 'destructive',
                 title: 'Save Error',
-                description: 'There was a problem saving the license record.',
+                description: 'There was a problem saving the record.',
             });
         }
     }
@@ -92,18 +95,36 @@ export default function NewLicensePage() {
                     Back to License Data
                 </Link>
              </Button>
-            <h1 className="text-3xl font-bold tracking-tight font-headline">Add New License Record</h1>
+            <h1 className="text-3xl font-bold tracking-tight font-headline">Add New Record</h1>
         </div>
         <div className="max-w-4xl mx-auto">
          <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
               <Card>
                 <CardHeader>
-                  <CardTitle>License Record Details</CardTitle>
-                  <CardDescription>Fill in the form to register a new Hotel/Guest House License.</CardDescription>
+                  <CardTitle>Record Details</CardTitle>
+                  <CardDescription>Fill in the form to register a new Hotel/Guest House record.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField control={form.control} name="Record Type" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Record Type</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="License">License</SelectItem>
+                              <SelectItem value="BOP">BOP</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                     <FormField control={form.control} name="S/N" render={({ field }) => (
                         <FormItem>
                           <FormLabel>S/N</FormLabel>
@@ -216,7 +237,7 @@ export default function NewLicensePage() {
                   
                 </CardContent>
                 <CardFooter className="border-t px-6 py-4">
-                  <Button type="submit">Save License Record</Button>
+                  <Button type="submit">Save Record</Button>
                 </CardFooter>
               </Card>
             </form>

@@ -63,7 +63,7 @@ function getDefaultStore(): AppStore {
         bops: [],
         bopHeaders: ['Business Name', 'Owner Name', 'Phone Number', 'Town', 'Permit Fee', 'Payment'],
         licenses: [],
-        licenseHeaders: ['S/N', 'Name of Hotel/Guest House', 'Property Rate', 'Arrears', 'Amount Due', 'Payment'],
+        licenseHeaders: ['Record Type', 'S/N', 'Name of Hotel/Guest House', 'Property Rate', 'Arrears', 'Amount Due', 'Payment'],
         summaryBillWorkbook: {},
         bills: [],
         users: [defaultAdminUser],
