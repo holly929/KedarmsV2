@@ -33,6 +33,7 @@ export type Bop = {
   'Phone Number'?: string;
   'Town'?: string;
   'Permit Fee'?: number;
+  'Arrears'?: number;
   'Payment'?: number;
   created_at?: string;
   payments?: Payment[];
@@ -41,7 +42,7 @@ export type Bop = {
 
 export type License = {
   id: string;
-  'Record Type'?: 'License' | 'BOP';
+  'Record Type'?: string; // Stored as "License", "BOP", or "License, BOP"
   'S/N'?: string;
   'Name of Hotel/Guest House'?: string;
   'Property Rate'?: number;

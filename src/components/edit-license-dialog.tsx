@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect } from 'react';
@@ -39,7 +40,7 @@ const licenseFormSchema = z.object({
   'S/N': z.string().optional(),
   'Name of Hotel/Guest House': z.string().min(3, 'Name is required.'),
   'Phone Number': z.string().optional(),
-  'Property Rate': z.coerce.number().min(0, 'Property rate must be a positive number.'),
+  'Property Rate': z.coerce.number().min(0, 'License Fee must be a positive number.'),
   'Arrears': z.coerce.number().min(0, 'Arrears must be a positive number.'),
   'Payment': z.coerce.number().min(0, 'Payment must be a positive number.'),
 });
@@ -90,7 +91,7 @@ export function EditLicenseDialog({
         'Name of Hotel/Guest House': getPropertyValue(license, 'Name of Hotel/Guest House'),
         'Phone Number': getPropertyValue(license, 'Phone Number'),
         'Property Rate': getPropertyValue(license, 'Property Rate'),
-        'Arrears': getPropertyValue(license, 'Arrears'),
+        'Arrears': getPropertyValue(license, 'Arrears') || 0,
         'Payment': getPropertyValue(license, 'Payment'),
       };
       
@@ -212,7 +213,7 @@ export function EditLicenseDialog({
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
                         <FormField control={form.control} name="Property Rate" render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Property Rate (GHS)</FormLabel>
+                                <FormLabel>License Fee (GHS)</FormLabel>
                                 <FormControl><Input type="number" step="10" {...field} value={field.value ?? ''}/></FormControl>
                                 <FormMessage />
                             </FormItem>

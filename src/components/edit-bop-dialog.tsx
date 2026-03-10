@@ -40,6 +40,7 @@ const bopFormSchema = z.object({
   'Phone Number': z.string().optional(),
   'Town': z.string().optional(),
   'Permit Fee': z.coerce.number().min(0, 'Permit fee must be a positive number.'),
+  'Arrears': z.coerce.number().min(0).default(0),
   'Payment': z.coerce.number().min(0, 'Payment must be a positive number.'),
 });
 
@@ -58,6 +59,7 @@ export function EditBopDialog({
         'Phone Number': '',
         'Town': '',
         'Permit Fee': 0,
+        'Arrears': 0,
         'Payment': 0,
     }
   });
@@ -65,8 +67,9 @@ export function EditBopDialog({
   const watchedValues = form.watch();
   const totalAmountPayable = React.useMemo(() => {
     const permitFee = Number(watchedValues['Permit Fee']) || 0;
+    const arrears = Number(watchedValues['Arrears']) || 0;
     const payment = Number(watchedValues['Payment']) || 0;
-    return permitFee - payment;
+    return (permitFee + arrears) - payment;
   }, [watchedValues]);
 
   useEffect(() => {
@@ -77,6 +80,7 @@ export function EditBopDialog({
         'Phone Number': getPropertyValue(bop, 'Phone Number'),
         'Town': getPropertyValue(bop, 'Town'),
         'Permit Fee': getPropertyValue(bop, 'Permit Fee'),
+        'Arrears': getPropertyValue(bop, 'Arrears') || 0,
         'Payment': getPropertyValue(bop, 'Payment'),
       };
       
@@ -151,10 +155,17 @@ export function EditBopDialog({
                   
                   <div className="border-t pt-4 mt-4">
                     <h3 className="text-lg font-medium">Billing Details</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
                         <FormField control={form.control} name="Permit Fee" render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Permit Fee (GHS)</FormLabel>
+                                <FormLabel>Permit Fee (License) (GHS)</FormLabel>
+                                <FormControl><Input type="number" step="10" {...field} value={field.value ?? ''}/></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                        <FormField control={form.control} name="Arrears" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Arrears (GHS)</FormLabel>
                                 <FormControl><Input type="number" step="10" {...field} value={field.value ?? ''}/></FormControl>
                                 <FormMessage />
                             </FormItem>

@@ -58,8 +58,8 @@ const BarcodeComponent = ({ value, isCompact }: { value: string; isCompact: bool
     return <svg ref={ref} />;
 };
 
-const BillRow = ({ label, value, isBold = false }: { label: string; value: string | number; isBold?: boolean; }) => (
-  <div className={cn("flex justify-between p-1 border-b border-black items-center", isBold ? 'font-bold' : '')}>
+const BillRow = ({ label, value, isBold = false, style = {} }: { label: string; value: string | number; isBold?: boolean; style?: React.CSSProperties }) => (
+  <div className={cn("flex justify-between p-1 border-b border-black items-center", isBold ? 'font-bold' : '')} style={style}>
     <span>{label}</span>
     <span className="text-right">{value}</span>
   </div>
@@ -189,8 +189,9 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
         } else if (billType === 'bop') {
             const bop = data as Bop;
             const permitFee = getNumber('Permit Fee');
+            const arrears = getNumber('Arrears');
             const payment = getNumber('Payment');
-            finalAmount = (permitFee || 0) - (payment || 0);
+            finalAmount = (permitFee || 0) + (arrears || 0) - (payment || 0);
 
             const businessName = (formatValue('Business Name') || '').substring(0, 20);
             const amount = formatAmount(finalAmount);
@@ -285,7 +286,9 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
 
     const renderBopBill = () => {
       const permitFee = getNumber('Permit Fee');
+      const arrears = getNumber('Arrears');
       const payment = getNumber('Payment');
+      const totalAmountDue = (permitFee || 0) + (arrears || 0);
 
       return (
         <>
@@ -303,7 +306,9 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             <div className="flex">
                 <div className="w-[67%] border-r-2 border-black">
                     <div className="font-bold text-center p-1 border-b-2 border-black">BILLING DETAILS</div>
-                    <BillRow label="PERMIT FEE" value={formatAmount(permitFee)} />
+                    <BillRow label="PERMIT FEE (LICENSE)" value={formatAmount(permitFee)} />
+                    <BillRow label="ARREARS" value={formatAmount(arrears)} />
+                    <BillRow label="AMOUNT DUE" value={formatAmount(totalAmountDue)} isBold />
                     <BillRow label="PAYMENT" value={formatAmount(payment)} />
                     <div className="flex justify-between p-1 border-b border-black items-center font-bold" style={accentStyle}>
                         <span>TOTAL AMOUNT PAYABLE</span>
@@ -313,6 +318,8 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                 <div className="w-[33%] text-right font-bold">
                     <div className="p-1 border-b-2 border-black flex items-end justify-end">FINANCIAL DETAILS</div>
                     <div className="p-1 border-b border-black">{formatAmount(permitFee)}</div>
+                    <div className="p-1 border-b border-black">{formatAmount(arrears)}</div>
+                    <div className="p-1 border-b border-black">{formatAmount(totalAmountDue)}</div>
                     <div className="p-1 border-b border-black">{formatAmount(payment)}</div>
                     <div className="p-1 border-b border-black flex items-center justify-end" style={accentStyle}>
                         <span style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountPayable)}</span>
@@ -344,7 +351,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             <div className="flex">
                 <div className="w-[67%] border-r-2 border-black">
                     <div className="font-bold text-center p-1 border-b-2 border-black">BILLING DETAILS</div>
-                    <BillRow label="PROPERTY RATE" value={formatAmount(propertyRate)} />
+                    <BillRow label="LICENSE FEE" value={formatAmount(propertyRate)} />
                     <BillRow label="ARREARS" value={formatAmount(arrears)} />
                     <BillRow label="AMOUNT DUE" value={formatAmount(totalAmountDue)} isBold />
                     <BillRow label="PAYMENT" value={formatAmount(payment)} />

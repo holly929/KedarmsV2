@@ -30,13 +30,16 @@ export function getBillStatus(property: Property): BillStatus {
 
 export function getBopBillStatus(bop: Bop): BillStatus {
   const permitFee = Number(getPropertyValue(bop, 'Permit Fee')) || 0;
+  const arrears = Number(getPropertyValue(bop, 'Arrears')) || 0;
   const payment = Number(getPropertyValue(bop, 'Payment')) || 0;
 
-  if (permitFee <= 0) {
+  const totalDue = permitFee + arrears;
+
+  if (totalDue <= 0) {
     return 'Unbilled';
   }
 
-  if (payment >= permitFee) {
+  if (payment >= totalDue) {
     return 'Paid';
   }
 

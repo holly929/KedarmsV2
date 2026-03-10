@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -7,7 +8,7 @@ import * as z from 'zod';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
@@ -25,7 +26,7 @@ const licenseFormSchema = z.object({
   'S/N': z.string().optional(),
   'Name of Hotel/Guest House': z.string().min(3, 'Name is required.'),
   'Phone Number': z.string().optional(),
-  'Property Rate': z.coerce.number().min(0, 'Property rate must be a positive number.'),
+  'Property Rate': z.coerce.number().min(0, 'License Fee must be a positive number.'),
   'Arrears': z.coerce.number().min(0, 'Arrears must be a positive number.'),
   'Payment': z.coerce.number().min(0, 'Payment must be a positive number.'),
   'created_at': z.date().optional(),
@@ -229,7 +230,7 @@ export default function NewLicensePage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
                         <FormField control={form.control} name="Property Rate" render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Property Rate (GHS)</FormLabel>
+                                <FormLabel>License Fee (GHS)</FormLabel>
                                 <FormControl><Input type="number" step="10" {...field} /></FormControl>
                                 <FormMessage />
                             </FormItem>

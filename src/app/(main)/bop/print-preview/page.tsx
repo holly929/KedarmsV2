@@ -149,15 +149,16 @@ export default function BulkBopPrintPage() {
         }
     }
     loadData();
-  }, []);
+  }, [toast]);
 
   const recordBills = async () => {
     if (renderedBops.length === 0) return;
 
     const newBills: Omit<Bill, 'id'>[] = renderedBops.map(b => {
         const permitFee = Number(b['Permit Fee']) || 0;
+        const arrears = Number(b['Arrears']) || 0;
         const payment = Number(b['Payment']) || 0;
-        const totalAmountDue = permitFee - payment;
+        const totalAmountDue = (permitFee + arrears) - payment;
 
         return {
             propertyId: b.id,
@@ -317,7 +318,3 @@ export default function BulkBopPrintPage() {
     </div>
   );
 }
-
-  
-
-    
