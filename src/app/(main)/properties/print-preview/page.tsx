@@ -157,11 +157,11 @@ export default function BulkPrintPage() {
     if (renderedProperties.length === 0) return;
 
     const newBills: Omit<Bill, 'id'>[] = renderedProperties.map(p => {
-        const rateableValue = Number(getPropertyValue(p, 'Rateable Value')) || 0;
-        const rateImpost = Number(getPropertyValue(p, 'Rate Impost')) || 0;
-        const sanitationCharged = Number(getPropertyValue(p, 'Sanitation Charged')) || 0;
-        const previousBalance = Number(getPropertyValue(p, 'Previous Balance')) || 0;
-        const totalPayment = Number(getPropertyValue(p, 'Total Payment')) || 0;
+        const rateableValue = Number(String(getPropertyValue(p, 'Rateable Value') || 0).replace(/,/g, '')) || 0;
+        const rateImpost = Number(String(getPropertyValue(p, 'Rate Impost') || 0).replace(/,/g, '')) || 0;
+        const sanitationCharged = Number(String(getPropertyValue(p, 'Sanitation Charged') || 0).replace(/,/g, '')) || 0;
+        const previousBalance = Number(String(getPropertyValue(p, 'Previous Balance') || 0).replace(/,/g, '')) || 0;
+        const totalPayment = Number(String(getPropertyValue(p, 'Total Payment') || 0).replace(/,/g, '')) || 0;
 
         const amountCharged = rateableValue * rateImpost;
         const totalThisYear = amountCharged + sanitationCharged;
@@ -214,11 +214,6 @@ export default function BulkPrintPage() {
         const chunkSize = 20;
 
         const renderChunk = () => {
-            if (currentIndex >= bopsToRender.length) { // fixed typo from potential previous copy-paste
-                setIsPreparing(false);
-                return;
-            }
-            // Logic fix: checking propertiesToRender instead of non-existent bopsToRender
             if (currentIndex >= propertiesToRender.length) {
                 setIsPreparing(false);
                 return;

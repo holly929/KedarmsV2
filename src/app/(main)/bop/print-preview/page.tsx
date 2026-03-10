@@ -16,6 +16,7 @@ import { useBillData } from '@/context/BillDataContext';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { store } from '@/lib/store';
+import { getPropertyValue } from '@/lib/property-utils';
 
 type GeneralSettings = {
   assemblyName?: string;
@@ -154,9 +155,9 @@ export default function BulkBopPrintPage() {
     if (renderedBops.length === 0) return;
 
     const newBills: Omit<Bill, 'id'>[] = renderedBops.map(b => {
-        const permitFee = Number(b['Permit Fee']) || 0;
-        const arrears = Number(b['Arrears']) || 0;
-        const payment = Number(b['Payment']) || 0;
+        const permitFee = Number(String(getPropertyValue(b, 'Permit Fee') || 0).replace(/,/g, '')) || 0;
+        const arrears = Number(String(getPropertyValue(b, 'Arrears') || 0).replace(/,/g, '')) || 0;
+        const payment = Number(String(getPropertyValue(b, 'Payment') || 0).replace(/,/g, '')) || 0;
         const totalAmountDue = (permitFee + arrears) - payment;
 
         return {

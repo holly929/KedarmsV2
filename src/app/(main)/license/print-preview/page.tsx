@@ -16,6 +16,7 @@ import { useBillData } from '@/context/BillDataContext';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { store } from '@/lib/store';
+import { getPropertyValue } from '@/lib/property-utils';
 
 type GeneralSettings = {
   assemblyName?: string;
@@ -154,10 +155,10 @@ export default function BulkLicensePrintPage() {
     if (renderedLicenses.length === 0) return;
 
     const newBills: Omit<Bill, 'id'>[] = renderedLicenses.map(l => {
-        const rate = Number(l['Property Rate']) || 0;
-        const bopAmt = Number(l['Bop Amount']) || 0;
-        const arrears = Number(l['Arrears']) || 0;
-        const payment = Number(l['Payment']) || 0;
+        const rate = Number(String(getPropertyValue(l, 'License Fee') || getPropertyValue(l, 'Property Rate') || 0).replace(/,/g, '')) || 0;
+        const bopAmt = Number(String(getPropertyValue(l, 'Bop Amount') || 0).replace(/,/g, '')) || 0;
+        const arrears = Number(String(getPropertyValue(l, 'Arrears') || 0).replace(/,/g, '')) || 0;
+        const payment = Number(String(getPropertyValue(l, 'Payment') || 0).replace(/,/g, '')) || 0;
         const totalAmountDue = rate + bopAmt + arrears - payment;
 
         return {
