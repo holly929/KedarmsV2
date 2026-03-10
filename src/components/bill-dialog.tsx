@@ -117,20 +117,21 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
         }
     }, [data, displaySettingsProp]);
     
-    const getNumber = (key: string): number | null => {
-        if (!data) return null;
+    const getNumber = useCallback((key: string): number => {
+        if (!data) return 0;
         const value = getPropertyValue(data as any, key);
-        if (value === null || value === undefined || String(value).trim() === '') return null;
+        if (value === null || value === undefined || String(value).trim() === '') return 0;
         
         const cleanedValue = String(value).replace(/,/g, '').replace(/[^0-9.-]/g, '');
-        if (cleanedValue === '') return null;
+        if (cleanedValue === '') return 0;
         const num = Number(cleanedValue);
-        return isNaN(num) ? null : num;
-    };
+        return isNaN(num) ? 0 : num;
+    }, [data]);
 
-    const formatAmount = useCallback((amount: number | null) => {
-        if (amount === null) return '0.00';
-        return amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const formatAmount = useCallback((amount: number | string | null | undefined) => {
+        const val = typeof amount === 'number' ? amount : Number(String(amount || 0).replace(/,/g, ''));
+        if (isNaN(val)) return '0.00';
+        return val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }, []);
     
     const formatValue = useCallback((valueKey: string) => {
@@ -140,7 +141,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
         
         const numericKeys = ['License Fee', 'Bop Amount', 'Arrears', 'Payment', 'Rateable Value', 'Rate Impost', 'Total Payment', 'Permit Fee', 'Sanitation Charged', 'Previous Balance', 'Amount Due', 'Property Rate'];
         
-        if (numericKeys.includes(valueKey) || !isNaN(Number(String(val).replace(/,/g, '')))) {
+        if (numericKeys.some(k => valueKey.toLowerCase().includes(k.toLowerCase())) || !isNaN(Number(String(val).replace(/,/g, '')))) {
             const skipKeys = ['Property No', 'Account Number', 'Phone', 'S/N'];
             if (skipKeys.some(k => valueKey.includes(k))) return String(val);
 
@@ -178,7 +179,6 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
         return <div className="flex"><div className="w-1/2 font-bold border-b border-black p-1">{label}</div><div className="w-1/2 border-b border-l border-black p-1">{formatValue(valueKey)}</div></div>;
     };
 
-    // Calculations
     const { totalAmountPayable, barcodeValue } = useMemo(() => {
         let finalAmount = 0;
         let finalBarcode = '';
@@ -193,9 +193,9 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             const sanitationCharged = getNumber('Sanitation Charged');
             const previousBalance = getNumber('Previous Balance');
             const totalPayment = getNumber('Total Payment');
-            const amountCharged = (rateableValue != null && rateImpost != null) ? rateableValue * rateImpost : 0;
-            const totalThisYear = amountCharged + (sanitationCharged || 0);
-            finalAmount = totalThisYear + (previousBalance || 0) - (totalPayment || 0);
+            const amountCharged = rateableValue * rateImpost;
+            const totalThisYear = amountCharged + sanitationCharged;
+            finalAmount = totalThisYear + previousBalance - totalPayment;
             
             const propertyNo = formatValue('Property No');
             const ownerName = (formatValue('Owner Name') || '').substring(0, 20);
@@ -206,17 +206,17 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             const permitFee = getNumber('Permit Fee');
             const arrears = getNumber('Arrears');
             const payment = getNumber('Payment');
-            finalAmount = (permitFee || 0) + (arrears || 0) - (payment || 0);
+            finalAmount = (permitFee + arrears) - payment;
 
             const businessName = (formatValue('Business Name') || '').substring(0, 20);
             const amount = formatAmount(finalAmount);
             const year = new Date().getFullYear();
             finalBarcode = `${data.id}|${businessName}|${amount}|${year}`;
         } else { // License
-            const licenseFee = getNumber('License Fee') || getNumber('Property Rate') || 0; 
-            const bopAmt = getNumber('Bop Amount') || 0;
-            const arrears = getNumber('Arrears') || 0;
-            const payment = getNumber('Payment') || 0;
+            const licenseFee = getNumber('License Fee') || getNumber('Property Rate'); 
+            const bopAmt = getNumber('Bop Amount');
+            const arrears = getNumber('Arrears');
+            const payment = getNumber('Payment');
             finalAmount = (licenseFee + bopAmt + arrears) - payment;
 
             const hotelName = (formatValue('Name of Hotel/Guest House') || '').substring(0, 20);
@@ -234,9 +234,9 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
       const sanitationCharged = getNumber('Sanitation Charged');
       const previousBalance = getNumber('Previous Balance');
       const totalPayment = getNumber('Total Payment');
-      const amountCharged = (rateableValue != null && rateImpost != null) ? rateableValue * rateImpost : null;
-      const totalThisYear = (amountCharged ?? 0) + (sanitationCharged ?? 0);
-      const totalBill = totalThisYear + (previousBalance || 0);
+      const amountCharged = rateableValue * rateImpost;
+      const totalThisYear = amountCharged + sanitationCharged;
+      const totalBill = totalThisYear + previousBalance;
 
       return (
         <>
@@ -303,7 +303,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
       const permitFee = getNumber('Permit Fee');
       const arrears = getNumber('Arrears');
       const payment = getNumber('Payment');
-      const totalDue = (permitFee || 0) + (arrears || 0);
+      const totalDue = permitFee + arrears;
 
       return (
         <>
@@ -346,10 +346,10 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     }
 
     const renderLicenseBill = () => {
-      const licenseFee = getNumber('License Fee') || getNumber('Property Rate') || 0;
-      const bopAmt = getNumber('Bop Amount') || 0;
-      const arrears = getNumber('Arrears') || 0;
-      const payment = getNumber('Payment') || 0;
+      const licenseFee = getNumber('License Fee') || getNumber('Property Rate');
+      const bopAmt = getNumber('Bop Amount');
+      const arrears = getNumber('Arrears');
+      const payment = getNumber('Payment');
       const totalDue = (licenseFee + bopAmt + arrears);
 
       return (
