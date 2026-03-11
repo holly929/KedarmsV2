@@ -384,6 +384,10 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
 
     if (!data) return <div ref={ref}>Loading Data...</div>;
 
+    const assemblyName = settings.general?.assemblyName || 'KWAHU EAST DISTRICT ASSEMBLY';
+    const postalAddress = settings.general?.postalAddress || 'P.O. Box 11, ABETIFI';
+    const contactPhone = settings.general?.contactPhone || '0242122039/0244971784';
+
     return (
       <div ref={ref} className={cn("text-black bg-white w-full h-full box-border", fontClass, isCompact ? 'p-1' : 'p-2')} style={baseStyle}>
         <div className="border-[3px] border-black p-1 relative h-full flex flex-col">
@@ -400,12 +404,12 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     )}
                 </div>
                 <div className="w-1/2 text-center">
-                    <h1 className="font-bold tracking-wide" style={{ fontSize: `${finalFontSize * 1.5}px` }}>{settings.general?.assemblyName?.toUpperCase() || 'DISTRICT ASSEMBLY'}</h1>
+                    <h1 className="font-bold tracking-wide" style={{ fontSize: `${finalFontSize * 1.5}px` }}>{assemblyName.toUpperCase()}</h1>
                     <h2 className="font-bold tracking-wide" style={{ fontSize: `${finalFontSize * 1.3}px` }}>
                       {billType === 'property' || billType === 'license' ? 'PROPERTY RATE BILL' : 'B.O.P. BILL'}
                     </h2>
-                    <p style={{ fontSize: `${finalFontSize * 0.9}px` }}>{settings.general?.postalAddress}</p>
-                    <p style={{ fontSize: `${finalFontSize * 0.9}px` }}>TEL: {settings.general?.contactPhone}</p>
+                    <p style={{ fontSize: `${finalFontSize * 0.9}px` }}>{postalAddress}</p>
+                    <p style={{ fontSize: `${finalFontSize * 0.9}px` }}>TEL: {contactPhone}</p>
                 </div>
                 <div className="w-1/4 flex justify-end items-center">
                     {settings.appearance?.assemblyLogo && (

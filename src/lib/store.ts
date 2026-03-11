@@ -71,10 +71,10 @@ function getDefaultStore(): AppStore {
         settings: {
             generalSettings: {
                 systemName: 'RateEase',
-                assemblyName: 'District Assembly',
-                postalAddress: 'P.O. Box 1, District Capital',
-                contactPhone: '012-345-6789',
-                contactEmail: 'contact@assembly.gov.gh'
+                assemblyName: 'KWAHU EAST DISTRICT ASSEMBLY',
+                postalAddress: 'P.O. Box 11, ABETIFI',
+                contactPhone: '0242122039/0244971784',
+                contactEmail: 'info@kwahueast.gov.gh'
             },
             appearanceSettings: {},
             integrationsSettings: {},

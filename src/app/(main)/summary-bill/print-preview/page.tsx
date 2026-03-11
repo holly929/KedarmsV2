@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
@@ -53,6 +54,10 @@ const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
 
     const filteredHeaders = headers.filter(h => h && String(h).trim() !== '' && !String(h).toLowerCase().startsWith('__empty'));
 
+    const assemblyName = settings.general?.assemblyName || 'KWAHU EAST DISTRICT ASSEMBLY';
+    const postalAddress = settings.general?.postalAddress || 'P.O. Box 11, ABETIFI';
+    const contactPhone = settings.general?.contactPhone || '0242122039/0244971784';
+
   return (
     <div className={cn("text-black bg-white w-full h-full box-border p-8", fontClass)} style={baseStyle}>
       <div className="h-full flex flex-col">
@@ -63,9 +68,9 @@ const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
                     <img src={settings.appearance.ghanaLogo} alt="Ghana Coat of Arms" style={{ objectFit: 'contain', width: '80px', height: 'auto' }} />
                 ) : <div className="w-[80px]"></div>}
                 <div>
-                    <h1 className="font-bold tracking-wide text-2xl">{settings.general?.assemblyName?.toUpperCase() || 'DISTRICT ASSEMBLY'}</h1>
-                    <p className="text-sm">{settings.general?.postalAddress}</p>
-                    <p className="text-sm">TEL: {settings.general?.contactPhone}</p>
+                    <h1 className="font-bold tracking-wide text-2xl">{assemblyName.toUpperCase()}</h1>
+                    <p className="text-sm">{postalAddress}</p>
+                    <p className="text-sm">TEL: {contactPhone}</p>
                 </div>
                 {settings.appearance?.assemblyLogo ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
