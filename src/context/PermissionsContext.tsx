@@ -3,16 +3,9 @@
 
 import React, { createContext, useContext, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import type { User } from '@/lib/types';
+import type { User, PERMISSION_PAGES, PermissionPage, UserRole, RolePermissions } from '@/lib/types';
 import { store, saveStore } from '@/lib/store';
-
-export const PERMISSION_PAGES = [
-  'dashboard', 'properties', 'billing', 'bop', 'bop-billing', 'license', 'license-billing', 'bills', 'defaulters', 'reports', 'users', 'settings', 'integrations', 'payment', 'activity-logs', 'summary-bill'
-] as const;
-
-export type PermissionPage = typeof PERMISSION_PAGES[number];
-export type UserRole = User['role'];
-export type RolePermissions = Record<UserRole, Partial<Record<PermissionPage, boolean>>>;
+import { PERMISSION_PAGES as PERMISSION_PAGES_LIST } from '@/lib/types';
 
 interface PermissionsContextType {
   permissions: RolePermissions;
@@ -37,7 +30,7 @@ export function PermissionsProvider({ children }: { children: React.ReactNode })
     if (role === 'Admin') return true;
 
     const page = pagePath.split('/')[1] as PermissionPage;
-    if (!PERMISSION_PAGES.includes(page)) {
+    if (!(PERMISSION_PAGES_LIST as unknown as string[]).includes(page)) {
         return true;
     }
     
@@ -58,3 +51,5 @@ export function usePermissions() {
   }
   return context;
 }
+
+export { PERMISSION_PAGES_LIST as PERMISSION_PAGES };

@@ -107,6 +107,14 @@ export type User = {
   created_at?: string;
 };
 
+export const PERMISSION_PAGES = [
+  'dashboard', 'properties', 'billing', 'bop', 'bop-billing', 'license', 'license-billing', 'bills', 'defaulters', 'reports', 'users', 'settings', 'integrations', 'payment', 'activity-logs', 'summary-bill'
+] as const;
+
+export type PermissionPage = typeof PERMISSION_PAGES[number];
+export type UserRole = User['role'];
+export type RolePermissions = Record<UserRole, Partial<Record<PermissionPage, boolean>>>;
+
 export type RevenueByPropertyType = {
   name: string;
   revenue: number;

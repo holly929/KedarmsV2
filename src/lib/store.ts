@@ -4,8 +4,7 @@
 // ensuring that data is shared and consistent across all user sessions
 // within the same server process.
 
-import type { Property, Bop, License, Bill, User, Payment, ActivityLog } from './types';
-import { PERMISSION_PAGES, type RolePermissions, type UserRole } from '@/context/PermissionsContext';
+import type { Property, Bop, License, Bill, User, Payment, ActivityLog, RolePermissions } from './types';
 
 const STORE_KEY = 'rateease.store';
 
