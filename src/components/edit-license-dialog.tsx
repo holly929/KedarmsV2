@@ -40,13 +40,13 @@ const licenseFormSchema = z.object({
   'S/N': z.string().optional(),
   'Name of Hotel/Guest House': z.string().min(3, 'Name is required.'),
   'Phone Number': z.string().optional(),
-  'License Fee': z.coerce.number().min(0, 'Property Rate must be a positive number.'),
+  'Property Rate': z.coerce.number().min(0, 'Property Rate must be a positive number.'),
   'Bop Amount': z.coerce.number().min(0).default(0),
   'Arrears': z.coerce.number().min(0).default(0),
   'Payment': z.coerce.number().min(0, 'Payment must be a positive number.'),
 });
 
-const RECORD_TYPES = ['License', 'BOP'];
+const RECORD_TYPES = ['Property Rate', 'BOP'];
 
 export function EditLicenseDialog({
   license,
@@ -58,11 +58,11 @@ export function EditLicenseDialog({
   const form = useForm<z.infer<typeof licenseFormSchema>>({
     resolver: zodResolver(licenseFormSchema),
     defaultValues: {
-        'Record Type': ['License'],
+        'Record Type': ['Property Rate'],
         'S/N': '',
         'Name of Hotel/Guest House': '',
         'Phone Number': '',
-        'License Fee': 0,
+        'Property Rate': 0,
         'Bop Amount': 0,
         'Arrears': 0,
         'Payment': 0,
@@ -72,7 +72,7 @@ export function EditLicenseDialog({
   const watchedValues = form.watch();
   
   const totalAmountDue = React.useMemo(() => {
-    const rate = Number(watchedValues['License Fee']) || 0;
+    const rate = Number(watchedValues['Property Rate']) || 0;
     const bopAmt = Number(watchedValues['Bop Amount']) || 0;
     const arrears = Number(watchedValues['Arrears']) || 0;
     return rate + bopAmt + arrears;
@@ -85,15 +85,15 @@ export function EditLicenseDialog({
 
   useEffect(() => {
     if (license && isOpen) {
-       const recordTypeStr = getPropertyValue(license, 'Record Type') || 'License';
+       const recordTypeStr = getPropertyValue(license, 'Record Type') || 'Property Rate';
        const recordTypeArray = String(recordTypeStr).split(',').map((s: string) => s.trim()).filter(Boolean);
 
        const normalizedData = {
-        'Record Type': recordTypeArray.length > 0 ? recordTypeArray : ['License'],
+        'Record Type': recordTypeArray.length > 0 ? recordTypeArray : ['Property Rate'],
         'S/N': getPropertyValue(license, 'S/N'),
         'Name of Hotel/Guest House': getPropertyValue(license, 'Name of Hotel/Guest House'),
         'Phone Number': getPropertyValue(license, 'Phone Number'),
-        'License Fee': getPropertyValue(license, 'License Fee') || getPropertyValue(license, 'Property Rate') || 0,
+        'Property Rate': getPropertyValue(license, 'Property Rate') || getPropertyValue(license, 'License Fee') || 0,
         'Bop Amount': getPropertyValue(license, 'Bop Amount') || 0,
         'Arrears': getPropertyValue(license, 'Arrears') || 0,
         'Payment': getPropertyValue(license, 'Payment') || 0,
@@ -207,7 +207,7 @@ export function EditLicenseDialog({
                   <div className="border-t pt-4 mt-4">
                     <h3 className="text-lg font-medium">Billing Details</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
-                        <FormField control={form.control} name="License Fee" render={({ field }) => (
+                        <FormField control={form.control} name="Property Rate" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Property Rate (GHS)</FormLabel>
                                 <FormControl><Input type="number" step="10" {...field} value={field.value ?? ''}/></FormControl>

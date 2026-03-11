@@ -211,10 +211,10 @@ export default function BillsPage() {
               <TableCell>
                 <Badge variant={bill.billType === 'property' ? 'secondary' : bill.billType === 'bop' ? 'outline' : 'default'} className="capitalize">
                     {bill.billType === 'property' ? <Home className="h-3 w-3 mr-1" /> : bill.billType === 'bop' ? <Building className="h-3 w-3 mr-1" /> : <Hotel className="h-3 w-3 mr-1" />}
-                    {bill.billType}
+                    {bill.billType === 'license' ? 'Hotel/Guest House' : bill.billType}
                 </Badge>
               </TableCell>
-              <TableCell className="font-medium">{identifier.value}</TableCell>
+              <TableCell className="font-medium">{String(identifier.value)}</TableCell>
               <TableCell>{identifyBillName(bill)}</TableCell>
               <TableCell>{formatDate(bill.generatedAt)}</TableCell>
               <TableCell><Badge variant="outline">{bill.year}</Badge></TableCell>
@@ -258,7 +258,7 @@ export default function BillsPage() {
                     />
                   <div>
                     <CardTitle className="text-base font-semibold">{identifyBillName(bill)}</CardTitle>
-                    <CardDescription>{identifier.key}: {identifier.value}</CardDescription>
+                    <CardDescription>{identifier.key}: {String(identifier.value)}</CardDescription>
                   </div>
                 </div>
                  <DropdownMenu>
@@ -284,7 +284,7 @@ export default function BillsPage() {
                   <span className="font-semibold">Type</span>
                    <Badge variant={bill.billType === 'property' ? 'secondary' : bill.billType === 'bop' ? 'outline' : 'default'} className="capitalize">
                       {bill.billType === 'property' ? <Home className="h-3 w-3 mr-1" /> : bill.billType === 'bop' ? <Building className="h-3 w-3 mr-1" /> : <Hotel className="h-3 w-3 mr-1" />}
-                      {bill.billType}
+                      {bill.billType === 'license' ? 'Hotel/Guest House' : bill.billType}
                   </Badge>
               </div>
                <div className="flex justify-between items-center text-xs text-muted-foreground">
@@ -331,7 +331,7 @@ export default function BillsPage() {
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="property">Property Rate</SelectItem>
                 <SelectItem value="bop">BOP</SelectItem>
-                <SelectItem value="license">License</SelectItem>
+                <SelectItem value="license">Property Rate (Hotel)</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filterYear} onValueChange={setFilterYear}>

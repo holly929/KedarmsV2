@@ -197,7 +197,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             const pay = getNumericValue('Payment');
             calculated = (pf + arr) - pay;
         } else {
-            const lf = getNumericValue('License Fee') || getNumericValue('Property Rate');
+            const lf = getNumericValue('Property Rate') || getNumericValue('License Fee');
             const bop = getNumericValue('Bop Amount');
             const arr = getNumericValue('Arrears');
             const pay = getNumericValue('Payment');
@@ -335,7 +335,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     }
 
     const renderLicenseBill = () => {
-      const lf = getNumericValue('License Fee') || getNumericValue('Property Rate');
+      const lf = getNumericValue('Property Rate') || getNumericValue('License Fee');
       const bop = getNumericValue('Bop Amount');
       const arr = getNumericValue('Arrears');
       const pay = getNumericValue('Payment');
@@ -402,7 +402,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                 <div className="w-1/2 text-center">
                     <h1 className="font-bold tracking-wide" style={{ fontSize: `${finalFontSize * 1.5}px` }}>{settings.general?.assemblyName?.toUpperCase() || 'DISTRICT ASSEMBLY'}</h1>
                     <h2 className="font-bold tracking-wide" style={{ fontSize: `${finalFontSize * 1.3}px` }}>
-                      {billType === 'property' ? 'PROPERTY RATE BILL' : billType === 'bop' ? 'B.O.P. BILL' : 'LICENSE BILL'}
+                      {billType === 'property' || billType === 'license' ? 'PROPERTY RATE BILL' : 'B.O.P. BILL'}
                     </h2>
                     <p style={{ fontSize: `${finalFontSize * 0.9}px` }}>{settings.general?.postalAddress}</p>
                     <p style={{ fontSize: `${finalFontSize * 0.9}px` }}>TEL: {settings.general?.contactPhone}</p>
