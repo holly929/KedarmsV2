@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -157,15 +158,23 @@ export default function BulkPrintPage() {
     if (renderedProperties.length === 0) return;
 
     const newBills: Omit<Bill, 'id'>[] = renderedProperties.map(p => {
-        const rateableValue = Number(String(getPropertyValue(p, 'Rateable Value') || 0).replace(/,/g, '')) || 0;
-        const rateImpost = Number(String(getPropertyValue(p, 'Rate Impost') || 0).replace(/,/g, '')) || 0;
-        const sanitationCharged = Number(String(getPropertyValue(p, 'Sanitation Charged') || 0).replace(/,/g, '')) || 0;
-        const previousBalance = Number(String(getPropertyValue(p, 'Previous Balance') || 0).replace(/,/g, '')) || 0;
-        const totalPayment = Number(String(getPropertyValue(p, 'Total Payment') || 0).replace(/,/g, '')) || 0;
+        // Prioritize imported "Amount Due"
+        const importedAmountDue = Number(String(getPropertyValue(p, 'Amount Due') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
+        
+        let totalAmountDue = 0;
+        if (!isNaN(importedAmountDue) && importedAmountDue !== 0) {
+            totalAmountDue = importedAmountDue;
+        } else {
+            const rateableValue = Number(String(getPropertyValue(p, 'Rateable Value') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+            const rateImpost = Number(String(getPropertyValue(p, 'Rate Impost') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+            const sanitationCharged = Number(String(getPropertyValue(p, 'Sanitation Charged') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+            const previousBalance = Number(String(getPropertyValue(p, 'Previous Balance') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+            const totalPayment = Number(String(getPropertyValue(p, 'Total Payment') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
 
-        const amountCharged = rateableValue * rateImpost;
-        const totalThisYear = amountCharged + sanitationCharged;
-        const totalAmountDue = totalThisYear + previousBalance - totalPayment;
+            const amountCharged = rateableValue * rateImpost;
+            const totalThisYear = amountCharged + sanitationCharged;
+            totalAmountDue = totalThisYear + previousBalance - totalPayment;
+        }
 
         return {
             propertyId: p.id,

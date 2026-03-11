@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -129,7 +130,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     }, [data]);
 
     const formatAmount = useCallback((amount: number | string | null | undefined) => {
-        const val = typeof amount === 'number' ? amount : Number(String(amount || 0).replace(/,/g, ''));
+        const val = typeof amount === 'number' ? amount : Number(String(amount || 0).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
         if (isNaN(val)) return '0.00';
         return val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }, []);
@@ -141,11 +142,11 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
         
         const numericKeys = ['License Fee', 'Bop Amount', 'Arrears', 'Payment', 'Rateable Value', 'Rate Impost', 'Total Payment', 'Permit Fee', 'Sanitation Charged', 'Previous Balance', 'Amount Due', 'Property Rate'];
         
-        if (numericKeys.some(k => valueKey.toLowerCase().includes(k.toLowerCase())) || !isNaN(Number(String(val).replace(/,/g, '')))) {
+        if (numericKeys.some(k => valueKey.toLowerCase().includes(k.toLowerCase())) || !isNaN(Number(String(val).replace(/,/g, '').replace(/[^0-9.-]/g, '')))) {
             const skipKeys = ['Property No', 'Account Number', 'Phone', 'S/N'];
             if (skipKeys.some(k => valueKey.includes(k))) return String(val);
 
-            const num = Number(String(val).replace(/,/g, ''));
+            const num = Number(String(val).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
             if (!isNaN(num)) {
                 if (valueKey.toLowerCase().includes('impost')) return String(val);
                 return formatAmount(num);
@@ -187,15 +188,23 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             return { totalAmountPayable: 0, barcodeValue: '' };
         }
 
+        // Check if "Amount Due" exists in the data directly first
+        const importedAmountDue = getNumber('Amount Due');
+
         if (billType === 'property') {
             const rateableValue = getNumber('Rateable Value');
             const rateImpost = getNumber('Rate Impost');
             const sanitationCharged = getNumber('Sanitation Charged');
             const previousBalance = getNumber('Previous Balance');
             const totalPayment = getNumber('Total Payment');
-            const amountCharged = rateableValue * rateImpost;
-            const totalThisYear = amountCharged + sanitationCharged;
-            finalAmount = totalThisYear + previousBalance - totalPayment;
+            
+            if (importedAmountDue > 0) {
+                finalAmount = importedAmountDue;
+            } else {
+                const amountCharged = rateableValue * rateImpost;
+                const totalThisYear = amountCharged + sanitationCharged;
+                finalAmount = totalThisYear + previousBalance - totalPayment;
+            }
             
             const propertyNo = formatValue('Property No');
             const ownerName = (formatValue('Owner Name') || '').substring(0, 20);
@@ -206,7 +215,12 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             const permitFee = getNumber('Permit Fee');
             const arrears = getNumber('Arrears');
             const payment = getNumber('Payment');
-            finalAmount = (permitFee + arrears) - payment;
+            
+            if (importedAmountDue > 0) {
+                finalAmount = importedAmountDue;
+            } else {
+                finalAmount = (permitFee + arrears) - payment;
+            }
 
             const businessName = (formatValue('Business Name') || '').substring(0, 20);
             const amount = formatAmount(finalAmount);
@@ -217,7 +231,12 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             const bopAmt = getNumber('Bop Amount');
             const arrears = getNumber('Arrears');
             const payment = getNumber('Payment');
-            finalAmount = (licenseFee + bopAmt + arrears) - payment;
+            
+            if (importedAmountDue > 0) {
+                finalAmount = importedAmountDue;
+            } else {
+                finalAmount = (licenseFee + bopAmt + arrears) - payment;
+            }
 
             const hotelName = (formatValue('Name of Hotel/Guest House') || '').substring(0, 20);
             const amount = formatAmount(finalAmount);

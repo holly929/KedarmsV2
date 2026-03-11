@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -155,11 +156,19 @@ export default function BulkLicensePrintPage() {
     if (renderedLicenses.length === 0) return;
 
     const newBills: Omit<Bill, 'id'>[] = renderedLicenses.map(l => {
-        const rate = Number(String(getPropertyValue(l, 'License Fee') || getPropertyValue(l, 'Property Rate') || 0).replace(/,/g, '')) || 0;
-        const bopAmt = Number(String(getPropertyValue(l, 'Bop Amount') || 0).replace(/,/g, '')) || 0;
-        const arrears = Number(String(getPropertyValue(l, 'Arrears') || 0).replace(/,/g, '')) || 0;
-        const payment = Number(String(getPropertyValue(l, 'Payment') || 0).replace(/,/g, '')) || 0;
-        const totalAmountDue = rate + bopAmt + arrears - payment;
+        // Prioritize imported "Amount Due"
+        const importedAmountDue = Number(String(getPropertyValue(l, 'Amount Due') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
+        
+        let totalAmountDue = 0;
+        if (!isNaN(importedAmountDue) && importedAmountDue !== 0) {
+            totalAmountDue = importedAmountDue;
+        } else {
+            const rate = Number(String(getPropertyValue(l, 'License Fee') || getPropertyValue(l, 'Property Rate') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+            const bopAmt = Number(String(getPropertyValue(l, 'Bop Amount') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+            const arrears = Number(String(getPropertyValue(l, 'Arrears') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+            const payment = Number(String(getPropertyValue(l, 'Payment') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+            totalAmountDue = rate + bopAmt + arrears - payment;
+        }
 
         return {
             propertyId: l.id,

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -155,10 +156,18 @@ export default function BulkBopPrintPage() {
     if (renderedBops.length === 0) return;
 
     const newBills: Omit<Bill, 'id'>[] = renderedBops.map(b => {
-        const permitFee = Number(String(getPropertyValue(b, 'Permit Fee') || 0).replace(/,/g, '')) || 0;
-        const arrears = Number(String(getPropertyValue(b, 'Arrears') || 0).replace(/,/g, '')) || 0;
-        const payment = Number(String(getPropertyValue(b, 'Payment') || 0).replace(/,/g, '')) || 0;
-        const totalAmountDue = (permitFee + arrears) - payment;
+        // Prioritize imported "Amount Due"
+        const importedAmountDue = Number(String(getPropertyValue(b, 'Amount Due') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
+        
+        let totalAmountDue = 0;
+        if (!isNaN(importedAmountDue) && importedAmountDue !== 0) {
+            totalAmountDue = importedAmountDue;
+        } else {
+            const permitFee = Number(String(getPropertyValue(b, 'Permit Fee') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+            const arrears = Number(String(getPropertyValue(b, 'Arrears') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+            const payment = Number(String(getPropertyValue(b, 'Payment') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+            totalAmountDue = (permitFee + arrears) - payment;
+        }
 
         return {
             propertyId: b.id,
