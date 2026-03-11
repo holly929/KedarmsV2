@@ -356,7 +356,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             <div className="flex">
                 <div className="w-[67%] border-r-2 border-black">
                     <div className="font-bold text-center p-1 border-b-2 border-black">BILLING DETAILS</div>
-                    <BillRow label="LICENSE FEE" value={formatToTwoDecimals(lf)} />
+                    <BillRow label="PROPERTY RATE" value={formatToTwoDecimals(lf)} />
                     <BillRow label="BOP AMOUNT" value={formatToTwoDecimals(bop)} />
                     <BillRow label="ARREARS" value={formatToTwoDecimals(arr)} />
                     <BillRow label="AMOUNT DUE" value={formatToTwoDecimals(totalDue)} isBold />

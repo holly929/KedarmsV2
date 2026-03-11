@@ -40,7 +40,7 @@ const licenseFormSchema = z.object({
   'S/N': z.string().optional(),
   'Name of Hotel/Guest House': z.string().min(3, 'Name is required.'),
   'Phone Number': z.string().optional(),
-  'License Fee': z.coerce.number().min(0, 'License Fee must be a positive number.'),
+  'License Fee': z.coerce.number().min(0, 'Property Rate must be a positive number.'),
   'Bop Amount': z.coerce.number().min(0).default(0),
   'Arrears': z.coerce.number().min(0).default(0),
   'Payment': z.coerce.number().min(0, 'Payment must be a positive number.'),
@@ -209,7 +209,7 @@ export function EditLicenseDialog({
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-2">
                         <FormField control={form.control} name="License Fee" render={({ field }) => (
                             <FormItem>
-                                <FormLabel>License Fee (GHS)</FormLabel>
+                                <FormLabel>Property Rate (GHS)</FormLabel>
                                 <FormControl><Input type="number" step="10" {...field} value={field.value ?? ''}/></FormControl>
                                 <FormMessage />
                             </FormItem>
