@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -35,7 +36,6 @@ type AppearanceSettings = {
 
 const formatToTwoDecimals = (val: any): string => {
     if (val === undefined || val === null || String(val).trim() === '') return '0.00';
-    // Remove formatting characters to get raw number
     const cleaned = String(val).replace(/,/g, '').replace(/[^0-9.-]/g, '');
     const num = Number(cleaned);
     if (isNaN(num)) return '0.00';
@@ -87,11 +87,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     
     const [displaySettings, setDisplaySettings] = useState<Record<string, boolean>>({});
 
-    const { 
-        fontFamily, 
-        fontSize, 
-        accentColor 
-    } = settings.appearance || {};
+    const { fontFamily, fontSize, accentColor } = settings.appearance || {};
 
     const fontClass = useMemo(() => ({
         sans: 'font-sans',
@@ -159,8 +155,8 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
 
     const shouldDisplay = (field: string) => {
         const normField = normalizeKey(field);
-        // Critical identifying fields should almost always display
-        if (['sn', 'serialnumber', 'hotel', 'hotelname', 'ownername', 'propertyno', 'businessname'].includes(normField)) return true;
+        const identificationFields = ['sn', 'serialnumber', 'hotel', 'hotelname', 'ownername', 'propertyno', 'businessname', 'nameofhotelguesthouse'];
+        if (identificationFields.includes(normField)) return true;
         
         for (const settingKey in displaySettings) {
              if (normalizeKey(settingKey) === normField) {
@@ -182,13 +178,11 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
 
     const totalAmountPayable = useMemo(() => {
         if (!data) return '0.00';
-        // 1. Try to get total directly from imported data (PRIORITY)
         const importedTotal = getPropertyValue(data as any, 'Amount Due');
         if (importedTotal !== undefined && importedTotal !== null && String(importedTotal).trim() !== '') {
             return formatToTwoDecimals(importedTotal);
         }
 
-        // 2. Fallback to calculation if total column is missing
         let calculated = 0;
         if (billType === 'property') {
             const rv = getNumericValue('Rateable Value');
@@ -212,14 +206,17 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
         return formatToTwoDecimals(calculated);
     }, [data, billType, getNumericValue]);
 
+    const billedToName = useMemo(() => {
+        if (!data) return '';
+        return String(getPropertyValue(data as any, 'Name of Hotel/Guest House') || getPropertyValue(data as any, 'Owner Name') || getPropertyValue(data as any, 'Business Name') || '...').toUpperCase();
+    }, [data]);
+
     const barcodeValue = useMemo(() => {
         if (!data) return '';
         const id = String(getPropertyValue(data as any, 'Property No') || getPropertyValue(data as any, 'S/N') || data.id);
-        const rawName = String(getPropertyValue(data as any, 'Owner Name') || getPropertyValue(data as any, 'Name of Hotel/Guest House') || getPropertyValue(data as any, 'Business Name') || '');
-        const name = rawName.substring(0, 20);
-        return `${id}|${name}|${totalAmountPayable}|${new Date().getFullYear()}`;
-    }, [data, totalAmountPayable]);
-
+        const rawName = String(billedToName).substring(0, 20);
+        return `${id}|${rawName}|${totalAmountPayable}|${new Date().getFullYear()}`;
+    }, [data, totalAmountPayable, billedToName]);
 
     const renderPropertyBill = () => {
       const rv = getNumericValue('Rateable Value');
@@ -248,7 +245,6 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <div className="font-bold text-center p-1">AMOUNT (GH&#8373;)</div>
                 </div>
             </div>
-
             <div className="flex">
                 <div className="w-[67%] border-r-2 border-black">
                     <div className="flex border-b-2 border-black">
@@ -393,7 +389,6 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
         <div className="border-[3px] border-black p-1 relative h-full flex flex-col">
           <div className="absolute inset-0 z-0 flex items-center justify-center opacity-20 pointer-events-none">
               {settings.appearance?.ghanaLogo && (
-                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img src={settings.appearance.ghanaLogo} alt="Watermark" width={400} height={400} style={{objectFit: 'contain'}} />
               )}
           </div>
@@ -401,7 +396,6 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             <header className="flex justify-between items-start mb-2">
                 <div className="w-1/4 flex justify-start items-center">
                     {settings.appearance?.ghanaLogo && (
-                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={settings.appearance.ghanaLogo} alt="Ghana Coat of Arms" style={{ objectFit: 'contain', width: isCompact ? '60px' : '70px', height: 'auto' }} />
                     )}
                 </div>
@@ -415,13 +409,17 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                 </div>
                 <div className="w-1/4 flex justify-end items-center">
                     {settings.appearance?.assemblyLogo && (
-                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={settings.appearance.assemblyLogo} alt="Assembly Logo" style={{ objectFit: 'contain', width: isCompact ? '60px' : '70px', height: 'auto' }} />
                     )}
                 </div>
             </header>
+
+            <div className="text-center py-2 mb-2 border-y border-black">
+                <span className="text-xs font-bold block">BILLED TO:</span>
+                <span className="text-lg font-extrabold tracking-tight" style={{ fontSize: `${finalFontSize * 1.4}px` }}>{billedToName}</span>
+            </div>
             
-            <main className="border-t-2 border-b-2 border-black flex-grow">
+            <main className="border-t border-b border-black flex-grow">
                 {billType === 'property' ? renderPropertyBill() : billType === 'bop' ? renderBopBill() : renderLicenseBill()}
             </main>
             
@@ -433,7 +431,6 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <div className="flex-1 text-center">
                         <div className="mx-auto flex items-center justify-center" style={{ minHeight: isCompact ? '30px' : '40px' }}>
                             {settings.appearance?.signature && (
-                                /* eslint-disable-next-line @next/next/no-img-element */
                                 <img src={settings.appearance.signature} alt="Signature" className="max-h-[64px] max-w-full object-contain" width={128} height={64} />
                             )}
                         </div>
