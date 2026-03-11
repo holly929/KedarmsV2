@@ -34,6 +34,13 @@ type AppearanceSettings = {
   accentColor?: string;
 };
 
+const formatToTwoDecimals = (val: any): string => {
+    if (val === undefined || val === null || String(val).trim() === '') return '0.00';
+    const num = typeof val === 'number' ? val : Number(String(val).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
+    if (isNaN(num)) return '0.00';
+    return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
 const BarcodeComponent = ({ value, isCompact }: { value: string; isCompact: boolean }) => {
     const ref = useRef<SVGSVGElement | null>(null);
 
@@ -105,9 +112,8 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
         backgroundColor: accentColor || '#F1F5F9'
     }), [accentColor]);
 
-
     useEffect(() => {
-        if (displaySettingsProp) {
+        if (displaySettingsProp && Object.keys(displaySettingsProp).length > 0) {
             setDisplaySettings(displaySettingsProp);
         } else if (data) {
             const allFields = Object.keys(data).reduce((acc, key) => {
@@ -118,52 +124,45 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
         }
     }, [data, displaySettingsProp]);
     
-    const getNumber = useCallback((key: string): number => {
+    const getNumericValue = useCallback((key: string): number => {
         if (!data) return 0;
-        const value = getPropertyValue(data as any, key);
-        if (value === null || value === undefined || String(value).trim() === '') return 0;
-        
-        const cleanedValue = String(value).replace(/,/g, '').replace(/[^0-9.-]/g, '');
-        if (cleanedValue === '') return 0;
-        const num = Number(cleanedValue);
+        const val = getPropertyValue(data as any, key);
+        if (val === undefined || val === null || String(val).trim() === '') return 0;
+        const num = Number(String(val).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
         return isNaN(num) ? 0 : num;
     }, [data]);
 
-    const formatAmount = useCallback((amount: number | string | null | undefined) => {
-        const val = typeof amount === 'number' ? amount : Number(String(amount || 0).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
-        if (isNaN(val)) return '0.00';
-        return val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }, []);
-    
     const formatValue = useCallback((valueKey: string) => {
         if (!data) return '...';
         const val = getPropertyValue(data as any, valueKey);
+        
         if (val === null || val === undefined || String(val).trim() === '') return '...';
         
         const numericKeys = ['License Fee', 'Bop Amount', 'Arrears', 'Payment', 'Rateable Value', 'Rate Impost', 'Total Payment', 'Permit Fee', 'Sanitation Charged', 'Previous Balance', 'Amount Due', 'Property Rate'];
         
         if (numericKeys.some(k => valueKey.toLowerCase().includes(k.toLowerCase())) || !isNaN(Number(String(val).replace(/,/g, '').replace(/[^0-9.-]/g, '')))) {
-            const skipKeys = ['Property No', 'Account Number', 'Phone', 'S/N'];
+            const skipKeys = ['Property No', 'Account Number', 'Phone', 'S/N', 'SN'];
             if (skipKeys.some(k => valueKey.includes(k))) return String(val);
 
             const num = Number(String(val).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
             if (!isNaN(num)) {
                 if (valueKey.toLowerCase().includes('impost')) return String(val);
-                return formatAmount(num);
+                return formatToTwoDecimals(num);
             }
         }
         
         return String(val);
-    }, [data, formatAmount]);
+    }, [data]);
     
-    const normalizeDisplayKey = (key: string): string => {
-        return (key || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-    }
+    const normalizeKey = (key: string): string => (key || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
     const shouldDisplay = (field: string) => {
-        const normalizedSearchKey = normalizeDisplayKey(field);
+        const normField = normalizeKey(field);
+        // Critical fields always display
+        if (['sn', 'serialnumber', 'hotel', 'hotelname', 'ownername', 'propertyno'].includes(normField)) return true;
+        
         for (const settingKey in displaySettings) {
-             if (normalizeDisplayKey(settingKey) === normalizedSearchKey) {
+             if (normalizeKey(settingKey) === normField) {
                 return displaySettings[settingKey];
              }
         }
@@ -180,82 +179,55 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
         return <div className="flex"><div className="w-1/2 font-bold border-b border-black p-1">{label}</div><div className="w-1/2 border-b border-l border-black p-1">{formatValue(valueKey)}</div></div>;
     };
 
-    const { totalAmountPayable, barcodeValue } = useMemo(() => {
-        let finalAmount = 0;
-        let finalBarcode = '';
-
-        if (!data) {
-            return { totalAmountPayable: 0, barcodeValue: '' };
+    const totalAmountPayable = useMemo(() => {
+        if (!data) return '0.00';
+        // 1. Try to get total directly from imported data (PRIORITY)
+        const importedTotal = getPropertyValue(data as any, 'Amount Due');
+        if (importedTotal !== undefined && importedTotal !== null && String(importedTotal).trim() !== '') {
+            return formatToTwoDecimals(importedTotal);
         }
 
-        // Check if "Amount Due" exists in the data directly first
-        const importedAmountDue = getNumber('Amount Due');
-
+        // 2. Fallback to calculation if total column is missing
+        let calculated = 0;
         if (billType === 'property') {
-            const rateableValue = getNumber('Rateable Value');
-            const rateImpost = getNumber('Rate Impost');
-            const sanitationCharged = getNumber('Sanitation Charged');
-            const previousBalance = getNumber('Previous Balance');
-            const totalPayment = getNumber('Total Payment');
-            
-            if (importedAmountDue > 0) {
-                finalAmount = importedAmountDue;
-            } else {
-                const amountCharged = rateableValue * rateImpost;
-                const totalThisYear = amountCharged + sanitationCharged;
-                finalAmount = totalThisYear + previousBalance - totalPayment;
-            }
-            
-            const propertyNo = formatValue('Property No');
-            const ownerName = (formatValue('Owner Name') || '').substring(0, 20);
-            const amount = formatAmount(finalAmount);
-            const year = new Date().getFullYear();
-            finalBarcode = `${propertyNo}|${ownerName}|${amount}|${year}`;
+            const rv = getNumericValue('Rateable Value');
+            const ri = getNumericValue('Rate Impost');
+            const sc = getNumericValue('Sanitation Charged');
+            const pb = getNumericValue('Previous Balance');
+            const tp = getNumericValue('Total Payment');
+            calculated = (rv * ri) + sc + pb - tp;
         } else if (billType === 'bop') {
-            const permitFee = getNumber('Permit Fee');
-            const arrears = getNumber('Arrears');
-            const payment = getNumber('Payment');
-            
-            if (importedAmountDue > 0) {
-                finalAmount = importedAmountDue;
-            } else {
-                finalAmount = (permitFee + arrears) - payment;
-            }
-
-            const businessName = (formatValue('Business Name') || '').substring(0, 20);
-            const amount = formatAmount(finalAmount);
-            const year = new Date().getFullYear();
-            finalBarcode = `${data.id}|${businessName}|${amount}|${year}`;
-        } else { // License
-            const licenseFee = getNumber('License Fee') || getNumber('Property Rate'); 
-            const bopAmt = getNumber('Bop Amount');
-            const arrears = getNumber('Arrears');
-            const payment = getNumber('Payment');
-            
-            if (importedAmountDue > 0) {
-                finalAmount = importedAmountDue;
-            } else {
-                finalAmount = (licenseFee + bopAmt + arrears) - payment;
-            }
-
-            const hotelName = (formatValue('Name of Hotel/Guest House') || '').substring(0, 20);
-            const amount = formatAmount(finalAmount);
-            const year = new Date().getFullYear();
-            finalBarcode = `${data.id}|${hotelName}|${amount}|${year}`;
+            const pf = getNumericValue('Permit Fee');
+            const arr = getNumericValue('Arrears');
+            const pay = getNumericValue('Payment');
+            calculated = (pf + arr) - pay;
+        } else {
+            const lf = getNumericValue('License Fee') || getNumericValue('Property Rate');
+            const bop = getNumericValue('Bop Amount');
+            const arr = getNumericValue('Arrears');
+            const pay = getNumericValue('Payment');
+            calculated = (lf + bop + arr) - pay;
         }
-        return { totalAmountPayable: finalAmount, barcodeValue: finalBarcode };
-    }, [data, billType, formatValue, formatAmount, getNumber]);
+        return formatToTwoDecimals(calculated);
+    }, [data, billType, getNumericValue]);
+
+    const barcodeValue = useMemo(() => {
+        if (!data) return '';
+        const id = getPropertyValue(data as any, 'Property No') || getPropertyValue(data as any, 'S/N') || data.id;
+        const name = (getPropertyValue(data as any, 'Owner Name') || getPropertyValue(data as any, 'Name of Hotel/Guest House') || '').substring(0, 20);
+        return `${id}|${name}|${totalAmountPayable}|${new Date().getFullYear()}`;
+    }, [data, totalAmountPayable]);
 
 
     const renderPropertyBill = () => {
-      const rateableValue = getNumber('Rateable Value');
-      const rateImpost = getNumber('Rate Impost');
-      const sanitationCharged = getNumber('Sanitation Charged');
-      const previousBalance = getNumber('Previous Balance');
-      const totalPayment = getNumber('Total Payment');
-      const amountCharged = rateableValue * rateImpost;
-      const totalThisYear = amountCharged + sanitationCharged;
-      const totalBill = totalThisYear + previousBalance;
+      const rv = getNumericValue('Rateable Value');
+      const ri = getNumericValue('Rate Impost');
+      const sc = getNumericValue('Sanitation Charged');
+      const pb = getNumericValue('Previous Balance');
+      const tp = getNumericValue('Total Payment');
+      const charged = rv * ri;
+      const totalThisYear = charged + sc;
+      const totalBill = totalThisYear + pb;
 
       return (
         <>
@@ -281,36 +253,36 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                         <div className="w-1/3 font-bold flex items-center justify-center p-1 text-center">BILLING DETAILS</div>
                         <div className="w-1/3 border-x border-black p-1">
                             <div className="font-bold">RATEABLE VALUE</div>
-                            <div className="flex justify-between items-end"><span>GH&#8373;</span><span>{formatAmount(rateableValue)}</span></div>
+                            <div className="flex justify-between items-end"><span>GH&#8373;</span><span>{formatToTwoDecimals(rv)}</span></div>
                         </div>
                         <div className="w-1/3 p-1">
                             <div className="font-bold">RATE IMPOST</div>
                             <div className="flex justify-end items-end h-full"><span>{formatValue('Rate Impost')}</span></div>
                         </div>
                     </div>
-                    <BillRow label="AMOUNT CHARGED (Rateable Value * Rate Impost)" value={formatAmount(amountCharged)} />
-                    <BillRow label="SANITATION CHARGED" value={formatAmount(sanitationCharged)} />
+                    <BillRow label="AMOUNT CHARGED (Rateable Value * Rate Impost)" value={formatToTwoDecimals(charged)} />
+                    <BillRow label="SANITATION CHARGED" value={formatToTwoDecimals(sc)} />
                     <BillRow label="UNASSESSED RATE" value="..." />
-                    <BillRow label="TOTAL THIS YEAR" value={formatAmount(totalThisYear)} isBold />
-                    <BillRow label="PREVIOUS BALANCE" value={formatAmount(previousBalance)} />
-                    <BillRow label="TOTAL BILL" value={formatAmount(totalBill)} isBold />
-                    <BillRow label="TOTAL PAYMENT" value={formatAmount(totalPayment)} />
+                    <BillRow label="TOTAL THIS YEAR" value={formatToTwoDecimals(totalThisYear)} isBold />
+                    <BillRow label="PREVIOUS BALANCE" value={formatToTwoDecimals(pb)} />
+                    <BillRow label="TOTAL BILL" value={formatToTwoDecimals(totalBill)} isBold />
+                    <BillRow label="TOTAL PAYMENT" value={formatToTwoDecimals(tp)} />
                     <div className="flex justify-between p-1 border-b border-black items-center font-bold" style={accentStyle}>
                         <span>TOTAL AMOUNT PAYABLE</span>
-                        <span className="text-right" style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountPayable)}</span>
+                        <span className="text-right" style={{ fontSize: `${finalFontSize * 1.2}px` }}>{totalAmountPayable}</span>
                     </div>
                 </div>
                 <div className="w-[33%] text-right font-bold">
                     <div className="p-1 border-b-2 border-black flex items-end justify-end">FINANCIAL DETAILS</div>
-                    <div className="p-1 border-b border-black">{formatAmount(amountCharged)}</div>
-                    <div className="p-1 border-b border-black">{formatAmount(sanitationCharged)}</div>
+                    <div className="p-1 border-b border-black">{formatToTwoDecimals(charged)}</div>
+                    <div className="p-1 border-b border-black">{formatToTwoDecimals(sc)}</div>
                     <div className="p-1 border-b border-black">...</div>
-                    <div className="p-1 border-b border-black">{formatAmount(totalThisYear)}</div>
-                    <div className="p-1 border-b border-black">{formatAmount(previousBalance)}</div>
-                    <div className="p-1 border-b border-black">{formatAmount(totalBill)}</div>
-                    <div className="p-1 border-b border-black">{formatAmount(totalPayment)}</div>
+                    <div className="p-1 border-b border-black">{formatToTwoDecimals(totalThisYear)}</div>
+                    <div className="p-1 border-b border-black">{formatToTwoDecimals(pb)}</div>
+                    <div className="p-1 border-b border-black">{formatToTwoDecimals(totalBill)}</div>
+                    <div className="p-1 border-b border-black">{formatToTwoDecimals(tp)}</div>
                     <div className="p-1 border-b border-black flex items-center justify-end" style={accentStyle}>
-                        <span style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountPayable)}</span>
+                        <span style={{ fontSize: `${finalFontSize * 1.2}px` }}>{totalAmountPayable}</span>
                     </div>
                 </div>
             </div>
@@ -319,10 +291,10 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     }
 
     const renderBopBill = () => {
-      const permitFee = getNumber('Permit Fee');
-      const arrears = getNumber('Arrears');
-      const payment = getNumber('Payment');
-      const totalDue = permitFee + arrears;
+      const pf = getNumericValue('Permit Fee');
+      const arr = getNumericValue('Arrears');
+      const pay = getNumericValue('Payment');
+      const totalDue = pf + arr;
 
       return (
         <>
@@ -340,23 +312,23 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             <div className="flex">
                 <div className="w-[67%] border-r-2 border-black">
                     <div className="font-bold text-center p-1 border-b-2 border-black">BILLING DETAILS</div>
-                    <BillRow label="PERMIT FEE (LICENSE)" value={formatAmount(permitFee)} />
-                    <BillRow label="ARREARS" value={formatAmount(arrears)} />
-                    <BillRow label="AMOUNT DUE" value={formatAmount(totalDue)} isBold />
-                    <BillRow label="PAYMENT" value={formatAmount(payment)} />
+                    <BillRow label="PERMIT FEE (LICENSE)" value={formatToTwoDecimals(pf)} />
+                    <BillRow label="ARREARS" value={formatToTwoDecimals(arr)} />
+                    <BillRow label="AMOUNT DUE" value={formatToTwoDecimals(totalDue)} isBold />
+                    <BillRow label="PAYMENT" value={formatToTwoDecimals(pay)} />
                     <div className="flex justify-between p-1 border-b border-black items-center font-bold" style={accentStyle}>
                         <span>TOTAL AMOUNT PAYABLE</span>
-                        <span className="text-right" style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountPayable)}</span>
+                        <span className="text-right" style={{ fontSize: `${finalFontSize * 1.2}px` }}>{totalAmountPayable}</span>
                     </div>
                 </div>
                 <div className="w-[33%] text-right font-bold">
                     <div className="p-1 border-b-2 border-black flex items-end justify-end">FINANCIAL DETAILS</div>
-                    <div className="p-1 border-b border-black">{formatAmount(permitFee)}</div>
-                    <div className="p-1 border-b border-black">{formatAmount(arrears)}</div>
-                    <div className="p-1 border-b border-black">{formatAmount(totalDue)}</div>
-                    <div className="p-1 border-b border-black">{formatAmount(payment)}</div>
+                    <div className="p-1 border-b border-black">{formatToTwoDecimals(pf)}</div>
+                    <div className="p-1 border-b border-black">{formatToTwoDecimals(arr)}</div>
+                    <div className="p-1 border-b border-black">{formatToTwoDecimals(totalDue)}</div>
+                    <div className="p-1 border-b border-black">{formatToTwoDecimals(pay)}</div>
                     <div className="p-1 border-b border-black flex items-center justify-end" style={accentStyle}>
-                        <span style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountPayable)}</span>
+                        <span style={{ fontSize: `${finalFontSize * 1.2}px` }}>{totalAmountPayable}</span>
                     </div>
                 </div>
             </div>
@@ -365,11 +337,11 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     }
 
     const renderLicenseBill = () => {
-      const licenseFee = getNumber('License Fee') || getNumber('Property Rate');
-      const bopAmt = getNumber('Bop Amount');
-      const arrears = getNumber('Arrears');
-      const payment = getNumber('Payment');
-      const totalDue = (licenseFee + bopAmt + arrears);
+      const lf = getNumericValue('License Fee') || getNumericValue('Property Rate');
+      const bop = getNumericValue('Bop Amount');
+      const arr = getNumericValue('Arrears');
+      const pay = getNumericValue('Payment');
+      const totalDue = (lf + bop + arr);
 
       return (
         <>
@@ -386,25 +358,25 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             <div className="flex">
                 <div className="w-[67%] border-r-2 border-black">
                     <div className="font-bold text-center p-1 border-b-2 border-black">BILLING DETAILS</div>
-                    <BillRow label="LICENSE FEE" value={formatAmount(licenseFee)} />
-                    <BillRow label="BOP AMOUNT" value={formatAmount(bopAmt)} />
-                    <BillRow label="ARREARS" value={formatAmount(arrears)} />
-                    <BillRow label="AMOUNT DUE" value={formatAmount(totalDue)} isBold />
-                    <BillRow label="PAYMENT" value={formatAmount(payment)} />
+                    <BillRow label="LICENSE FEE" value={formatToTwoDecimals(lf)} />
+                    <BillRow label="BOP AMOUNT" value={formatToTwoDecimals(bop)} />
+                    <BillRow label="ARREARS" value={formatToTwoDecimals(arr)} />
+                    <BillRow label="AMOUNT DUE" value={formatToTwoDecimals(totalDue)} isBold />
+                    <BillRow label="PAYMENT" value={formatToTwoDecimals(pay)} />
                     <div className="flex justify-between p-1 border-b border-black items-center font-bold" style={accentStyle}>
                         <span>TOTAL AMOUNT PAYABLE</span>
-                        <span className="text-right" style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountPayable)}</span>
+                        <span className="text-right" style={{ fontSize: `${finalFontSize * 1.2}px` }}>{totalAmountPayable}</span>
                     </div>
                 </div>
                 <div className="w-[33%] text-right font-bold">
                     <div className="p-1 border-b-2 border-black flex items-end justify-end">FINANCIAL DETAILS</div>
-                    <div className="p-1 border-b border-black">{formatAmount(licenseFee)}</div>
-                    <div className="p-1 border-b border-black">{formatAmount(bopAmt)}</div>
-                    <div className="p-1 border-b border-black">{formatAmount(arrears)}</div>
-                    <div className="p-1 border-b border-black">{formatAmount(totalDue)}</div>
-                    <div className="p-1 border-b border-black">{formatAmount(payment)}</div>
+                    <div className="p-1 border-b border-black">{formatToTwoDecimals(lf)}</div>
+                    <div className="p-1 border-b border-black">{formatToTwoDecimals(bop)}</div>
+                    <div className="p-1 border-b border-black">{formatToTwoDecimals(arr)}</div>
+                    <div className="p-1 border-b border-black">{formatToTwoDecimals(totalDue)}</div>
+                    <div className="p-1 border-b border-black">{formatToTwoDecimals(pay)}</div>
                     <div className="p-1 border-b border-black flex items-center justify-end" style={accentStyle}>
-                        <span style={{ fontSize: `${finalFontSize * 1.2}px` }}>{formatAmount(totalAmountPayable)}</span>
+                        <span style={{ fontSize: `${finalFontSize * 1.2}px` }}>{totalAmountPayable}</span>
                     </div>
                 </div>
             </div>
@@ -412,9 +384,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
       )
     }
 
-    if (!data) {
-        return <div ref={ref}>Loading...</div>;
-    }
+    if (!data) return <div ref={ref}>Loading Data...</div>;
 
     return (
       <div ref={ref} className={cn("text-black bg-white w-full h-full box-border", fontClass, isCompact ? 'p-1' : 'p-2')} style={baseStyle}>
@@ -456,9 +426,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             <footer className="mt-auto pt-2">
                 <div className="flex items-end justify-between gap-2">
                     <div className="flex-1">
-                        {barcodeValue && (
-                           <BarcodeComponent value={barcodeValue} isCompact={isCompact} />
-                        )}
+                        {barcodeValue && <BarcodeComponent value={barcodeValue} isCompact={isCompact} />}
                     </div>
                     <div className="flex-1 text-center">
                         <div className="mx-auto flex items-center justify-center" style={{ minHeight: isCompact ? '30px' : '40px' }}>
@@ -467,9 +435,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                                 <img src={settings.appearance.signature} alt="Signature" className="max-h-[64px] max-w-full object-contain" width={128} height={64} />
                             )}
                         </div>
-                        <p className="border-t-2 border-black max-w-[12rem] mx-auto mt-1 pt-1 font-bold">
-                            COORDINATING DIRECTOR
-                        </p>
+                        <p className="border-t-2 border-black max-w-[12rem] mx-auto mt-1 pt-1 font-bold">COORDINATING DIRECTOR</p>
                     </div>
                 </div>
                 <div className="font-bold text-center mt-2">
