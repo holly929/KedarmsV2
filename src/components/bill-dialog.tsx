@@ -197,7 +197,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             const pay = getNumericValue('Payment');
             calculated = (pf + arr) - pay;
         } else {
-            const lf = getNumericValue('Property Rate') || getNumericValue('License Fee');
+            const lf = getNumericValue('Property Rate');
             const bop = getNumericValue('Bop Amount');
             const arr = getNumericValue('Arrears');
             const pay = getNumericValue('Payment');
@@ -214,8 +214,8 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     const barcodeValue = useMemo(() => {
         if (!data) return '';
         const id = String(getPropertyValue(data as any, 'Property No') || getPropertyValue(data as any, 'S/N') || data.id);
-        const rawName = String(billedToName).substring(0, 20);
-        return `${id}|${rawName}|${totalAmountPayable}|${new Date().getFullYear()}`;
+        const nameStr = String(billedToName).substring(0, 20);
+        return `${id}|${nameStr}|${totalAmountPayable}|${new Date().getFullYear()}`;
     }, [data, totalAmountPayable, billedToName]);
 
     const renderPropertyBill = () => {
@@ -335,7 +335,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     }
 
     const renderLicenseBill = () => {
-      const lf = getNumericValue('Property Rate') || getNumericValue('License Fee');
+      const lf = getNumericValue('Property Rate');
       const bop = getNumericValue('Bop Amount');
       const arr = getNumericValue('Arrears');
       const pay = getNumericValue('Payment');
@@ -393,32 +393,35 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
         <div className="border-[3px] border-black p-1 relative h-full flex flex-col">
           <div className="absolute inset-0 z-0 flex items-center justify-center opacity-20 pointer-events-none">
               {settings.appearance?.ghanaLogo && (
+                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img src={settings.appearance.ghanaLogo} alt="Watermark" width={400} height={400} style={{objectFit: 'contain'}} />
               )}
           </div>
           <div className="relative z-10 flex flex-col flex-grow">
             <header className="flex justify-between items-start mb-2">
-                <div className="w-1/4 flex justify-start items-center">
+                <div className="w-1/4 flex justify-start items-center pt-2">
                     {settings.appearance?.ghanaLogo && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={settings.appearance.ghanaLogo} alt="Ghana Coat of Arms" style={{ objectFit: 'contain', width: isCompact ? '60px' : '70px', height: 'auto' }} />
                     )}
                 </div>
-                <div className="w-1/2 text-center">
-                    <h1 className="font-bold tracking-wide" style={{ fontSize: `${finalFontSize * 1.5}px` }}>{assemblyName.toUpperCase()}</h1>
-                    <h2 className="font-bold tracking-wide" style={{ fontSize: `${finalFontSize * 1.3}px` }}>
+                <div className="w-1/2 text-center space-y-0.5">
+                    <h1 className="font-bold tracking-tight uppercase" style={{ fontSize: `${finalFontSize * 1.6}px` }}>{assemblyName}</h1>
+                    <p className="font-medium" style={{ fontSize: `${finalFontSize}px` }}>{postalAddress}</p>
+                    <p className="font-medium" style={{ fontSize: `${finalFontSize}px` }}>TEL: {contactPhone}</p>
+                    <h2 className="font-extrabold tracking-widest mt-2 border-t border-black pt-1 uppercase" style={{ fontSize: `${finalFontSize * 1.4}px` }}>
                       {billType === 'property' || billType === 'license' ? 'PROPERTY RATE BILL' : 'B.O.P. BILL'}
                     </h2>
-                    <p style={{ fontSize: `${finalFontSize * 0.9}px` }}>{postalAddress}</p>
-                    <p style={{ fontSize: `${finalFontSize * 0.9}px` }}>TEL: {contactPhone}</p>
                 </div>
-                <div className="w-1/4 flex justify-end items-center">
+                <div className="w-1/4 flex justify-end items-center pt-2">
                     {settings.appearance?.assemblyLogo && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={settings.appearance.assemblyLogo} alt="Assembly Logo" style={{ objectFit: 'contain', width: isCompact ? '60px' : '70px', height: 'auto' }} />
                     )}
                 </div>
             </header>
 
-            <div className="text-center py-2 mb-2 border-y border-black">
+            <div className="text-center py-2 mb-2 border-y border-black bg-muted/10">
                 <span className="text-xs font-bold block">BILLED TO:</span>
                 <span className="text-lg font-extrabold tracking-tight" style={{ fontSize: `${finalFontSize * 1.4}px` }}>{billedToName}</span>
             </div>
@@ -435,6 +438,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <div className="flex-1 text-center">
                         <div className="mx-auto flex items-center justify-center" style={{ minHeight: isCompact ? '30px' : '40px' }}>
                             {settings.appearance?.signature && (
+                                /* eslint-disable-next-line @next/next/no-img-element */
                                 <img src={settings.appearance.signature} alt="Signature" className="max-h-[64px] max-w-full object-contain" width={128} height={64} />
                             )}
                         </div>

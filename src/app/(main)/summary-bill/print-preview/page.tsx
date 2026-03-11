@@ -67,19 +67,19 @@ const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={settings.appearance.ghanaLogo} alt="Ghana Coat of Arms" style={{ objectFit: 'contain', width: '80px', height: 'auto' }} />
                 ) : <div className="w-[80px]"></div>}
-                <div>
-                    <h1 className="font-bold tracking-wide text-2xl">{assemblyName.toUpperCase()}</h1>
-                    <p className="text-sm">{postalAddress}</p>
-                    <p className="text-sm">TEL: {contactPhone}</p>
+                <div className="flex flex-col items-center">
+                    <h1 className="font-bold tracking-tight text-3xl uppercase">{assemblyName}</h1>
+                    <p className="text-base font-medium">{postalAddress}</p>
+                    <p className="text-base font-medium">TEL: {contactPhone}</p>
+                    <h2 className="font-bold tracking-widest text-xl text-center mt-4 border-y-2 border-black py-2 w-full uppercase">
+                        SUMMARY BILL - {sheetName}
+                    </h2>
                 </div>
                 {settings.appearance?.assemblyLogo ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={settings.appearance.assemblyLogo} alt="Assembly Logo" style={{ objectFit: 'contain', width: '80px', height: 'auto' }} />
                 ) : <div className="w-[80px]"></div>}
             </div>
-            <h2 className="font-bold tracking-wide text-xl text-center mt-4 border-y-2 border-black py-2">
-                SUMMARY BILL - {sheetName.toUpperCase()}
-            </h2>
         </header>
         
         <main className="flex-grow">
