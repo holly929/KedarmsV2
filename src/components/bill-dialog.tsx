@@ -155,7 +155,10 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
 
     const shouldDisplay = (field: string) => {
         const normField = normalizeKey(field);
-        const identificationFields = ['sn', 'serialnumber', 'hotel', 'hotelname', 'ownername', 'propertyno', 'businessname', 'nameofhotelguesthouse'];
+        const identificationFields = [
+            'sn', 'serialnumber', 'serialno', 'no', 'hotel', 'hotelname', 'ownername', 
+            'propertyno', 'businessname', 'nameofhotelguesthouse', 'establishment', 'entity'
+        ];
         if (identificationFields.includes(normField)) return true;
         
         for (const settingKey in displaySettings) {
@@ -208,12 +211,17 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
 
     const billedToName = useMemo(() => {
         if (!data) return '';
-        return String(getPropertyValue(data as any, 'Name of Hotel/Guest House') || getPropertyValue(data as any, 'Owner Name') || getPropertyValue(data as any, 'Business Name') || '...').toUpperCase();
+        const nameVal = getPropertyValue(data as any, 'Name of Hotel/Guest House') || 
+                        getPropertyValue(data as any, 'Hotel Name') ||
+                        getPropertyValue(data as any, 'Business Name') || 
+                        getPropertyValue(data as any, 'Owner Name') || 
+                        getPropertyValue(data as any, 'Entity') || '...';
+        return String(nameVal).toUpperCase();
     }, [data]);
 
     const barcodeValue = useMemo(() => {
         if (!data) return '';
-        const id = String(getPropertyValue(data as any, 'Property No') || getPropertyValue(data as any, 'S/N') || data.id);
+        const id = String(getPropertyValue(data as any, 'Property No') || getPropertyValue(data as any, 'S/N') || getPropertyValue(data as any, 'SN') || data.id);
         const nameStr = String(billedToName).substring(0, 20);
         return `${id}|${nameStr}|${totalAmountPayable}|${new Date().getFullYear()}`;
     }, [data, totalAmountPayable, billedToName]);
@@ -410,7 +418,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <p className="font-medium" style={{ fontSize: `${finalFontSize}px` }}>{postalAddress}</p>
                     <p className="font-medium" style={{ fontSize: `${finalFontSize}px` }}>TEL: {contactPhone}</p>
                     <h2 className="font-extrabold tracking-widest mt-2 border-t border-black pt-1 uppercase" style={{ fontSize: `${finalFontSize * 1.4}px` }}>
-                      {billType === 'property' || billType === 'license' ? 'PROPERTY RATE BILL' : 'B.O.P. BILL'}
+                      PROPERTY RATE BILL & B.O.P
                     </h2>
                 </div>
                 <div className="w-1/4 flex justify-end items-center pt-2">

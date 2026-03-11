@@ -16,7 +16,7 @@ const STANDARD_ALIASES: Record<string, string[]> = {
     'Previous Balance': ['Previous Balance', 'Prev Balance', 'Arrears', 'previousbalance', 'Arrears BF', 'Balance BF', 'Debt', 'Old Balance'],
     'Total Payment': ['Total Payment', 'Amount Paid', 'Payment', 'totalpayment', 'Paid', 'Total Paid', 'Amt Paid'],
     'S/N': ['S/N', 'SN', 'Serial Number', 'Serial No', 'Index', 'No.', 'Serial', 'Number'],
-    'Name of Hotel/Guest House': ['Name of Hotel/Guest House', 'Hotel Name', 'Guest House Name', 'Business Name', 'Name', 'Establishment', 'Hotel', 'Guest House', 'Entity', 'Billed To', 'Company'],
+    'Name of Hotel/Guest House': ['Name of Hotel/Guest House', 'Hotel Name', 'Guest House Name', 'Hotel', 'Guest House', 'Business Name', 'Name', 'Establishment', 'Entity', 'Billed To', 'Company'],
     'License Fee': ['License Fee', 'Property Rate', 'Rate', 'License', 'License Amount', 'Permit Fee', 'License Amt', 'Fee'],
     'Bop Amount': ['Bop Amount', 'BOP', 'Bop Fee', 'BOP Amount', 'BOP Fee', 'Business Operating Permit'],
     'Arrears': ['Arrears', 'Previous Balance', 'Arrears BF', 'Prev Balance', 'Balance BF', 'Debt', 'Owed', 'Outstanding'],
