@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -36,7 +35,9 @@ type AppearanceSettings = {
 
 const formatToTwoDecimals = (val: any): string => {
     if (val === undefined || val === null || String(val).trim() === '') return '0.00';
-    const num = typeof val === 'number' ? val : Number(String(val).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
+    // Remove formatting characters to get raw number
+    const cleaned = String(val).replace(/,/g, '').replace(/[^0-9.-]/g, '');
+    const num = Number(cleaned);
     if (isNaN(num)) return '0.00';
     return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
@@ -158,8 +159,8 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
 
     const shouldDisplay = (field: string) => {
         const normField = normalizeKey(field);
-        // Critical fields always display
-        if (['sn', 'serialnumber', 'hotel', 'hotelname', 'ownername', 'propertyno'].includes(normField)) return true;
+        // Critical identifying fields should almost always display
+        if (['sn', 'serialnumber', 'hotel', 'hotelname', 'ownername', 'propertyno', 'businessname'].includes(normField)) return true;
         
         for (const settingKey in displaySettings) {
              if (normalizeKey(settingKey) === normField) {
@@ -213,8 +214,9 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
 
     const barcodeValue = useMemo(() => {
         if (!data) return '';
-        const id = getPropertyValue(data as any, 'Property No') || getPropertyValue(data as any, 'S/N') || data.id;
-        const name = (getPropertyValue(data as any, 'Owner Name') || getPropertyValue(data as any, 'Name of Hotel/Guest House') || '').substring(0, 20);
+        const id = String(getPropertyValue(data as any, 'Property No') || getPropertyValue(data as any, 'S/N') || data.id);
+        const rawName = String(getPropertyValue(data as any, 'Owner Name') || getPropertyValue(data as any, 'Name of Hotel/Guest House') || getPropertyValue(data as any, 'Business Name') || '');
+        const name = rawName.substring(0, 20);
         return `${id}|${name}|${totalAmountPayable}|${new Date().getFullYear()}`;
     }, [data, totalAmountPayable]);
 
