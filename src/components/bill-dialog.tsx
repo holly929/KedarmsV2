@@ -221,9 +221,9 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
 
     const barcodeValue = useMemo(() => {
         if (!data) return '';
-        const id = String(getPropertyValue(data as any, 'Property No') || getPropertyValue(data as any, 'S/N') || getPropertyValue(data as any, 'SN') || data.id);
+        const idStr = String(getPropertyValue(data as any, 'Property No') || getPropertyValue(data as any, 'S/N') || getPropertyValue(data as any, 'SN') || data.id);
         const nameStr = String(billedToName).substring(0, 20);
-        return `${id}|${nameStr}|${totalAmountPayable}|${new Date().getFullYear()}`;
+        return `${idStr}|${nameStr}|${totalAmountPayable}|${new Date().getFullYear()}`;
     }, [data, totalAmountPayable, billedToName]);
 
     const renderPropertyBill = () => {
@@ -418,7 +418,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <p className="font-medium" style={{ fontSize: `${finalFontSize}px` }}>{postalAddress}</p>
                     <p className="font-medium" style={{ fontSize: `${finalFontSize}px` }}>TEL: {contactPhone}</p>
                     <h2 className="font-extrabold tracking-widest mt-2 border-t border-black pt-1 uppercase" style={{ fontSize: `${finalFontSize * 1.4}px` }}>
-                      PROPERTY RATE BILL & B.O.P
+                      PROPERTY RATE & B.O.P BILL
                     </h2>
                 </div>
                 <div className="w-1/4 flex justify-end items-center pt-2">
