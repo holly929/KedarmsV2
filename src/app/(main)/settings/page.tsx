@@ -1,10 +1,10 @@
+
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -13,30 +13,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
-import { usePropertyData } from '@/context/PropertyDataContext';
-import { useBopData } from '@/context/BopDataContext';
-import { useLicenseData } from '@/context/LicenseDataContext';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
-import { PERMISSION_PAGES, usePermissions } from '@/context/PermissionsContext';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { Property, Bop, License, UserRole, PermissionPage } from '@/lib/types';
 import { PrintableContent } from '@/components/bill-dialog';
-import { Loader2, Server, Download, UploadCloud, MessageSquare, Phone } from 'lucide-react';
+import { Loader2, Download, UploadCloud, Type, Palette, ShieldCheck, Image as ImageIcon } from 'lucide-react';
 import { store, saveStore } from '@/lib/store';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { getPropertyValue } from '@/lib/property-utils';
+import { Separator } from '@/components/ui/separator';
 
 const generalFormSchema = z.object({
   systemName: z.string().min(3, 'System name must be at least 3 characters.'),
@@ -47,19 +28,13 @@ const generalFormSchema = z.object({
 });
 
 const appearanceFormSchema = z.object({
-  assemblyLogo: z.any().optional(),
-  ghanaLogo: z.any().optional(),
-  signature: z.any().optional(),
+  assemblyLogo: z.string().optional(),
+  ghanaLogo: z.string().optional(),
+  signature: z.string().optional(),
   billWarningText: z.string().max(200).optional(),
   fontFamily: z.enum(['sans', 'serif', 'mono']).default('sans'),
   fontSize: z.coerce.number().min(8).max(14).default(12),
   accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color code").default('#F1F5F9'),
-});
-
-const integrationsFormSchema = z.object({
-  googleSheetUrl: z.string().url().optional().or(z.literal('')),
-  bopGoogleSheetUrl: z.string().url().optional().or(z.literal('')),
-  summaryBillGoogleSheetUrl: z.string().url().optional().or(z.literal('')),
 });
 
 const smsFormSchema = z.object({
@@ -78,36 +53,23 @@ const smsFormSchema = z.object({
   manualPaymentMessageTemplate: z.string().max(320).optional(),
 });
 
-const ImageUploadPreview = ({ src, alt }: { src: string | null, alt: string }) => {
-    if (!src) return null;
-    return (
-        <div className="mt-2 relative aspect-video w-full max-w-[200px] overflow-hidden rounded-md border bg-muted/50 flex items-center justify-center">
-             {/* eslint-disable-next-line @next/next/no-img-element */}
-             <img src={src} alt={alt} style={{ height: '80%', objectFit: 'contain' }} />
-        </div>
-    )
-}
-
-const PlaceholderGuide = ({ common, property, bop, license, payment }: { common: string[], property: string[], bop: string[], license: string[], payment?: string[] }) => (
-    <div className="text-xs text-muted-foreground space-y-2 rounded-lg border bg-background/50 p-3 mt-2">
-        <p className="font-bold mb-1">Available Placeholders:</p>
-        <div className="flex flex-wrap gap-1">
-            {[...common, ...property, ...bop, ...license, ...(payment || [])].map(p => (
-                <code key={p} className="rounded bg-muted px-1 font-mono">{`{{${p}}}`}</code>
-            ))}
-        </div>
-    </div>
-);
+const DUMMY_PROPERTY = {
+  id: 'preview-123',
+  'Owner Name': 'HON. KOFI MANSAH',
+  'Property No': 'KE-ABET-001',
+  'Town': 'ABETIFI',
+  'Suburb': 'CHRISTIAN QUARTERS',
+  'Property Type': 'Residential',
+  'Rateable Value': 50000,
+  'Rate Impost': 0.005,
+  'Sanitation Charged': 150,
+  'Previous Balance': 200,
+  'Total Payment': 100,
+};
 
 export default function SettingsPage() {
   useRequirePermission();
-  const { properties } = usePropertyData();
-  const { bopData } = useBopData();
-  const { licenseData } = useLicenseData();
-  const { permissions, updatePermissions } = usePermissions();
   const [loading, setLoading] = useState(true);
-
-  const [billFields, setBillFields] = useState<Record<string, boolean>>({});
 
   const generalForm = useForm<z.infer<typeof generalFormSchema>>({
     resolver: zodResolver(generalFormSchema),
@@ -125,29 +87,27 @@ export default function SettingsPage() {
   });
 
   const watchedProvider = smsForm.watch('provider');
+  const appearanceValues = appearanceForm.watch();
+  const generalValues = generalForm.watch();
 
   useEffect(() => {
     setLoading(true);
     generalForm.reset(store.settings.generalSettings);
     appearanceForm.reset(store.settings.appearanceSettings);
     smsForm.reset(store.settings.smsSettings);
-    setBillFields(store.settings.billDisplaySettings || {});
     setLoading(false);
   }, [generalForm, appearanceForm, smsForm]);
 
   const onGeneralSave = (data: z.infer<typeof generalFormSchema>) => {
     store.settings.generalSettings = data;
     saveStore();
-    toast({ title: 'Settings Saved' });
-    setTimeout(() => window.location.reload(), 500);
+    toast({ title: 'General Settings Saved' });
   };
 
-  const onAppearanceSave = () => {
-    store.settings.appearanceSettings = appearanceForm.getValues();
-    store.settings.billDisplaySettings = billFields;
+  const onAppearanceSave = (data: z.infer<typeof appearanceFormSchema>) => {
+    store.settings.appearanceSettings = data;
     saveStore();
-    toast({ title: 'Appearance Saved' });
-    setTimeout(() => window.location.reload(), 500);
+    toast({ title: 'Appearance Settings Saved' });
   };
 
   const onSmsSave = (data: z.infer<typeof smsFormSchema>) => {
@@ -160,7 +120,9 @@ export default function SettingsPage() {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => appearanceForm.setValue(fieldName, reader.result as string);
+      reader.onloadend = () => {
+        appearanceForm.setValue(fieldName, reader.result as string);
+      };
       reader.readAsDataURL(file);
     }
   };
@@ -169,77 +131,221 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight font-headline">System Configuration</h1>
-      <Tabs defaultValue="general">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="appearance">Appearance</TabsTrigger>
-          <TabsTrigger value="sms">SMS Gateway</TabsTrigger>
-          <TabsTrigger value="permissions">Permissions</TabsTrigger>
-          <TabsTrigger value="backup">Data Tools</TabsTrigger>
+      <h1 className="text-3xl font-bold tracking-tight font-headline">System Settings</h1>
+      
+      <Tabs defaultValue="appearance" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
+          <TabsTrigger value="general" className="py-2">General</TabsTrigger>
+          <TabsTrigger value="appearance" className="py-2">Appearance & Branding</TabsTrigger>
+          <TabsTrigger value="sms" className="py-2">SMS Gateway</TabsTrigger>
+          <TabsTrigger value="backup" className="py-2">Backup & Data</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
           <Form {...generalForm}>
             <form onSubmit={generalForm.handleSubmit(onGeneralSave)}>
               <Card>
-                <CardHeader><CardTitle>Assembly Details</CardTitle></CardHeader>
+                <CardHeader>
+                  <CardTitle>Assembly Information</CardTitle>
+                  <CardDescription>Main contact details used on official documents.</CardDescription>
+                </CardHeader>
                 <CardContent className="space-y-4">
-                  <FormField control={generalForm.control} name="assemblyName" render={({ field }) => (
-                    <FormItem><FormLabel>Assembly Name</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={generalForm.control} name="assemblyName" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Full Assembly Name</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={generalForm.control} name="systemName" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Software System Name</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+                  <FormField control={generalForm.control} name="postalAddress" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Postal Address</FormLabel>
+                      <FormControl><Input {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )} />
-                   <FormField control={generalForm.control} name="postalAddress" render={({ field }) => (
-                    <FormItem><FormLabel>Address</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-                  )} />
-                   <FormField control={generalForm.control} name="contactPhone" render={({ field }) => (
-                    <FormItem><FormLabel>Contact Phone(s)</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-                  )} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={generalForm.control} name="contactPhone" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Contact Telephone</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={generalForm.control} name="contactEmail" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Official Email</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
                 </CardContent>
-                <CardFooter><Button type="submit">Update Assembly Info</Button></CardFooter>
+                <CardFooter>
+                  <Button type="submit">Save General Info</Button>
+                </CardFooter>
               </Card>
             </form>
           </Form>
         </TabsContent>
 
         <TabsContent value="appearance">
-          <Form {...appearanceForm}>
-            <form onSubmit={appearanceForm.handleSubmit(onAppearanceSave)}>
-              <Card>
-                <CardHeader><CardTitle>Branding & Layout</CardTitle></CardHeader>
-                <CardContent className="grid md:grid-cols-2 gap-8">
-                  <div className="space-y-6">
-                    <FormField control={appearanceForm.control} name="assemblyLogo" render={({ field }) => (
-                      <FormItem><FormLabel>Assembly Logo</FormLabel><FormControl><Input type="file" onChange={(e) => handleFileChange(e, 'assemblyLogo')} /></FormControl><ImageUploadPreview src={field.value} alt="Logo" /></FormItem>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+            <Form {...appearanceForm}>
+              <form onSubmit={appearanceForm.handleSubmit(onAppearanceSave)} className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5" /> Official Branding</CardTitle>
+                    <CardDescription>Upload logos and signatures to customize the bill header and footer.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField control={appearanceForm.control} name="ghanaLogo" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ghana Coat of Arms</FormLabel>
+                          <FormControl>
+                            <div className="space-y-2">
+                              <Input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'ghanaLogo')} />
+                              {field.value && <img src={field.value} alt="Preview" className="h-16 object-contain border rounded p-1 bg-muted/20" />}
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={appearanceForm.control} name="assemblyLogo" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Assembly Logo</FormLabel>
+                          <FormControl>
+                            <div className="space-y-2">
+                              <Input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'assemblyLogo')} />
+                              {field.value && <img src={field.value} alt="Preview" className="h-16 object-contain border rounded p-1 bg-muted/20" />}
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+                    <Separator />
+                    <FormField control={appearanceForm.control} name="signature" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Authorized Director's Signature</FormLabel>
+                        <FormControl>
+                          <div className="space-y-2">
+                            <Input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'signature')} />
+                            {field.value && <img src={field.value} alt="Signature Preview" className="h-12 object-contain border rounded p-1 bg-muted/20" />}
+                          </div>
+                        </FormControl>
+                        <FormDescription>Will appear above "COORDINATING DIRECTOR" on the bill.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
                     )} />
-                     <FormField control={appearanceForm.control} name="signature" render={({ field }) => (
-                      <FormItem><FormLabel>Director Signature</FormLabel><FormControl><Input type="file" onChange={(e) => handleFileChange(e, 'signature')} /></FormControl><ImageUploadPreview src={field.value} alt="Sig" /></FormItem>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Type className="h-5 w-5" /> Typography & Layout</CardTitle>
+                    <CardDescription>Adjust the visual style of the printed documents.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField control={appearanceForm.control} name="fontFamily" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Primary Font</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>
+                              <SelectItem value="sans">Modern Sans-Serif (Inter)</SelectItem>
+                              <SelectItem value="serif">Classic Serif (Tinos)</SelectItem>
+                              <SelectItem value="mono">Typewriter (Courier)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={appearanceForm.control} name="fontSize" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Base Font Size (px)</FormLabel>
+                          <FormControl><Input type="number" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+
+                    <FormField control={appearanceForm.control} name="accentColor" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2"><Palette className="h-4 w-4" /> Total Section Background Color</FormLabel>
+                        <div className="flex items-center gap-4">
+                          <FormControl><Input type="color" {...field} className="h-10 w-20 p-1" /></FormControl>
+                          <span className="text-sm font-mono text-muted-foreground uppercase">{field.value}</span>
+                        </div>
+                        <FormDescription>Used to highlight the "Total Amount Payable" section on the bill.</FormDescription>
+                        <FormMessage />
+                      </FormItem>
                     )} />
+
                     <FormField control={appearanceForm.control} name="billWarningText" render={({ field }) => (
-                      <FormItem><FormLabel>Bill Footer Warning</FormLabel><FormControl><Textarea {...field} /></FormControl></FormItem>
+                      <FormItem>
+                        <FormLabel>Bottom Warning Text</FormLabel>
+                        <FormControl><Textarea {...field} placeholder="e.g. PAY AT ONCE OR FACE LEGAL ACTION" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )} />
-                  </div>
-                  <div className="bg-white p-4 border rounded-lg shadow-inner flex items-center justify-center min-h-[300px]">
-                      <p className="text-muted-foreground text-sm">Bill Preview rendering on separate device...</p>
-                  </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button type="submit" className="w-full">Apply Appearance Settings</Button>
+                  </CardFooter>
+                </Card>
+              </form>
+            </Form>
+
+            <div className="sticky top-20">
+               <Card className="overflow-hidden border-2 border-primary/20">
+                <CardHeader className="bg-primary/5 py-3">
+                    <CardTitle className="text-sm flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /> Live Professional Preview</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 bg-muted/30 flex justify-center overflow-auto max-h-[80vh]">
+                    <div className="scale-[0.5] sm:scale-[0.6] origin-top py-8">
+                        <div className="w-[210mm] min-h-[297mm] mx-auto bg-white shadow-2xl">
+                             <PrintableContent 
+                                property={DUMMY_PROPERTY as any}
+                                settings={{
+                                    general: generalValues,
+                                    appearance: appearanceValues
+                                }}
+                            />
+                        </div>
+                    </div>
                 </CardContent>
-                <CardFooter><Button type="submit">Save Branding</Button></CardFooter>
-              </Card>
-            </form>
-          </Form>
+               </Card>
+               <p className="text-xs text-muted-foreground mt-4 text-center">
+                 Note: This is a scaled-down preview. Actual print quality is standard A4 high-resolution.
+               </p>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="sms">
           <Form {...smsForm}>
             <form onSubmit={smsForm.handleSubmit(onSmsSave)}>
               <Card>
-                <CardHeader><CardTitle>SMS API Configuration</CardTitle><CardDescription>Choose your provider and enter credentials.</CardDescription></CardHeader>
+                <CardHeader><CardTitle>SMS Gateway API Configuration</CardTitle></CardHeader>
                 <CardContent className="space-y-6">
                   <FormField control={smsForm.control} name="provider" render={({ field }) => (
                     <FormItem><FormLabel>Service Provider</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                         <SelectContent>
-                          <SelectItem value="none">Disabled</SelectItem>
+                          <SelectItem value="none">None (Disabled)</SelectItem>
                           <SelectItem value="arkesel">Arkesel (Ghana)</SelectItem>
                           <SelectItem value="twilio">Twilio (Global)</SelectItem>
                           <SelectItem value="sms_gh">SMS Online GH</SelectItem>
@@ -251,86 +357,47 @@ export default function SettingsPage() {
                   {watchedProvider === 'arkesel' && (
                     <div className="grid gap-4 p-4 border rounded-lg bg-muted/20">
                       <FormField control={smsForm.control} name="apiKey" render={({ field }) => (
-                        <FormItem><FormLabel>API Key</FormLabel><FormControl><Input type="password" {...field} /></FormControl></FormItem>
+                        <FormItem><FormLabel>Arkesel API Key</FormLabel><FormControl><Input type="password" {...field} /></FormControl></FormItem>
                       )} />
                       <FormField control={smsForm.control} name="senderId" render={({ field }) => (
-                        <FormItem><FormLabel>Sender ID</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                        <FormItem><FormLabel>Sender ID (Custom Name)</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
                       )} />
                     </div>
                   )}
 
-                  {watchedProvider === 'twilio' && (
-                    <div className="grid gap-4 p-4 border rounded-lg bg-muted/20">
-                      <FormField control={smsForm.control} name="twilioSid" render={({ field }) => (
-                        <FormItem><FormLabel>Account SID</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-                      )} />
-                      <FormField control={smsForm.control} name="twilioToken" render={({ field }) => (
-                        <FormItem><FormLabel>Auth Token</FormLabel><FormControl><Input type="password" {...field} /></FormControl></FormItem>
-                      )} />
-                      <FormField control={smsForm.control} name="twilioFrom" render={({ field }) => (
-                        <FormItem><FormLabel>Twilio Number (E.164)</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-                      )} />
-                    </div>
-                  )}
-
-                  <div className="border-t pt-6 space-y-6">
-                    <h3 className="font-bold text-lg">Automated Messaging</h3>
-                    
-                    <div className="space-y-4">
-                      <FormField control={smsForm.control} name="enableSmsOnManualPayment" render={({ field }) => (
-                        <FormItem className="flex items-center justify-between p-3 border rounded-md">
-                          <div>
-                            <FormLabel>Enable Auto-SMS on Manual Payment</FormLabel>
-                            <FormDescription>Send a receipt confirmation after recording cash/manual payments.</FormDescription>
-                          </div>
-                          <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                        </FormItem>
-                      )} />
-                      <FormField control={smsForm.control} name="manualPaymentMessageTemplate" render={({ field }) => (
-                          <FormItem><FormLabel>Payment Confirmation Template</FormLabel><FormControl><Textarea {...field} /></FormControl>
-                          <PlaceholderGuide common={['Owner Name', 'Amount Owed', 'Year']} property={[]} bop={[]} license={[]} payment={['Amount Paid', 'Payment Date', 'Receipt No']} />
-                          </FormItem>
-                      )} />
-                    </div>
-
-                    <div className="space-y-4 pt-4 border-t">
-                      <FormField control={smsForm.control} name="enableSmsOnBillGenerated" render={({ field }) => (
-                        <FormItem className="flex items-center justify-between p-3 border rounded-md">
-                          <div>
-                            <FormLabel>Enable Auto-SMS on Bill Generation</FormLabel>
-                            <FormDescription>Notify users when a new bill is printed or recorded.</FormDescription>
-                          </div>
-                          <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                        </FormItem>
-                      )} />
-                       <FormField control={smsForm.control} name="billGeneratedMessageTemplate" render={({ field }) => (
-                          <FormItem><FormLabel>Bill Notification Template</FormLabel><FormControl><Textarea {...field} /></FormControl>
-                          <PlaceholderGuide common={['Owner Name', 'Amount Owed', 'Year']} property={[]} bop={[]} license={[]} />
-                          </FormItem>
-                      )} />
-                    </div>
+                  <div className="grid gap-6 border-t pt-6">
+                    <h3 className="font-bold">Message Templates</h3>
+                    <FormField control={smsForm.control} name="manualPaymentMessageTemplate" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Manual Payment Confirmation Template</FormLabel>
+                        <FormControl><Textarea {...field} rows={3} /></FormControl>
+                      </FormItem>
+                    )} />
                   </div>
                 </CardContent>
-                <CardFooter><Button type="submit">Activate SMS Gateway</Button></CardFooter>
+                <CardFooter><Button type="submit">Save SMS Configuration</Button></CardFooter>
               </Card>
             </form>
           </Form>
         </TabsContent>
-        
+
         <TabsContent value="backup">
             <Card>
-                <CardHeader><CardTitle>System Maintenance</CardTitle></CardHeader>
+                <CardHeader><CardTitle>Data Maintenance</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                     <div className="p-4 border rounded-lg flex items-center justify-between">
-                        <div><h4 className="font-bold">Database Backup</h4><p className="text-sm text-muted-foreground">Download all data as JSON.</p></div>
+                        <div>
+                            <h4 className="font-bold">System Database Backup</h4>
+                            <p className="text-sm text-muted-foreground">Download your local database as a portable JSON file.</p>
+                        </div>
                         <Button variant="outline" onClick={() => {
                             const data = localStorage.getItem('rateease.store');
                             const blob = new Blob([data || '{}'], {type: 'application/json'});
                             const url = URL.createObjectURL(blob);
                             const a = document.createElement('a');
-                            a.href = url; a.download = `backup-${new Date().toISOString()}.json`;
+                            a.href = url; a.download = `rateease-backup-${new Date().toISOString().split('T')[0]}.json`;
                             a.click();
-                        }}><Download className="mr-2 h-4 w-4" /> Download</Button>
+                        }}><Download className="mr-2 h-4 w-4" /> Download Backup</Button>
                     </div>
                 </CardContent>
             </Card>
