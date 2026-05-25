@@ -118,7 +118,7 @@ async function sendSingleSms(phoneNumber: string, message: string): Promise<{ su
     }
 }
 
-export async function testSmsConnection(): Promise<{ success: boolean; message?: string; error?: string; hint?: string }> {
+export async function testSmsConnection(): Promise<{ success: boolean; message?: string; details?: any[]; error?: string; hint?: string }> {
     const config = store.settings.smsSettings;
     try {
         const response = await fetch('/api/sms', {

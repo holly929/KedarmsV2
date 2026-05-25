@@ -14,7 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
 import { PrintableContent } from '@/components/bill-dialog';
-import { Loader2, Download, UploadCloud, Type, Palette, ShieldCheck, Image as ImageIcon, Trash2, RefreshCcw, RotateCcw, ShieldAlert, History, Activity, AlertCircle } from 'lucide-react';
+import { Loader2, Download, UploadCloud, Type, Palette, ShieldCheck, Image as ImageIcon, Trash2, RefreshCcw, RotateCcw, ShieldAlert, History, Activity, AlertCircle, Network, Info } from 'lucide-react';
 import { store, saveStore, clearAllTransactionsInStore, factoryResetStore } from '@/lib/store';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -88,7 +88,7 @@ export default function SettingsPage() {
   useRequirePermission();
   const [loading, setLoading] = useState(true);
   const [testingSms, setTestingSms] = useState(false);
-  const [testResult, setTestResult] = useState<{success: boolean, message?: string, error?: string, hint?: string} | null>(null);
+  const [testResult, setTestResult] = useState<{success: boolean, message?: string, details?: any[], error?: string, hint?: string} | null>(null);
   
   const { deleteAllProperties } = usePropertyData();
   const { deleteAllBop } = useBopData();
@@ -149,9 +149,9 @@ export default function SettingsPage() {
         const result = await testSmsConnection();
         setTestResult(result);
         if(result.success) {
-            toast({ title: 'Gateway Reachable', description: 'Your server can successfully reach the SMS provider.' });
+            toast({ title: 'Gateway Reachable', description: 'At least one endpoint is responding.' });
         } else {
-            toast({ variant: 'destructive', title: 'Connection Failed', description: 'See the diagnostic log below.' });
+            toast({ variant: 'destructive', title: 'Connection Failed', description: 'Check the diagnostic results below.' });
         }
     } catch (e: any) {
         setTestResult({ success: false, error: e.message });
@@ -400,7 +400,7 @@ export default function SettingsPage() {
                             disabled={testingSms || watchedProvider === 'none'}
                         >
                             {testingSms ? <Loader2 className="h-3 w-3 mr-2 animate-spin" /> : <Activity className="h-3 w-3 mr-2" />}
-                            Test Connection
+                            Test Connectivity
                         </Button>
                     </div>
                     <CardDescription>Configure your provider to enable automated notifications.</CardDescription>
@@ -432,14 +432,49 @@ export default function SettingsPage() {
                   )}
 
                   {testResult && (
-                      <Alert variant={testResult.success ? 'default' : 'destructive'} className={testResult.success ? "bg-green-50 border-green-200 text-green-800" : ""}>
-                          {testResult.success ? <ShieldCheck className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-                          <AlertTitle>{testResult.success ? 'Gateway Reachable' : 'Diagnostic Error'}</AlertTitle>
-                          <AlertDescription className="text-xs mt-1">
-                              {testResult.message || testResult.error}
-                              {testResult.hint && <p className="mt-2 font-bold opacity-80">{testResult.hint}</p>}
-                          </AlertDescription>
-                      </Alert>
+                      <div className="space-y-3">
+                        <Alert variant={testResult.success ? 'default' : 'destructive'} className={testResult.success ? "bg-green-50 border-green-200 text-green-800" : ""}>
+                            {testResult.success ? <ShieldCheck className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                            <AlertTitle>{testResult.success ? 'Gateway Reachable' : 'Diagnostic Error'}</AlertTitle>
+                            <AlertDescription className="text-xs mt-1">
+                                {testResult.message || testResult.error}
+                                {testResult.hint && <p className="mt-2 font-bold opacity-80">{testResult.hint}</p>}
+                            </AlertDescription>
+                        </Alert>
+                        
+                        <Card className="border-dashed">
+                            <CardHeader className="py-2 px-4 bg-muted/20 border-b">
+                                <CardTitle className="text-[10px] uppercase font-bold flex items-center gap-2"><Network className="h-3 w-3" /> Raw Trace Data</CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-3">
+                                <div className="space-y-2">
+                                    {testResult.details?.map((res, i) => (
+                                        <div key={i} className="flex justify-between items-center text-[10px] font-mono border-b pb-1 last:border-0">
+                                            <span className="truncate max-w-[150px]">{res.url.replace('https://', '')}</span>
+                                            <span className={res.success ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
+                                                {res.success ? `SUCCESS (${res.status} ${res.time})` : `FAILED (${res.error})`}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {!testResult.success && (
+                            <Alert className="bg-blue-50 border-blue-200">
+                                <Info className="h-4 w-4 text-blue-600" />
+                                <AlertTitle className="text-blue-700">How to Fix This</AlertTitle>
+                                <AlertDescription className="text-blue-600 text-xs">
+                                    <p className="mb-2">Your hosting environment is blocking outbound requests. Please share the following details with your IT team:</p>
+                                    <ul className="list-disc pl-4 space-y-1">
+                                        <li><strong>Action:</strong> White-list outbound HTTPS traffic on <strong>Port 443</strong></li>
+                                        <li><strong>Domains to Allow:</strong> openapi.arkesel.com, api.arkesel.com</li>
+                                        <li><strong>Static IPs:</strong> Arkesel does not provide static IPs; whitelisting must be done by domain.</li>
+                                    </ul>
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                      </div>
                   )}
 
                   <div className="grid gap-6 border-t pt-6">
