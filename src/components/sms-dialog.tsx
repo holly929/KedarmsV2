@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, MessageSquare } from 'lucide-react';
+import { Loader2, MessageSquare, AlertCircle } from 'lucide-react';
 
 import type { Property, Bop, License } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { sendSms } from '@/lib/sms-service';
 import { getPropertyValue } from '@/lib/property-utils';
 import { getBopBillStatus, getBillStatus, getLicenseBillStatus } from '@/lib/billing-utils';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface SmsDialogProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ const smsFormSchema = z.object({
 export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialogProps) {
   const { toast } = useToast();
   const [isSending, setIsSending] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
   
   const form = useForm<z.infer<typeof smsFormSchema>>({
     resolver: zodResolver(smsFormSchema),
@@ -39,6 +41,7 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
 
   useEffect(() => {
     if (isOpen && selectedProperties.length > 0) {
+      setLastError(null);
       const firstItem = selectedProperties[0];
       const isBop = !!getPropertyValue(firstItem as any, 'Business Name');
       const isHotel = !!getPropertyValue(firstItem as any, 'Name of Hotel/Guest House');
@@ -57,11 +60,11 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
       let defaultMessage = "";
       if (isDefaulter) {
          if (isBop) {
-             defaultMessage = "Dear {{Owner Name}}, your BOP payment of GHS {{Amount Owed}} for '{{Business Name}}' is overdue as of {{Date}}. Please contact the District Assembly.";
+             defaultMessage = "Dear {{Owner Name}}, your BOP payment of GHS {{Amount Owed}} for '{{Business Name}}' is overdue. Please contact the Assembly.";
          } else if (isHotel) {
-             defaultMessage = "Dear {{Name of Hotel/Guest House}}, your license/rate payment of GHS {{Amount Owed}} is overdue as of {{Date}}. Please contact the District Assembly.";
+             defaultMessage = "Dear {{Name of Hotel/Guest House}}, your license/rate payment of GHS {{Amount Owed}} is overdue. Please contact the Assembly.";
          } else {
-            defaultMessage = "Dear {{Owner Name}}, your property rate payment of GHS {{Amount Owed}} for property '{{Property No}}' is overdue as of {{Date}}. Please contact the assembly to arrange payment.";
+            defaultMessage = "Dear {{Owner Name}}, your property rate payment of GHS {{Amount Owed}} for '{{Property No}}' is overdue. Please contact the Assembly.";
          }
       } else {
         defaultMessage = "Dear {{Owner Name}}, this is a notification from the District Assembly regarding your records. Current balance: GHS {{Amount Owed}}. Thank you.";
@@ -76,6 +79,7 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
 
   async function onSubmit(data: z.infer<typeof smsFormSchema>) {
     setIsSending(true);
+    setLastError(null);
 
     try {
         const results = await sendSms(selectedProperties, data.message);
@@ -90,30 +94,18 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
         }
 
         if (failedSends.length > 0) {
-             toast({
-                variant: 'destructive',
-                title: `${failedSends.length} Messages Failed`,
-                description: `Check your SMS provider settings. Error: ${failedSends[0].error}`,
-            });
+            setLastError(failedSends[0].error || "Check your SMS provider settings.");
         }
         
         if (successfulSends === 0 && failedSends.length === 0) {
-             toast({
-                variant: 'destructive',
-                title: 'No Valid Recipients',
-                description: 'None of the selected items have a valid phone number.',
-            });
+             setLastError("None of the selected items have a valid phone number.");
         }
 
-        if (successfulSends > 0) {
+        if (successfulSends > 0 && failedSends.length === 0) {
             onOpenChange(false);
         }
-    } catch (error) {
-        toast({
-            variant: 'destructive',
-            title: 'System Error',
-            description: 'An unexpected error occurred while sending SMS.',
-        });
+    } catch (error: any) {
+        setLastError(error.message || "An unexpected system error occurred.");
     } finally {
         setIsSending(false);
     }
@@ -129,11 +121,19 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
           </DialogTitle>
           <DialogDescription>
             {selectedProperties.length === 1 
-              ? `Sending a message to ${getPropertyValue(selectedProperties[0] as any, 'Owner Name') || 'this owner'}.`
-              : `Compose a message to send to ${recipientCount} selected recipients with phone numbers.`}
-            You can use placeholders like {'{{Owner Name}}'}.
+              ? `Sending to ${getPropertyValue(selectedProperties[0] as any, 'Owner Name') || 'this owner'}.`
+              : `Composer for ${recipientCount} selected recipients.`}
           </DialogDescription>
         </DialogHeader>
+        
+        {lastError && (
+            <Alert variant="destructive" className="my-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Dispatch Failed</AlertTitle>
+                <AlertDescription>{lastError}</AlertDescription>
+            </Alert>
+        )}
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField

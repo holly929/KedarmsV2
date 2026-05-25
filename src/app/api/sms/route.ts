@@ -34,6 +34,8 @@ export async function POST(request: Request) {
 
   try {
     if (provider === 'arkesel') {
+        const sender = String(config.senderId || 'RateEase').substring(0, 11);
+        
         const response = await fetch(`https://openapi.arkesel.com/api/v2/sms/send`, {
             method: 'POST',
             headers: {
@@ -42,7 +44,7 @@ export async function POST(request: Request) {
                 'Accept': 'application/json'
             },
             body: JSON.stringify({
-                sender: config.senderId || 'RateEase',
+                sender: sender,
                 message: message,
                 recipients: [normalizedPhone]
             })
@@ -65,7 +67,7 @@ export async function POST(request: Request) {
             key: config.apiKey || '',
             secret: config.apiSecret || '',
             to: normalizedPhone,
-            from: config.senderId || 'RateEase',
+            from: String(config.senderId || 'RateEase').substring(0, 11),
             msg: message,
         });
         const res = await fetch(`https://api.smsgh.com/v3/messages/send?${params.toString()}`);
@@ -76,7 +78,6 @@ export async function POST(request: Request) {
     } 
     
     if (provider === 'twilio') {
-        // Use btoa for edge compatibility instead of Buffer
         const auth = btoa(`${config.twilioSid}:${config.twilioToken}`);
         const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${config.twilioSid}/Messages.json`, {
             method: 'POST',
@@ -101,8 +102,8 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error("SMS API Route Runtime Error:", error);
     return NextResponse.json({ 
-        error: `System Error: ${error.message || 'Internal connection failure'}`,
-        hint: 'This usually means the server could not reach the SMS provider API.'
+        error: `Provider Connection Failed: ${error.message || 'Unreachable'}`,
+        hint: 'This usually means the application cannot reach the SMS provider over the internet. Check your firewall or proxy settings.'
     }, { status: 500 });
   }
 }

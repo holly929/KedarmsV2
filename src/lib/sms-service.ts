@@ -95,16 +95,20 @@ async function sendSingleSms(phoneNumber: string, message: string): Promise<{ su
             }),
         });
 
-        const result = await response.json();
+        let result;
+        try {
+            result = await response.json();
+        } catch (jsonErr) {
+            return { success: false, error: `Critical API Error: Server returned an invalid response (${response.status})` };
+        }
+
         if (response.ok && result.success === true) {
             return { success: true };
         } else {
-            // Return actual error message from backend route
             return { success: false, error: result.error || 'Provider rejected the request.' };
         }
     } catch (error: any) {
-        // This is usually a client-side network error or browser block
-        return { success: false, error: `Connection Error: ${error.message || 'Check your internet'}` };
+        return { success: false, error: `Connection Error: ${error.message || 'Check your internet connection'}` };
     }
 }
 
