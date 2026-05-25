@@ -99,11 +99,12 @@ async function sendSingleSms(phoneNumber: string, message: string): Promise<{ su
         if (response.ok && result.success === true) {
             return { success: true };
         } else {
-            // Return actual error message from provider if available
+            // Return actual error message from backend route
             return { success: false, error: result.error || 'Provider rejected the request.' };
         }
     } catch (error: any) {
-        return { success: false, error: error.message || 'Network connection error.' };
+        // This is usually a client-side network error or browser block
+        return { success: false, error: `Connection Error: ${error.message || 'Check your internet'}` };
     }
 }
 

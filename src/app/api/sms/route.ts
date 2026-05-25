@@ -9,15 +9,24 @@ function normalizePhoneNumber(phone: string): string {
     return '233' + cleaned.substring(1);
   }
   
-  // If it starts with 233 but is short, or already correct, return it
+  // If it's already correct (starts with 233 and is 12 digits), or other format, return it
   return cleaned;
 }
 
 export async function POST(request: Request) {
-  const { phoneNumber, message, config } = await request.json();
+  let phoneNumber, message, config;
+  
+  try {
+    const body = await request.json();
+    phoneNumber = body.phoneNumber;
+    message = body.message;
+    config = body.config;
+  } catch (e) {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+  }
 
-  if (!phoneNumber || !message || !config) {
-    return NextResponse.json({ error: 'Missing parameters.' }, { status: 400 });
+  if (!phoneNumber || !message || !config || config.provider === 'none') {
+    return NextResponse.json({ error: 'Missing parameters or SMS provider not configured.' }, { status: 400 });
   }
 
   const normalizedPhone = normalizePhoneNumber(phoneNumber);
@@ -25,7 +34,6 @@ export async function POST(request: Request) {
 
   try {
     if (provider === 'arkesel') {
-        // Using Arkesel v2 API (JSON)
         const response = await fetch(`https://openapi.arkesel.com/api/v2/sms/send`, {
             method: 'POST',
             headers: {
@@ -42,12 +50,11 @@ export async function POST(request: Request) {
 
         const result = await response.json();
         
-        // Arkesel v2 returns 201 for successful submission
-        if (response.status === 200 || response.status === 201) {
+        if (response.ok) {
             return NextResponse.json({ success: true, data: result });
         } else {
             return NextResponse.json({ 
-                error: result.message || result.error || `Arkesel Error: ${response.status}`,
+                error: result.message || result.error || `Arkesel API Error: ${response.status}`,
                 details: result 
             }, { status: response.status });
         }
@@ -69,7 +76,8 @@ export async function POST(request: Request) {
     } 
     
     if (provider === 'twilio') {
-        const auth = Buffer.from(`${config.twilioSid}:${config.twilioToken}`).toString('base64');
+        // Use btoa for edge compatibility instead of Buffer
+        const auth = btoa(`${config.twilioSid}:${config.twilioToken}`);
         const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${config.twilioSid}/Messages.json`, {
             method: 'POST',
             headers: {
@@ -89,9 +97,12 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: result.message || 'Twilio Error' }, { status: res.status });
     }
 
-    return NextResponse.json({ error: 'SMS Provider not supported or configured incorrectly.' }, { status: 500 });
+    return NextResponse.json({ error: 'SMS Provider not supported.' }, { status: 500 });
   } catch (error: any) {
-    console.error("SMS API Route Error:", error);
-    return NextResponse.json({ error: error.message || 'Internal API Error' }, { status: 500 });
+    console.error("SMS API Route Runtime Error:", error);
+    return NextResponse.json({ 
+        error: `System Error: ${error.message || 'Internal connection failure'}`,
+        hint: 'This usually means the server could not reach the SMS provider API.'
+    }, { status: 500 });
   }
 }
