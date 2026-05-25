@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Printer } from 'lucide-react';
 import type { Property, Payment } from '@/lib/types';
+import { ReceiptDialog } from './receipt-dialog';
 
 interface PropertyPaymentHistoryDialogProps {
   property: Property | null;
@@ -33,46 +37,69 @@ const formatDate = (isoString: string) => new Date(isoString).toLocaleString('en
 });
 
 export function PropertyPaymentHistoryDialog({ property, isOpen, onOpenChange }: PropertyPaymentHistoryDialogProps) {
+  const [printingPayment, setPrintingPayment] = React.useState<Payment | null>(null);
   const payments = property?.payments || [];
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[625px]">
-        <DialogHeader>
-          <DialogTitle>Payment History</DialogTitle>
-          <DialogDescription>
-            A log of all payments made for this property.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="max-h-[60vh] overflow-y-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {payments.length > 0 ? (
-                payments.map((payment: Payment) => (
-                  <TableRow key={payment.id}>
-                    <TableCell>{formatDate(payment.date)}</TableCell>
-                    <TableCell className="capitalize">{payment.method}</TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(payment.amount)}</TableCell>
-                  </TableRow>
-                ))
-              ) : (
+    <>
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle>Payment History</DialogTitle>
+            <DialogDescription>
+              A log of all payments made for this property.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center">
-                    No payments found.
-                  </TableCell>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Method</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </DialogContent>
-    </Dialog>
+              </TableHeader>
+              <TableBody>
+                {payments.length > 0 ? (
+                  payments.map((payment: Payment) => (
+                    <TableRow key={payment.id}>
+                      <TableCell>{formatDate(payment.date)}</TableCell>
+                      <TableCell className="capitalize">{payment.method}</TableCell>
+                      <TableCell className="text-right font-mono font-bold">{formatCurrency(payment.amount)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => setPrintingPayment(payment)}
+                          title="Print Receipt"
+                        >
+                          <Printer className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground italic">
+                      No payments found for this property.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {printingPayment && property && (
+        <ReceiptDialog
+          isOpen={!!printingPayment}
+          onOpenChange={(open) => !open && setPrintingPayment(null)}
+          payment={printingPayment}
+          item={property}
+        />
+      )}
+    </>
   );
 }

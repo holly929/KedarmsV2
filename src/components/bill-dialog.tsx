@@ -81,9 +81,8 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
     settings: { general?: GeneralSettings, appearance?: AppearanceSettings }; 
     isCompact?: boolean; 
     isDemandNotice?: boolean;
-    displaySettings?: Record<string, boolean>;
 }>(
-  ({ property: propertyProp, data: dataProp, billType: billTypeProp, settings, isCompact = false, isDemandNotice = false, displaySettings: displaySettingsProp }, ref) => {
+  ({ property: propertyProp, data: dataProp, billType: billTypeProp, settings, isCompact = false, isDemandNotice = false }, ref) => {
     
     const data = dataProp || propertyProp;
     const billType = billTypeProp || 'property';
@@ -452,7 +451,6 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
                         billType={bill.billType} 
                         settings={settings}
                         isDemandNotice={isDemandNotice}
-                        displaySettings={store.settings.billDisplaySettings}
                     />
                     </div>
                  )}
