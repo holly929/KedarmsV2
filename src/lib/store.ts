@@ -47,7 +47,20 @@ interface AppStore {
 function getDefaultStore(): AppStore {
     return {
         properties: [],
-        propertyHeaders: ['Owner Name', 'Property No', 'Town', 'Rateable Value', 'Total Payment'],
+        propertyHeaders: [
+            'S/N', 
+            'Owner Name', 
+            'Property No', 
+            'Town', 
+            'Suburb', 
+            'Property Type', 
+            'Rateable Value', 
+            'Rate Impost', 
+            'Sanitation Charged', 
+            'Previous Balance', 
+            'Total Payment', 
+            'Amount Due'
+        ],
         bops: [],
         bopHeaders: ['Business Name', 'Owner Name', 'Phone Number', 'Town', 'Permit Fee', 'Arrears', 'Payment'],
         licenses: [],

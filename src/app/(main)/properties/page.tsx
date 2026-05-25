@@ -58,11 +58,27 @@ import { Progress } from '@/components/ui/progress';
 const ROWS_PER_PAGE = 15;
 const IMPORT_CHUNK_SIZE = 200;
 
+// Standard professional headers for the system
+const DEFAULT_SYSTEM_HEADERS = [
+    'S/N', 
+    'Owner Name', 
+    'Property No', 
+    'Town', 
+    'Suburb', 
+    'Property Type', 
+    'Rateable Value', 
+    'Rate Impost', 
+    'Sanitation Charged', 
+    'Previous Balance', 
+    'Total Payment', 
+    'Amount Due'
+];
+
 const formatValue = (value: any, header: string) => {
     if (value === undefined || value === null || String(value).trim() === '') return '';
     
     // Fields that should NEVER be formatted as currency
-    const skipFormatting = ['Property No', 'Account Number', 'Valuation List No.', 'Phone Number', 'S/N', 'ID', 'Town', 'Suburb', 'Owner', 'Type'];
+    const skipFormatting = ['Property No', 'Account Number', 'Valuation List No.', 'Phone Number', 'S/N', 'SN', 'ID', 'Town', 'Suburb', 'Owner', 'Type'];
     const isCurrencyHeader = !skipFormatting.some(k => header.toLowerCase().includes(k.toLowerCase()));
     const isRateImpost = header.toLowerCase().includes('rate impost');
 
@@ -70,7 +86,7 @@ const formatValue = (value: any, header: string) => {
         return String(value);
     }
 
-    const num = typeof value === 'number' ? value : Number(String(value).replace(/,/g, ''));
+    const num = typeof value === 'number' ? value : Number(String(value).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
     
     if (!isNaN(num) && isCurrencyHeader) {
         return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -163,7 +179,6 @@ export default function PropertiesPage() {
         const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
         if (rows.length === 0) throw new Error("No data found in the spreadsheet.");
 
-        // More robust header detection: Find first row with at least 3 non-empty cells
         let headerRowIndex = rows.findIndex(row => {
             const populatedCells = (row || []).filter(cell => cell !== null && String(cell).trim() !== '').length;
             return populatedCells >= 3;
@@ -193,7 +208,9 @@ export default function PropertiesPage() {
         const processChunk = () => {
           try {
             if (currentIndex >= dataRows.length) {
-                setProperties(allNewData, newHeaders);
+                // Merge with default system headers if some are missing from import
+                const finalHeaders = Array.from(new Set([...DEFAULT_SYSTEM_HEADERS, ...newHeaders]));
+                setProperties(allNewData, finalHeaders);
                 setCurrentPage(1);
                 toast({ title: 'Import Successful', description: `${allNewData.length} records have been loaded.` });
                 setImportStatus({ inProgress: false, total: 0, processed: 0 });
@@ -300,8 +317,8 @@ export default function PropertiesPage() {
       <Table>
         <TableHeader>
           <TableRow>
-            {headers.map((header) => (
-              <TableHead key={header}>{header}</TableHead>
+            {DEFAULT_SYSTEM_HEADERS.map((header) => (
+              <TableHead key={header} className="whitespace-nowrap">{header}</TableHead>
             ))}
             {!isViewer && <TableHead><span className="sr-only">Actions</span></TableHead>}
           </TableRow>
@@ -310,8 +327,8 @@ export default function PropertiesPage() {
           {paginatedData.length > 0 ? (
             paginatedData.map((row) => (
               <TableRow key={row.id}>
-                {headers.map((header, cellIndex) => (
-                  <TableCell key={cellIndex} className={cellIndex === 0 ? 'font-medium' : ''}>
+                {DEFAULT_SYSTEM_HEADERS.map((header, cellIndex) => (
+                  <TableCell key={cellIndex} className={cn(cellIndex === 1 ? 'font-bold' : '', "whitespace-nowrap")}>
                     {typeof getPropertyValue(row, header) === 'object' && getPropertyValue(row, header) !== null
                       ? 'View Details'
                       : formatValue(getPropertyValue(row, header), header)}
@@ -332,7 +349,7 @@ export default function PropertiesPage() {
                           <Wallet className="mr-2 h-4 w-4" />
                           View Payments
                         </DropdownMenuItem>
-                        {getPropertyValue(row, 'Owner Name') && getPropertyValue(row, 'Rateable Value') ? (
+                        {getPropertyValue(row, 'Owner Name') && (getPropertyValue(row, 'Rateable Value') || getPropertyValue(row, 'Amount Due')) ? (
                           <DropdownMenuItem onSelect={() => handleViewBill(row)}>
                             <View className="mr-2 h-4 w-4" />
                             View Bill
@@ -355,7 +372,7 @@ export default function PropertiesPage() {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={headers.length + (isViewer ? 0 : 1)} className="h-24 text-center">
+              <TableCell colSpan={DEFAULT_SYSTEM_HEADERS.length + (isViewer ? 0 : 1)} className="h-24 text-center">
                 No results found.
               </TableCell>
             </TableRow>
@@ -370,7 +387,7 @@ export default function PropertiesPage() {
       {paginatedData.length > 0 ? paginatedData.map(row => (
         <Card key={row.id} className="transition-shadow hover:shadow-lg">
           <CardHeader className="flex flex-row items-start justify-between pb-2">
-            <CardTitle className="text-base font-semibold">{getPropertyValue(row, headers[0]) || 'N/A'}</CardTitle>
+            <CardTitle className="text-base font-semibold">{getPropertyValue(row, 'Owner Name') || 'N/A'}</CardTitle>
             {!isViewer && 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -384,7 +401,7 @@ export default function PropertiesPage() {
                     <Wallet className="mr-2 h-4 w-4" />
                     View Payments
                   </DropdownMenuItem>
-                  {getPropertyValue(row, 'Owner Name') && getPropertyValue(row, 'Rateable Value') ? (
+                  {getPropertyValue(row, 'Owner Name') && (getPropertyValue(row, 'Rateable Value') || getPropertyValue(row, 'Amount Due')) ? (
                     <DropdownMenuItem onSelect={() => handleViewBill(row)}>
                       <View className="mr-2 h-4 w-4" /> View Bill
                     </DropdownMenuItem>
@@ -401,13 +418,13 @@ export default function PropertiesPage() {
             }
           </CardHeader>
           <CardContent className="space-y-2 text-sm pl-6 pr-6 pb-4">
-            {headers.slice(1).map(header => {
-              const value = getPropertyValue(row, header);
-              if (header.toLowerCase() === 'id' || value === undefined || value === null) return null;
+            {['Property No', 'Town', 'Suburb', 'Property Type', 'Amount Due'].map(field => {
+              const value = getPropertyValue(row, field);
+              if (!value) return null;
               return (
-                <div key={header} className="flex justify-between items-center text-xs">
-                  <span className="font-semibold text-muted-foreground">{header}</span>
-                  <span className="text-right">{typeof value === 'object' && value !== null ? 'View Details' : formatValue(value, header)}</span>
+                <div key={field} className="flex justify-between items-center text-xs">
+                  <span className="font-semibold text-muted-foreground">{field}</span>
+                  <span className="text-right">{formatValue(value, field)}</span>
                 </div>
               );
             })}
