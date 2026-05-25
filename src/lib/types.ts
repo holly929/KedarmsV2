@@ -148,5 +148,5 @@ export interface PaymentStatusData {
 
 export interface RevenueByPropertyType {
   name: string;
-  value: number;
+  revenue: number;
 }
