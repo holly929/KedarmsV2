@@ -112,7 +112,7 @@ function GoogleSheetIntegrationView() {
         ) : (
           <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center h-[calc(100vh-30rem)]">
             <BookCopy className="h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">{emptyStateText}</h3>
+            <h3 className="mt-4 text-lg font-semibold">No Summary Bill Spreadsheet Connected</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               Please go to the <Button variant="link" asChild className="p-0 h-auto"><Link href="/settings">Settings</Link></Button> page to connect a Google Sheet.
             </p>
