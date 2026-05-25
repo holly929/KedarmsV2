@@ -12,6 +12,7 @@ import { LicenseProvider } from '@/context/LicenseDataContext';
 import { SummaryBillProvider } from '@/context/SummaryBillContext';
 import { BillProvider } from '@/context/BillDataContext';
 import { SmsLogProvider } from '@/context/SmsLogContext';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 export const metadata: Metadata = {
   title: 'RateEase',
@@ -49,8 +50,10 @@ export default function RootLayout({
                         <SummaryBillProvider>
                           <BillProvider>
                             <SmsLogProvider>
+                              <TooltipProvider>
                                 {children}
                                 <Toaster />
+                              </TooltipProvider>
                             </SmsLogProvider>
                           </BillProvider>
                         </SummaryBillProvider>

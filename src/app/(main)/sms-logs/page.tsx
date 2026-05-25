@@ -8,12 +8,11 @@ import { useRequirePermission } from '@/hooks/useRequirePermission';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Phone, User, AlertCircle, CheckCircle2, History } from 'lucide-react';
+import { Phone, User, AlertCircle, CheckCircle2, History } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
@@ -104,7 +103,6 @@ export default function SmsLogsPage() {
                 </div>
             </TableCell>
             <TableCell>
-              <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
                          <Badge variant={log.status === 'Success' ? 'default' : 'destructive'} className="cursor-help">
@@ -118,7 +116,6 @@ export default function SmsLogsPage() {
                         </TooltipContent>
                     )}
                 </Tooltip>
-              </TooltipProvider>
             </TableCell>
             <TableCell className="text-right text-muted-foreground text-xs whitespace-nowrap">
                  {formatTimestamp(log.timestamp)}
@@ -167,7 +164,7 @@ export default function SmsLogsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-primary" />
+            <History className="h-5 w-5 text-primary" />
             Communication Ledger
           </CardTitle>
           <CardDescription>A complete history of automated and manual SMS notifications.</CardDescription>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -11,11 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { FileClock, User } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
@@ -97,14 +95,12 @@ export default function ActivityLogsPage() {
             <TableCell><Badge variant="secondary">{log.action}</Badge></TableCell>
             <TableCell className="text-muted-foreground text-xs">{log.details}</TableCell>
             <TableCell className="text-right text-muted-foreground text-xs">
-                 <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger>{formatTimestamp(log.timestamp)}</TooltipTrigger>
-                        <TooltipContent>
-                            <p>{new Date(log.timestamp).toISOString()}</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger>{formatTimestamp(log.timestamp)}</TooltipTrigger>
+                    <TooltipContent>
+                        <p>{new Date(log.timestamp).toISOString()}</p>
+                    </TooltipContent>
+                </Tooltip>
             </TableCell>
           </TableRow>
         ))}

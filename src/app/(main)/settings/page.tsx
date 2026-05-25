@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -14,7 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
 import { PrintableContent } from '@/components/bill-dialog';
-import { Loader2, Download, UploadCloud, Type, Palette, ShieldCheck, Image as ImageIcon, Trash2, RefreshCcw, RotateCcw, ShieldAlert, History, Activity, AlertCircle, Network, Info, MessageSquare } from 'lucide-react';
+import { Loader2, Download, Type, Palette, ShieldCheck, Image as ImageIcon, Trash2, RefreshCcw, RotateCcw, ShieldAlert, History, Activity, AlertCircle, Network, Info, MessageSquare } from 'lucide-react';
 import { store, saveStore, clearAllTransactionsInStore, factoryResetStore } from '@/lib/store';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -87,7 +87,6 @@ const DUMMY_PROPERTY = {
 
 export default function SettingsPage() {
   useRequirePermission();
-  const [loading, setLoading] = useState(true);
   const [testingSms, setTestingSms] = useState(false);
   const [testResult, setTestResult] = useState<{success: boolean, message?: string, details?: any[], error?: string, hint?: string} | null>(null);
   
@@ -117,14 +116,6 @@ export default function SettingsPage() {
   const watchedProvider = smsForm.watch('provider');
   const appearanceValues = appearanceForm.watch();
   const generalValues = generalForm.watch();
-
-  useEffect(() => {
-    setLoading(true);
-    generalForm.reset(store.settings.generalSettings);
-    appearanceForm.reset(store.settings.appearanceSettings);
-    smsForm.reset(store.settings.smsSettings);
-    setLoading(false);
-  }, [generalForm, appearanceForm, smsForm]);
 
   const onGeneralSave = (data: z.infer<typeof generalFormSchema>) => {
     store.settings.generalSettings = data;
@@ -179,8 +170,6 @@ export default function SettingsPage() {
     toast({ title: 'Transactions Cleared', description: 'All payments across the system have been reset to zero.' });
     setTimeout(() => window.location.reload(), 1000);
   };
-
-  if (loading) return <div className="flex h-full items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
   return (
     <div className="space-y-6">
@@ -531,7 +520,6 @@ export default function SettingsPage() {
                         <CardDescription>Destructive actions to reset or clear system data.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {/* Clear Transactions */}
                         <div className="p-3 border rounded-lg flex items-center justify-between bg-background">
                             <div>
                                 <h4 className="text-sm font-bold">Clear All Transactions</h4>
@@ -558,7 +546,6 @@ export default function SettingsPage() {
                             </AlertDialog>
                         </div>
 
-                        {/* Clear Bill History */}
                         <div className="p-3 border rounded-lg flex items-center justify-between bg-background">
                             <div>
                                 <h4 className="text-sm font-bold">Clear Bill History</h4>
@@ -585,7 +572,6 @@ export default function SettingsPage() {
                             </AlertDialog>
                         </div>
 
-                        {/* Clear SMS Logs */}
                         <div className="p-3 border rounded-lg flex items-center justify-between bg-background">
                             <div>
                                 <h4 className="text-sm font-bold">Clear SMS Logs</h4>
@@ -612,7 +598,6 @@ export default function SettingsPage() {
                             </AlertDialog>
                         </div>
 
-                        {/* Clear Activity Logs */}
                         <div className="p-3 border rounded-lg flex items-center justify-between bg-background">
                             <div>
                                 <h4 className="text-sm font-bold">Clear Activity Logs</h4>
@@ -625,7 +610,6 @@ export default function SettingsPage() {
 
                         <Separator className="my-2" />
 
-                        {/* Factory Reset */}
                         <div className="p-3 border-2 border-dashed border-destructive/30 rounded-lg flex items-center justify-between bg-destructive/[0.05]">
                             <div>
                                 <h4 className="text-sm font-bold text-destructive">Factory System Reset</h4>
@@ -654,7 +638,6 @@ export default function SettingsPage() {
                     </CardContent>
                 </Card>
 
-                {/* Module-Specific Resets */}
                 <Card className="md:col-span-2 border-orange-200 bg-orange-50/20">
                      <CardHeader>
                         <CardTitle className="text-sm flex items-center gap-2 text-orange-600"><Trash2 className="h-4 w-4" /> Reset Module Data</CardTitle>

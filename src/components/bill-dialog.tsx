@@ -87,7 +87,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     const data = dataProp || propertyProp;
     const billType = billTypeProp || 'property';
     
-    const [displaySettings, setDisplaySettings] = useState<Record<string, boolean>>({});
+    const [displaySettings, setDisplaySettings] = useState<Record<string, boolean>>(displaySettingsProp || {});
 
     const { fontFamily, fontSize, accentColor } = settings.appearance || {};
 
@@ -119,9 +119,13 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                 acc[key] = true;
                 return acc;
             }, {} as Record<string, boolean>);
-            setDisplaySettings(allFields);
+            
+            // Only update if standard keys count is different to avoid update loop
+            if (Object.keys(allFields).length !== Object.keys(displaySettings).length) {
+              setDisplaySettings(allFields);
+            }
         }
-    }, [data, displaySettingsProp]);
+    }, [data, displaySettingsProp, displaySettings]);
     
     const getNumericValue = useCallback((key: string): number => {
         if (!data) return 0;
@@ -171,16 +175,6 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
         return true;
     };
     
-    const DetailRow = ({ label, valueKey }: { label: string; valueKey: string; }) => {
-        if (!shouldDisplay(valueKey)) return null;
-        return <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">{label}</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue(valueKey)}</div></div>;
-    };
-
-    const DetailRowRight = ({ label, valueKey }: { label: string; valueKey: string; }) => {
-        if (!shouldDisplay(valueKey)) return <div className="flex border-b border-black/20"><div className="w-1/2 font-bold p-1 min-h-[1.5em] bg-black/[0.02]"></div><div className="w-1/2 border-l border-black/20 p-1"></div></div>;
-        return <div className="flex border-b border-black/20"><div className="w-1/2 font-bold p-1 bg-black/[0.02]">{label}</div><div className="w-1/2 border-l border-black/20 p-1">{formatValue(valueKey)}</div></div>;
-    };
-
     const totalAmountPayable = useMemo(() => {
         if (!data) return '0.00';
         const importedTotal = getPropertyValue(data as any, 'Amount Due');
@@ -224,180 +218,31 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     const barcodeValue = useMemo(() => {
         if (!data) return '';
         const idStr = String(getPropertyValue(data as any, 'Property No') || getPropertyValue(data as any, 'S/N') || getPropertyValue(data as any, 'SN') || data.id);
-        const nameStr = String(billedToName).substring(0, 15);
         const amtStr = totalAmountPayable.replace(/[^0-9.]/g, '');
         return `${idStr}|${amtStr}|${new Date().getFullYear()}`;
-    }, [data, totalAmountPayable, billedToName]);
-
-    const renderPropertyBill = () => {
-      const rv = getNumericValue('Rateable Value');
-      const ri = getNumericValue('Rate Impost');
-      const sc = getNumericValue('Sanitation Charged');
-      const pb = getNumericValue('Previous Balance');
-      const tp = getNumericValue('Total Payment');
-      const charged = rv * ri;
-      const totalThisYear = charged + sc;
-      const totalBill = totalThisYear + pb;
-
-      return (
-        <>
-            <div className="flex border-b-2 border-black">
-                <div className="w-[67%] border-r-2 border-black">
-                    <DetailRow label="OWNER NAME" valueKey="Owner Name" />
-                    <DetailRow label="PHONE NUMBER" valueKey="Phone Number" />
-                    <DetailRow label="TOWN" valueKey="Town" />
-                    <DetailRow label="PROPERTY NO:" valueKey="Property No" />
-                    <DetailRow label="VALUATION LIST NO.:" valueKey="Valuation List No." />
-                </div>
-                <div className="w-[33%]">
-                    <DetailRowRight label="SUBURB" valueKey="Suburb" />
-                    <DetailRowRight label="ACCOUNT NUMBER" valueKey="Account Number" />
-                    <DetailRowRight label="PROPERTY TYPE" valueKey="Property Type" />
-                    <div className="font-bold text-center p-1 bg-black/5 border-b border-black/20 text-[0.8em]">AMOUNT (GH&#8373;)</div>
-                </div>
-            </div>
-            <div className="flex">
-                <div className="w-[67%] border-r-2 border-black">
-                    <div className="flex border-b-2 border-black bg-black/[0.01]">
-                        <div className="w-1/3 font-bold flex items-center justify-center p-1 text-center text-[0.8em]">BILLING PARTICULARS</div>
-                        <div className="w-1/3 border-x border-black/20 p-1">
-                            <div className="font-bold text-[0.7em] text-muted-foreground uppercase">RATEABLE VALUE</div>
-                            <div className="flex justify-between items-end"><span>GH&#8373;</span><span className="font-bold">{formatToTwoDecimals(rv)}</span></div>
-                        </div>
-                        <div className="w-1/3 p-1">
-                            <div className="font-bold text-[0.7em] text-muted-foreground uppercase">RATE IMPOST</div>
-                            <div className="flex justify-end items-end h-full font-bold"><span>{formatValue('Rate Impost')}</span></div>
-                        </div>
-                    </div>
-                    <BillRow label="AMOUNT CHARGED (Value x Impost)" value={formatToTwoDecimals(charged)} />
-                    <BillRow label="SANITATION CHARGED" value={formatToTwoDecimals(sc)} />
-                    <BillRow label="UNASSESSED RATE" value="..." />
-                    <BillRow label="TOTAL FOR CURRENT YEAR" value={formatToTwoDecimals(totalThisYear)} isBold />
-                    <BillRow label="ARREARS / PREVIOUS BALANCE" value={formatToTwoDecimals(pb)} />
-                    <BillRow label="TOTAL BILL OUTSTANDING" value={formatToTwoDecimals(totalBill)} isBold />
-                    <BillRow label="LESS TOTAL PAYMENT MADE" value={formatToTwoDecimals(tp)} />
-                    <div className="flex justify-between p-2 border-b border-black items-center font-bold" style={accentStyle}>
-                        <span className="text-[1.1em]">TOTAL AMOUNT PAYABLE</span>
-                        <span className="text-right" style={{ fontSize: `${finalFontSize * 1.3}px` }}>GH&#8373; {totalAmountPayable}</span>
-                    </div>
-                </div>
-                <div className="w-[33%] text-right font-bold flex flex-col">
-                    <div className="p-1 border-b-2 border-black bg-black/5 text-[0.8em] flex items-center justify-center">FINANCIALS (GH&#8373;)</div>
-                    <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(charged)}</div>
-                    <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(sc)}</div>
-                    <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">...</div>
-                    <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(totalThisYear)}</div>
-                    <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(pb)}</div>
-                    <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(totalBill)}</div>
-                    <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(tp)}</div>
-                    <div className="p-2 border-b border-black flex items-center justify-end" style={accentStyle}>
-                        <span style={{ fontSize: `${finalFontSize * 1.3}px` }}>{totalAmountPayable}</span>
-                    </div>
-                </div>
-            </div>
-        </>
-      )
-    }
-
-    const renderBopBill = () => {
-      const pf = getNumericValue('Permit Fee');
-      const arr = getNumericValue('Arrears');
-      const pay = getNumericValue('Payment');
-      const totalDue = pf + arr;
-
-      return (
-        <>
-            <div className="flex border-b-2 border-black">
-                <div className="w-[67%] border-r-2 border-black">
-                    <DetailRow label="BUSINESS NAME" valueKey="Business Name" />
-                    <DetailRow label="OWNER NAME" valueKey="Owner Name" />
-                    <DetailRow label="PHONE NUMBER" valueKey="Phone Number" />
-                    <DetailRow label="TOWN" valueKey="Town" />
-                </div>
-                <div className="w-[33%]">
-                    <div className="font-bold text-center p-1 bg-black/5 border-b border-black/20 text-[0.8em]">AMOUNT (GH&#8373;)</div>
-                </div>
-            </div>
-            <div className="flex">
-                <div className="w-[67%] border-r-2 border-black">
-                    <div className="font-bold text-center p-1 border-b-2 border-black bg-black/[0.01] text-[0.8em]">BILLING BREAKDOWN</div>
-                    <BillRow label="PERMIT FEE (LICENSE)" value={formatToTwoDecimals(pf)} />
-                    <BillRow label="ARREARS" value={formatToTwoDecimals(arr)} />
-                    <BillRow label="TOTAL AMOUNT DUE" value={formatToTwoDecimals(totalDue)} isBold />
-                    <BillRow label="LESS PAYMENT MADE" value={formatToTwoDecimals(pay)} />
-                    <div className="flex justify-between p-2 border-b border-black items-center font-bold" style={accentStyle}>
-                        <span className="text-[1.1em]">TOTAL AMOUNT PAYABLE</span>
-                        <span className="text-right" style={{ fontSize: `${finalFontSize * 1.3}px` }}>GH&#8373; {totalAmountPayable}</span>
-                    </div>
-                </div>
-                <div className="w-[33%] text-right font-bold flex flex-col">
-                    <div className="p-1 border-b-2 border-black bg-black/5 text-[0.8em] flex items-center justify-center">FINANCIALS (GH&#8373;)</div>
-                    <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(pf)}</div>
-                    <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(arr)}</div>
-                    <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(totalDue)}</div>
-                    <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(pay)}</div>
-                    <div className="p-2 border-b border-black flex items-center justify-end" style={accentStyle}>
-                        <span style={{ fontSize: `${finalFontSize * 1.3}px` }}>{totalAmountPayable}</span>
-                    </div>
-                </div>
-            </div>
-        </>
-      )
-    }
-
-    const renderLicenseBill = () => {
-      const lf = getNumericValue('Property Rate');
-      const bop = getNumericValue('Bop Amount');
-      const arr = getNumericValue('Arrears');
-      const pay = getNumericValue('Payment');
-      const totalDue = (lf + bop + arr);
-
-      return (
-        <>
-            <div className="flex border-b-2 border-black">
-                <div className="w-[67%] border-r-2 border-black">
-                    <DetailRow label="SERIAL NO (S/N)" valueKey="S/N" />
-                    <DetailRow label="HOTEL/ESTABLISHMENT" valueKey="Name of Hotel/Guest House" />
-                    <DetailRow label="CONTACT NUMBER" valueKey="Phone Number" />
-                </div>
-                <div className="w-[33%]">
-                    <div className="font-bold text-center p-1 bg-black/5 border-b border-black/20 text-[0.8em]">AMOUNT (GH&#8373;)</div>
-                </div>
-            </div>
-            <div className="flex">
-                <div className="w-[67%] border-r-2 border-black">
-                    <div className="font-bold text-center p-1 border-b-2 border-black bg-black/[0.01] text-[0.8em]">BILLING BREAKDOWN</div>
-                    <BillRow label="PROPERTY RATE FEE" value={formatToTwoDecimals(lf)} />
-                    <BillRow label="BOP FEE COMPONENT" value={formatToTwoDecimals(bop)} />
-                    <BillRow label="ACCUMULATED ARREARS" value={formatToTwoDecimals(arr)} />
-                    <BillRow label="TOTAL AMOUNT DUE" value={formatToTwoDecimals(totalDue)} isBold />
-                    <BillRow label="LESS PAYMENTS" value={formatToTwoDecimals(pay)} />
-                    <div className="flex justify-between p-2 border-b border-black items-center font-bold" style={accentStyle}>
-                        <span className="text-[1.1em]">TOTAL AMOUNT PAYABLE</span>
-                        <span className="text-right" style={{ fontSize: `${finalFontSize * 1.3}px` }}>GH&#8373; {totalAmountPayable}</span>
-                    </div>
-                </div>
-                <div className="w-[33%] text-right font-bold flex flex-col">
-                    <div className="p-1 border-b-2 border-black bg-black/5 text-[0.8em] flex items-center justify-center">FINANCIALS (GH&#8373;)</div>
-                    <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(lf)}</div>
-                    <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(bop)}</div>
-                    <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(arr)}</div>
-                    <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(totalDue)}</div>
-                    <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(pay)}</div>
-                    <div className="p-2 border-b border-black flex items-center justify-end" style={accentStyle}>
-                        <span style={{ fontSize: `${finalFontSize * 1.3}px` }}>{totalAmountPayable}</span>
-                    </div>
-                </div>
-            </div>
-        </>
-      )
-    }
+    }, [data, totalAmountPayable]);
 
     if (!data) return <div ref={ref} className="p-8 text-center text-muted-foreground">Loading Bill Data...</div>;
 
     const assemblyName = settings.general?.assemblyName || 'KWAHU EAST DISTRICT ASSEMBLY';
     const postalAddress = settings.general?.postalAddress || 'P.O. Box 11, ABETIFI';
     const contactPhone = settings.general?.contactPhone || '0242122039/0244971784';
+
+    const rv = getNumericValue('Rateable Value');
+    const ri = getNumericValue('Rate Impost');
+    const sc = getNumericValue('Sanitation Charged');
+    const pb = getNumericValue('Previous Balance');
+    const tp = getNumericValue('Total Payment');
+    const charged = rv * ri;
+    const totalThisYear = charged + sc;
+    const totalBill = totalThisYear + pb;
+
+    const pf = getNumericValue('Permit Fee');
+    const bopTotalDue = pf + getNumericValue('Arrears');
+
+    const lf = getNumericValue('Property Rate');
+    const licenseBop = getNumericValue('Bop Amount');
+    const licenseTotalDue = (lf + licenseBop + getNumericValue('Arrears'));
 
     return (
       <div ref={ref} className={cn("text-black bg-white w-full h-full box-border", fontClass, isCompact ? 'p-2' : 'p-4')} style={baseStyle}>
@@ -423,7 +268,6 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <div className={cn("mt-3 inline-block px-4 py-1 border-2 border-black font-black tracking-[0.2em] uppercase", isDemandNotice ? "bg-red-600 text-white border-red-700" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 1.4}px` }}>
                       {isDemandNotice ? 'DEMAND NOTICE' : 'PROPERTY RATE & B.O.P BILL'}
                     </div>
-                    {!isDemandNotice && <div className="mt-1 font-bold text-[0.8em] tracking-wider uppercase">PROPERTY RATE & B.O.P BILL</div>}
                 </div>
                 <div className="w-1/5 flex justify-end items-center">
                     {settings.appearance?.assemblyLogo && (
@@ -439,13 +283,122 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
             </div>
             
             <main className="border-2 border-black flex-grow">
-                {billType === 'property' ? renderPropertyBill() : billType === 'bop' ? renderBopBill() : renderLicenseBill()}
+                {billType === 'property' ? (
+                  <>
+                    <div className="flex border-b-2 border-black">
+                        <div className="w-[67%] border-r-2 border-black">
+                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">OWNER NAME</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Owner Name')}</div></div>
+                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">PHONE</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Phone Number')}</div></div>
+                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">TOWN</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Town')}</div></div>
+                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">PROPERTY NO</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Property No')}</div></div>
+                        </div>
+                        <div className="w-[33%]">
+                            <div className="flex border-b border-black/20"><div className="w-1/2 font-bold p-1 bg-black/[0.02]">SUBURB</div><div className="w-1/2 border-l border-black/20 p-1">{formatValue('Suburb')}</div></div>
+                            <div className="flex border-b border-black/20"><div className="w-1/2 font-bold p-1 bg-black/[0.02]">TYPE</div><div className="w-1/2 border-l border-black/20 p-1">{formatValue('Property Type')}</div></div>
+                            <div className="font-bold text-center p-1 bg-black/5 border-b border-black/20 text-[0.8em]">AMOUNT (GH&#8373;)</div>
+                        </div>
+                    </div>
+                    <div className="flex">
+                        <div className="w-[67%] border-r-2 border-black">
+                            <div className="flex border-b-2 border-black bg-black/[0.01]">
+                                <div className="w-1/3 font-bold flex items-center justify-center p-1 text-center text-[0.8em]">PARTICULARS</div>
+                                <div className="w-1/3 border-x border-black/20 p-1 text-center font-bold text-[0.8em]">RV: {formatToTwoDecimals(rv)}</div>
+                                <div className="w-1/3 p-1 text-center font-bold text-[0.8em]">IMPOST: {formatValue('Rate Impost')}</div>
+                            </div>
+                            <BillRow label="AMOUNT CHARGED" value={formatToTwoDecimals(charged)} />
+                            <BillRow label="SANITATION" value={formatToTwoDecimals(sc)} />
+                            <BillRow label="TOTAL CURRENT YEAR" value={formatToTwoDecimals(totalThisYear)} isBold />
+                            <BillRow label="PREVIOUS BALANCE" value={formatToTwoDecimals(pb)} />
+                            <BillRow label="TOTAL OUTSTANDING" value={formatToTwoDecimals(totalBill)} isBold />
+                            <BillRow label="LESS PAYMENT" value={formatToTwoDecimals(tp)} />
+                            <div className="flex justify-between p-2 border-b border-black items-center font-bold" style={accentStyle}>
+                                <span className="text-[1.1em]">TOTAL PAYABLE</span>
+                                <span className="text-right" style={{ fontSize: `${finalFontSize * 1.3}px` }}>GH&#8373; {totalAmountPayable}</span>
+                            </div>
+                        </div>
+                        <div className="w-[33%] text-right font-bold flex flex-col">
+                            <div className="p-1 border-b-2 border-black bg-black/5 text-[0.8em] flex items-center justify-center">FINANCIALS</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(charged)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(sc)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(totalThisYear)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(pb)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(totalBill)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(tp)}</div>
+                            <div className="p-2 border-b border-black flex items-center justify-end" style={accentStyle}>{totalAmountPayable}</div>
+                        </div>
+                    </div>
+                  </>
+                ) : billType === 'bop' ? (
+                  <>
+                    <div className="flex border-b-2 border-black">
+                        <div className="w-[67%] border-r-2 border-black">
+                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">BUSINESS</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Business Name')}</div></div>
+                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">OWNER</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Owner Name')}</div></div>
+                        </div>
+                        <div className="w-[33%]">
+                            <div className="font-bold text-center p-1 bg-black/5 border-b border-black/20 text-[0.8em]">AMOUNT (GH&#8373;)</div>
+                        </div>
+                    </div>
+                    <div className="flex">
+                        <div className="w-[67%] border-r-2 border-black">
+                            <BillRow label="PERMIT FEE" value={formatToTwoDecimals(pf)} />
+                            <BillRow label="ARREARS" value={formatToTwoDecimals(getNumericValue('Arrears'))} />
+                            <BillRow label="TOTAL DUE" value={formatToTwoDecimals(bopTotalDue)} isBold />
+                            <BillRow label="LESS PAYMENT" value={formatToTwoDecimals(getNumericValue('Payment'))} />
+                            <div className="flex justify-between p-2 border-b border-black items-center font-bold" style={accentStyle}>
+                                <span className="text-[1.1em]">TOTAL PAYABLE</span>
+                                <span className="text-right" style={{ fontSize: `${finalFontSize * 1.3}px` }}>GH&#8373; {totalAmountPayable}</span>
+                            </div>
+                        </div>
+                        <div className="w-[33%] text-right font-bold flex flex-col">
+                            <div className="p-1 border-b-2 border-black bg-black/5 text-[0.8em] flex items-center justify-center">FINANCIALS</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(pf)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(getNumericValue('Arrears'))}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(bopTotalDue)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(getNumericValue('Payment'))}</div>
+                            <div className="p-2 border-b border-black flex items-center justify-end" style={accentStyle}>{totalAmountPayable}</div>
+                        </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex border-b-2 border-black">
+                        <div className="w-[67%] border-r-2 border-black">
+                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">SN</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('S/N')}</div></div>
+                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">HOTEL</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Name of Hotel/Guest House')}</div></div>
+                        </div>
+                        <div className="w-[33%]">
+                            <div className="font-bold text-center p-1 bg-black/5 border-b border-black/20 text-[0.8em]">AMOUNT (GH&#8373;)</div>
+                        </div>
+                    </div>
+                    <div className="flex">
+                        <div className="w-[67%] border-r-2 border-black">
+                            <BillRow label="LICENSE FEE" value={formatToTwoDecimals(lf)} />
+                            <BillRow label="BOP FEE" value={formatToTwoDecimals(licenseBop)} />
+                            <BillRow label="ARREARS" value={formatToTwoDecimals(getNumericValue('Arrears'))} />
+                            <BillRow label="TOTAL DUE" value={formatToTwoDecimals(licenseTotalDue)} isBold />
+                            <div className="flex justify-between p-2 border-b border-black items-center font-bold" style={accentStyle}>
+                                <span className="text-[1.1em]">TOTAL PAYABLE</span>
+                                <span className="text-right" style={{ fontSize: `${finalFontSize * 1.3}px` }}>GH&#8373; {totalAmountPayable}</span>
+                            </div>
+                        </div>
+                        <div className="w-[33%] text-right font-bold flex flex-col">
+                            <div className="p-1 border-b-2 border-black bg-black/5 text-[0.8em] flex items-center justify-center">FINANCIALS</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(lf)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(licenseBop)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(getNumericValue('Arrears'))}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(licenseTotalDue)}</div>
+                            <div className="p-2 border-b border-black flex items-center justify-end" style={accentStyle}>{totalAmountPayable}</div>
+                        </div>
+                    </div>
+                  </>
+                )}
             </main>
             
             <footer className="mt-auto pt-4 flex flex-col gap-4">
                 <div className="flex items-end justify-between gap-8">
                     <div className="flex-1 flex flex-col items-start gap-1">
-                        <span className="text-[0.6em] font-bold text-muted-foreground tracking-tighter">SECURE DOCUMENT IDENTIFIER (SDI)</span>
+                        <span className="text-[0.6em] font-bold text-muted-foreground tracking-tighter">SDI (SECURE IDENTIFIER)</span>
                         {barcodeValue && <BarcodeComponent value={barcodeValue} isCompact={isCompact} />}
                     </div>
                     <div className="w-1/3 text-center">
@@ -460,7 +413,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                 </div>
                 <div className={cn("font-black text-center p-2 border-2 border-black tracking-[0.1em] text-[1.1em]", isDemandNotice ? "bg-red-600 text-white border-red-700" : "bg-black text-white")}>
                     {isDemandNotice 
-                      ? 'FAILURE TO PAY WITHIN 14 DAYS WILL RESULT IN LEGAL ACTION WITHOUT FURTHER NOTICE.'
+                      ? 'LEGAL ACTION WILL BE TAKEN IF NOT PAID WITHIN 14 DAYS.'
                       : (settings.appearance?.billWarningText || 'PAY AT ONCE OR FACE LEGAL ACTION')
                     }
                 </div>
@@ -510,7 +463,7 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
                <div className="flex items-center justify-between space-x-2 border p-3 rounded-lg bg-background">
                   <div className="flex flex-col space-y-1">
                     <Label htmlFor="demand-notice-toggle">Demand Notice</Label>
-                    <span className="text-[10px] text-muted-foreground">Switch to legal demand notice mode</span>
+                    <span className="text-[10px] text-muted-foreground">Legal demand notice mode</span>
                   </div>
                   <Switch 
                     id="demand-notice-toggle" 
@@ -518,11 +471,6 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
                     onCheckedChange={setIsDemandNotice} 
                   />
                </div>
-            </div>
-            <div className="pt-4 space-y-2">
-              <p className="text-xs text-muted-foreground">
-                Demand notices use a red header and specific legal language in the warning section to emphasize urgency.
-              </p>
             </div>
           </div>
 
@@ -547,7 +495,7 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
                  )}
             </div>
             <DialogFooter className="p-4 bg-white sm:justify-end border-t gap-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>Close Viewer</Button>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
               <Button onClick={handlePrint} disabled={isLoading} className={cn("shadow-lg", isDemandNotice ? "bg-red-600 hover:bg-red-700" : "")}>
                 <Printer className="mr-2 h-4 w-4" />
                 Print {isDemandNotice ? 'Demand Notice' : 'Official Copy'}

@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -36,7 +35,6 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { useRequirePermission } from '@/hooks/useRequirePermission';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -53,6 +51,7 @@ export default function UserManagementPage() {
   
   const [editingUser, setEditingUser] = React.useState<Partial<User> | null>(null);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [deleteConfirmUser, setDeleteConfirmUser] = React.useState<User | null>(null);
   const [currentPage, setCurrentPage] = React.useState(1);
   const isMobile = useIsMobile();
 
@@ -87,10 +86,12 @@ export default function UserManagementPage() {
     }
   }
 
-  const handleDeleteUser = (user: User) => {
-    deleteUser(user.id);
-    addLog('Deleted User', `Deleted user: ${user.email}`);
-    toast({ variant: 'destructive', title: 'User Deleted', description: `${user.name} has been removed from the system.` });
+  const handleDeleteUser = () => {
+    if (!deleteConfirmUser) return;
+    deleteUser(deleteConfirmUser.id);
+    addLog('Deleted User', `Deleted user: ${deleteConfirmUser.email}`);
+    toast({ variant: 'destructive', title: 'User Deleted', description: `${deleteConfirmUser.name} has been removed from the system.` });
+    setDeleteConfirmUser(null);
   }
 
   const roleVariant = (role: string): 'default' | 'secondary' | 'outline' => {
@@ -150,28 +151,10 @@ export default function UserManagementPage() {
                                 Edit
                             </DropdownMenuItem>
                             <DropdownMenuSeparator/>
-                             <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                     <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-destructive hover:bg-destructive/10">
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete
-                                    </button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This action cannot be undone. This will permanently delete the user account for {user.name}.
-                                    </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteUser(user)}>
-                                        Yes, delete user
-                                    </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
+                            <DropdownMenuItem onSelect={() => setDeleteConfirmUser(user)} className="text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                            </DropdownMenuItem>
                         </DropdownMenuContent>
                         </DropdownMenu>
                     </TableCell>
@@ -215,28 +198,9 @@ export default function UserManagementPage() {
                     <Edit className="mr-2 h-4 w-4" /> Edit
                 </DropdownMenuItem>
                 <DropdownMenuSeparator/>
-                 <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                         <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-destructive hover:bg-destructive/10">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                        </button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the user account for {user.name}.
-                        </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDeleteUser(user)}>
-                            Yes, delete user
-                        </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+                <DropdownMenuItem onSelect={() => setDeleteConfirmUser(user)} className="text-destructive">
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </CardHeader>
@@ -268,7 +232,7 @@ export default function UserManagementPage() {
         <CardHeader>
             <CardTitle>Users</CardTitle>
             <CardDescription>
-                Manage who can access the system and their permission levels.
+                Manage access and permission levels.
             </CardDescription>
         </CardHeader>
         <CardContent>
@@ -277,35 +241,39 @@ export default function UserManagementPage() {
          {totalPages > 1 && (
             <CardFooter className="flex justify-between items-center border-t pt-4">
             <span className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages} ({users.length} total users)
+                Page {currentPage} of {totalPages}
             </span>
             <div className="flex items-center gap-2">
-                <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                >
-                Previous
-                </Button>
-                <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                >
-                Next
-                </Button>
+                <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} disabled={currentPage === 1}>Previous</Button>
+                <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages}>Next</Button>
             </div>
             </CardFooter>
         )}
       </Card>
+      
       <EditUserDialog 
         user={editingUser}
         isOpen={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         onSave={handleSaveUser}
       />
+
+      <AlertDialog open={!!deleteConfirmUser} onOpenChange={(open) => !open && setDeleteConfirmUser(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+                This will permanently delete the account for {deleteConfirmUser?.name}. This action cannot be undone.
+            </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Yes, delete user
+            </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
