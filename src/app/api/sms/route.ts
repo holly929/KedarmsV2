@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server';
 
+/**
+ * Normalizes phone numbers to the 233XXXXXXXXX format required by Ghanaian gateways.
+ */
 function normalizePhoneNumber(phone: string): string {
-  // Remove all non-numeric characters
   const cleaned = String(phone || '').replace(/\D/g, '');
-  
-  // If it starts with 0 and is 10 digits (Ghana local), change to 233
   if (cleaned.startsWith('0') && cleaned.length === 10) {
     return '233' + cleaned.substring(1);
   }
-  
-  // Return cleaned number (expecting 233XXXXXXXXX format)
   return cleaned;
 }
 
@@ -22,32 +20,33 @@ export async function POST(request: Request) {
     message = body.message;
     config = body.config;
   } catch (e) {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid request payload.' }, { status: 400 });
   }
 
   if (!phoneNumber || !message || !config || config.provider === 'none') {
-    return NextResponse.json({ error: 'Missing parameters or SMS provider not configured.' }, { status: 400 });
+    return NextResponse.json({ error: 'SMS service is not fully configured in Settings.' }, { status: 400 });
   }
 
   const normalizedPhone = normalizePhoneNumber(phoneNumber);
   const provider = config.provider;
 
-  // Set up an abort controller for a 12-second timeout
+  // Use a longer timeout (25s) for outbound gateway communication
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 12000);
+  const timeoutId = setTimeout(() => controller.abort(), 25000);
 
   try {
     const commonHeaders = {
-      'User-Agent': 'RateEase-Revenue-System/1.0',
+      'User-Agent': 'RateEase-Revenue-System/1.1',
       'Accept': 'application/json',
+      'Cache-Control': 'no-cache'
     };
 
+    // --- ARKESEL V2 INTEGRATION ---
     if (provider === 'arkesel') {
         const sender = String(config.senderId || 'RateEase').substring(0, 11);
         
         const response = await fetch(`https://openapi.arkesel.com/api/v2/sms/send`, {
             method: 'POST',
-            cache: 'no-store',
             signal: controller.signal,
             headers: {
                 ...commonHeaders,
@@ -65,49 +64,32 @@ export async function POST(request: Request) {
 
         const contentType = response.headers.get('content-type');
         let result;
+        
         if (contentType && contentType.includes('application/json')) {
             result = await response.json();
         } else {
             const text = await response.text();
-            throw new Error(`Provider returned non-JSON response (likely a gateway block or 404): ${text.substring(0, 100)}`);
+            if (!response.ok) {
+                throw new Error(`Arkesel Gateway Error (${response.status}): ${text.substring(0, 100)}`);
+            }
+            result = { message: text };
         }
         
         if (response.ok) {
             return NextResponse.json({ success: true, data: result });
         } else {
             return NextResponse.json({ 
-                error: result.message || result.error || `Arkesel API Error: ${response.status}`,
+                error: result?.message || `Arkesel API Error: ${response.status}`,
                 details: result 
             }, { status: response.status });
         }
     } 
     
-    if (provider === 'sms_gh') {
-        const params = new URLSearchParams({
-            key: config.apiKey || '',
-            secret: config.apiSecret || '',
-            to: normalizedPhone,
-            from: String(config.senderId || 'RateEase').substring(0, 11),
-            msg: message,
-        });
-        const res = await fetch(`https://api.smsgh.com/v3/messages/send?${params.toString()}`, {
-            cache: 'no-store',
-            signal: controller.signal,
-            headers: commonHeaders
-        });
-        clearTimeout(timeoutId);
-
-        if (res.ok) return NextResponse.json({ success: true });
-        
-        const errorText = await res.text();
-        return NextResponse.json({ error: `SMS GH Error: ${errorText}` }, { status: res.status });
-    } 
-    
+    // --- TWILIO INTEGRATION ---
     if (provider === 'twilio') {
         const auth = Buffer.from(`${config.twilioSid}:${config.twilioToken}`).toString('base64');
         const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${config.twilioSid}/Messages.json`, {
             method: 'POST',
-            cache: 'no-store',
             signal: controller.signal,
             headers: {
                 ...commonHeaders,
@@ -125,20 +107,41 @@ export async function POST(request: Request) {
         const result = await res.json();
         if (res.ok) return NextResponse.json({ success: true, data: result });
         
-        return NextResponse.json({ error: result.message || 'Twilio Error' }, { status: res.status });
+        return NextResponse.json({ error: result.message || 'Twilio Rejected the request.' }, { status: res.status });
     }
 
-    return NextResponse.json({ error: 'SMS Provider not supported.' }, { status: 500 });
+    // --- SMS ONLINE GH INTEGRATION ---
+    if (provider === 'sms_gh') {
+        const params = new URLSearchParams({
+            key: config.apiKey || '',
+            secret: config.apiSecret || '',
+            to: normalizedPhone,
+            from: String(config.senderId || 'RateEase').substring(0, 11),
+            msg: message,
+        });
+        const res = await fetch(`https://api.smsgh.com/v3/messages/send?${params.toString()}`, {
+            headers: commonHeaders,
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (res.ok) return NextResponse.json({ success: true });
+        const errorText = await res.text();
+        return NextResponse.json({ error: `SMS GH Provider Error: ${errorText.substring(0, 100)}` }, { status: res.status });
+    }
+
+    return NextResponse.json({ error: 'The selected SMS provider is not currently supported by this route.' }, { status: 501 });
+
   } catch (error: any) {
     clearTimeout(timeoutId);
     console.error("SMS API Route Runtime Error:", error);
 
-    let message = error.message || 'fetch failed';
-    let hint = 'Verify that the server has an active internet connection and that the provider\'s domain is not blocked by a firewall.';
+    let message = error.message || 'Unknown network error';
+    let hint = 'Verify that the server has an active internet connection and that the provider\'s domain (e.g. openapi.arkesel.com) is not blocked by a firewall or proxy.';
 
     if (error.name === 'AbortError') {
-      message = 'Request Timed Out';
-      hint = 'The SMS gateway took too long to respond. This often happens due to high network latency or a proxy server delay.';
+      message = 'Gateway Connection Timed Out';
+      hint = 'The provider did not respond within 25 seconds. Check your internet connection or if the provider service is currently down.';
     }
 
     return NextResponse.json({ 
