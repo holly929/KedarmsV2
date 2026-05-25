@@ -46,6 +46,7 @@ export function ReceiptDialog({ isOpen, onOpenChange, payment, item }: ReceiptDi
                 
                 <div className="space-y-1 mb-4">
                     <div className="flex justify-between"><span>DATE:</span><span>{new Date(payment.date).toLocaleDateString()}</span></div>
+                    <div className="flex justify-between"><span>METHOD:</span><span className="font-bold">{payment.method}</span></div>
                     <div className="flex justify-between"><span>REF:</span><span>{payment.reference || payment.id}</span></div>
                     <div className="flex justify-between"><span>NAME:</span><span className="text-right">{getPropertyValue(item, 'Owner Name') || getPropertyValue(item, 'Business Name')}</span></div>
                     <div className="flex justify-between"><span>IDENTIFIER:</span><span>{getPropertyValue(item, 'Property No') || getPropertyValue(item, 'S/N') || 'N/A'}</span></div>

@@ -4,10 +4,12 @@ import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { usePropertyData } from '@/context/PropertyDataContext';
 import { useBopData } from '@/context/BopDataContext';
@@ -17,13 +19,14 @@ import { getPropertyValue } from '@/lib/property-utils';
 import type { Payment, Property, Bop, License } from '@/lib/types';
 import { ReceiptDialog } from './receipt-dialog';
 import { sendManualPaymentSms } from '@/lib/sms-service';
-import { RefreshCcw } from 'lucide-react';
+import { RefreshCcw, CreditCard, Banknote, Landmark } from 'lucide-react';
 import { store } from '@/lib/store';
 
 const paymentSchema = z.object({
   amount: z.coerce.number().positive('Amount must be positive'),
   date: z.string().min(1, 'Date is required'),
   reference: z.string().min(1, 'Receipt/Ref number is required'),
+  method: z.enum(['Cash', 'Mobile Money', 'Bank Transfer']).default('Cash'),
 });
 
 interface ManualPaymentDialogProps {
@@ -36,6 +39,7 @@ interface ManualPaymentDialogProps {
 export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: ManualPaymentDialogProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const router = useRouter();
   const { updateProperty } = usePropertyData();
   const { updateBop } = useBopData();
   const { updateLicense } = useLicenseData();
@@ -56,19 +60,20 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
       amount: 0,
       date: new Date().toISOString().split('T')[0],
       reference: '',
+      method: 'Cash',
     }
   });
 
-  // Re-generate reference number whenever dialog opens
   useEffect(() => {
     if (isOpen) {
       form.reset({
         amount: 0,
         date: new Date().toISOString().split('T')[0],
         reference: generateReceiptNo(),
+        method: 'Cash',
       });
     }
-  }, [isOpen]);
+  }, [isOpen, form]);
 
   const onSubmit = (values: z.infer<typeof paymentSchema>) => {
     if (!item || !user) return;
@@ -77,7 +82,7 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
       id: `man-${Date.now()}`,
       amount: values.amount,
       date: values.date,
-      method: 'Cash/Manual',
+      method: values.method,
       reference: values.reference,
       recordedBy: user.name,
     };
@@ -85,7 +90,6 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
     const existingPayments = item.payments || [];
     const updatedPayments = [...existingPayments, newPayment];
     
-    // Calculate new totals based on type
     let updatedItem: any = { ...item, payments: updatedPayments };
     if (type === 'property') {
         const currentPaid = Number(getPropertyValue(item, 'Total Payment') || 0);
@@ -102,33 +106,61 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
     }
 
     setLastPayment(newPayment);
-    toast({ title: 'Payment Recorded', description: `GHS ${values.amount.toFixed(2)} added to records.` });
+    toast({ title: 'Payment Recorded', description: `${values.method} payment of GHS ${values.amount.toFixed(2)} recorded.` });
     
-    // Trigger SMS notification
     sendManualPaymentSms(updatedItem, newPayment);
-    
     setShowReceipt(true);
   };
 
-  const handleRegenerate = () => {
-    form.setValue('reference', generateReceiptNo());
+  const handleInitiateOnline = () => {
+    if (!item) return;
+    const amount = form.getValues('amount');
+    if (amount <= 0) {
+      toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Enter an amount before paying online.' });
+      return;
+    }
+    
+    localStorage.setItem('paymentBill', JSON.stringify({ type, data: item }));
+    router.push(`/payment/${type}/${item.id}`);
+    onOpenChange(false);
   };
+
+  const selectedMethod = form.watch('method');
 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Record Manual Payment</DialogTitle>
+            <DialogTitle>Record Payment</DialogTitle>
             <DialogDescription>
-              Enter payment details for {getPropertyValue(item, 'Owner Name') || getPropertyValue(item, 'Business Name') || getPropertyValue(item, 'Name of Hotel/Guest House')}.
+              Collect revenue for {getPropertyValue(item, 'Owner Name') || getPropertyValue(item, 'Business Name') || getPropertyValue(item, 'Name of Hotel/Guest House')}.
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField control={form.control} name="method" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Payment Method</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select method" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Cash">Cash (Manual)</SelectItem>
+                      <SelectItem value="Mobile Money">Mobile Money (MoMo)</SelectItem>
+                      <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
               <FormField control={form.control} name="amount" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Amount (GHS)</FormLabel>
+                  <FormLabel>Amount to Pay (GHS)</FormLabel>
                   <FormControl>
                     <Input type="number" step="0.01" {...field} />
                   </FormControl>
@@ -138,7 +170,7 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
               
               <FormField control={form.control} name="date" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Date</FormLabel>
+                  <FormLabel>Transaction Date</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />
                   </FormControl>
@@ -148,29 +180,39 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
 
               <FormField control={form.control} name="reference" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Receipt/Ref Number</FormLabel>
+                  <FormLabel>Receipt / Transaction Ref</FormLabel>
                   <div className="flex gap-2">
                     <FormControl>
-                      <Input placeholder="PREFIX-YYYY-XXXXXX" {...field} />
+                      <Input placeholder="REF-XXXXXX" {...field} />
                     </FormControl>
                     <Button 
                       type="button" 
                       variant="outline" 
                       size="icon" 
-                      onClick={handleRegenerate}
-                      title="Regenerate Ref Number"
+                      onClick={() => form.setValue('reference', generateReceiptNo())}
                     >
                       <RefreshCcw className="h-4 w-4" />
                     </Button>
                   </div>
-                  <FormDescription>Unique ID for this transaction (Auto-generated from System Name).</FormDescription>
+                  <FormDescription>Official receipt or network transaction ID.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )} />
 
-              <DialogFooter className="pt-4">
+              {(selectedMethod === 'Mobile Money' || selectedMethod === 'Bank Transfer') && (
+                <div className="bg-primary/5 p-4 rounded-lg border border-primary/20 space-y-2">
+                   <p className="text-xs font-semibold text-primary uppercase">Paystack Integration</p>
+                   <p className="text-xs text-muted-foreground">You can initiate a real-time MoMo push or card payment via Paystack.</p>
+                   <Button type="button" variant="secondary" className="w-full" onClick={handleInitiateOnline}>
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      Initiate Paystack Payment
+                   </Button>
+                </div>
+              )}
+
+              <DialogFooter className="pt-4 gap-2">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                <Button type="submit">Save & Print Receipt</Button>
+                <Button type="submit">Record & Print Receipt</Button>
               </DialogFooter>
             </form>
           </Form>
