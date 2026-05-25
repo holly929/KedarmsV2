@@ -15,15 +15,16 @@ import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useLicenseData } from '@/context/LicenseDataContext';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, RefreshCcw } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { store } from '@/lib/store';
 
 const licenseFormSchema = z.object({
   'Record Type': z.array(z.string()).min(1, 'Select at least one record type.'),
-  'S/N': z.string().optional(),
+  'S/N': z.string().min(1, 'S/N is required.'),
   'Name of Hotel/Guest House': z.string().min(3, 'Name is required.'),
   'Phone Number': z.string().optional(),
   'Property Rate': z.coerce.number().min(0, 'Property Rate must be a positive number.'),
@@ -40,11 +41,19 @@ export default function NewLicensePage() {
     const router = useRouter();
     const { addLicense } = useLicenseData();
 
+    const generateSN = () => {
+        const systemName = store.settings.generalSettings?.systemName || 'RE';
+        const prefix = systemName.replace(/\s+/g, '').toUpperCase();
+        const year = new Date().getFullYear();
+        const random = Math.floor(1000 + Math.random() * 9000);
+        return `${prefix}-LIC-${year}-${random}`;
+    };
+
     const form = useForm<z.infer<typeof licenseFormSchema>>({
         resolver: zodResolver(licenseFormSchema),
         defaultValues: {
             'Record Type': ['Property Rate'],
-            'S/N': '',
+            'S/N': generateSN(),
             'Name of Hotel/Guest House': '',
             'Phone Number': '',
             'Property Rate': 0,
@@ -91,6 +100,10 @@ export default function NewLicensePage() {
             });
         }
     }
+
+    const handleRegenerateSN = () => {
+        form.setValue('S/N', generateSN());
+    };
 
   return (
     <>
@@ -161,8 +174,13 @@ export default function NewLicensePage() {
                     />
                     <FormField control={form.control} name="S/N" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>S/N</FormLabel>
-                          <FormControl><Input placeholder="e.g. 001" {...field} /></FormControl>
+                          <FormLabel>S/N (Serial No.)</FormLabel>
+                          <div className="flex gap-2">
+                            <FormControl><Input placeholder="Auto-generated" {...field} /></FormControl>
+                            <Button type="button" variant="outline" size="icon" onClick={handleRegenerateSN} title="Regenerate S/N">
+                                <RefreshCcw className="h-4 w-4" />
+                            </Button>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}

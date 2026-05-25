@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -14,14 +15,15 @@ import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { usePropertyData } from '@/context/PropertyDataContext';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, RefreshCcw } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { store } from '@/lib/store';
 
 const propertyFormSchema = z.object({
-  'S/N': z.string().optional(),
+  'S/N': z.string().min(1, 'S/N is required.'),
   'Owner Name': z.string().min(3, 'Owner name must be at least 3 characters.'),
   'Phone Number': z.string().optional(),
   'Town': z.string().min(2, 'Town name is required.'),
@@ -39,16 +41,23 @@ const propertyFormSchema = z.object({
   'created_at': z.date().optional(),
 });
 
-
 export default function NewPropertyPage() {
     useRequirePermission();
     const router = useRouter();
     const { addProperty } = usePropertyData();
 
+    const generateSN = () => {
+        const systemName = store.settings.generalSettings?.systemName || 'RE';
+        const prefix = systemName.replace(/\s+/g, '').toUpperCase();
+        const year = new Date().getFullYear();
+        const random = Math.floor(1000 + Math.random() * 9000);
+        return `${prefix}-PROP-${year}-${random}`;
+    };
+
     const form = useForm<z.infer<typeof propertyFormSchema>>({
         resolver: zodResolver(propertyFormSchema),
         defaultValues: {
-            'S/N': '',
+            'S/N': generateSN(),
             'Owner Name': '',
             'Phone Number': '',
             'Town': '',
@@ -80,7 +89,6 @@ export default function NewPropertyPage() {
 
     function onSubmit(data: z.infer<typeof propertyFormSchema>) {
         try {
-            // Use manually entered Amount Due if provided, otherwise use calculated
             const finalAmountDue = data['Amount Due'] !== undefined && data['Amount Due'] !== null 
                 ? data['Amount Due'] 
                 : calculatedPayable;
@@ -106,6 +114,10 @@ export default function NewPropertyPage() {
         }
     }
 
+    const handleRegenerateSN = () => {
+        form.setValue('S/N', generateSN());
+    };
+
   return (
     <>
         <div className="flex items-center gap-4">
@@ -130,8 +142,13 @@ export default function NewPropertyPage() {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                        <FormField control={form.control} name="S/N" render={({ field }) => (
                             <FormItem>
-                            <FormLabel>S/N</FormLabel>
-                            <FormControl><Input placeholder="001" {...field} /></FormControl>
+                            <FormLabel>S/N (Serial No.)</FormLabel>
+                            <div className="flex gap-2">
+                                <FormControl><Input placeholder="Auto-generated" {...field} /></FormControl>
+                                <Button type="button" variant="outline" size="icon" onClick={handleRegenerateSN} title="Regenerate S/N">
+                                    <RefreshCcw className="h-4 w-4" />
+                                </Button>
+                            </div>
                             <FormMessage />
                             </FormItem>
                         )} />
