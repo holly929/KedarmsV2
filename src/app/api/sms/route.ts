@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 
 function normalizePhoneNumber(phone: string): string {
+  // Remove all non-numeric characters
   const cleaned = String(phone || '').replace(/\D/g, '');
+  
+  // If it starts with 0 and is 10 digits (Ghana local), change to 233
   if (cleaned.startsWith('0') && cleaned.length === 10) {
     return '233' + cleaned.substring(1);
   }
+  
+  // If it starts with 233 but is short, or already correct, return it
   return cleaned;
 }
 
@@ -16,32 +21,54 @@ export async function POST(request: Request) {
   }
 
   const normalizedPhone = normalizePhoneNumber(phoneNumber);
+  const provider = config.provider;
 
   try {
-    if (config.provider === 'arkesel') {
-        const params = new URLSearchParams({
-            action: 'send-sms',
-            api_key: config.apiKey || '',
-            to: normalizedPhone,
-            from: config.senderId || '',
-            sms: message,
+    if (provider === 'arkesel') {
+        // Using Arkesel v2 API (JSON)
+        const response = await fetch(`https://openapi.arkesel.com/api/v2/sms/send`, {
+            method: 'POST',
+            headers: {
+                'api-key': config.apiKey || '',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                sender: config.senderId || 'RateEase',
+                message: message,
+                recipients: [normalizedPhone]
+            })
         });
-        const res = await fetch(`https://sms.arkesel.com/sms/api?${params.toString()}`);
-        const text = await res.text();
-        if (res.ok && (text.includes('SUCCESS') || text.includes('sent successfully'))) {
-            return NextResponse.json({ success: true });
+
+        const result = await response.json();
+        
+        // Arkesel v2 returns 201 for successful submission
+        if (response.status === 200 || response.status === 201) {
+            return NextResponse.json({ success: true, data: result });
+        } else {
+            return NextResponse.json({ 
+                error: result.message || result.error || `Arkesel Error: ${response.status}`,
+                details: result 
+            }, { status: response.status });
         }
-    } else if (config.provider === 'sms_gh') {
+    } 
+    
+    if (provider === 'sms_gh') {
         const params = new URLSearchParams({
             key: config.apiKey || '',
             secret: config.apiSecret || '',
             to: normalizedPhone,
-            from: config.senderId || '',
+            from: config.senderId || 'RateEase',
             msg: message,
         });
         const res = await fetch(`https://api.smsgh.com/v3/messages/send?${params.toString()}`);
         if (res.ok) return NextResponse.json({ success: true });
-    } else if (config.provider === 'twilio') {
+        
+        const errorText = await res.text();
+        return NextResponse.json({ error: `SMS GH Error: ${errorText}` }, { status: res.status });
+    } 
+    
+    if (provider === 'twilio') {
         const auth = Buffer.from(`${config.twilioSid}:${config.twilioToken}`).toString('base64');
         const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${config.twilioSid}/Messages.json`, {
             method: 'POST',
@@ -55,11 +82,16 @@ export async function POST(request: Request) {
                 Body: message
             })
         });
-        if (res.ok) return NextResponse.json({ success: true });
+        
+        const result = await res.json();
+        if (res.ok) return NextResponse.json({ success: true, data: result });
+        
+        return NextResponse.json({ error: result.message || 'Twilio Error' }, { status: res.status });
     }
 
-    return NextResponse.json({ error: 'SMS delivery failed through chosen provider.' }, { status: 500 });
-  } catch (error) {
-    return NextResponse.json({ error: 'Internal API Error' }, { status: 500 });
+    return NextResponse.json({ error: 'SMS Provider not supported or configured incorrectly.' }, { status: 500 });
+  } catch (error: any) {
+    console.error("SMS API Route Error:", error);
+    return NextResponse.json({ error: error.message || 'Internal API Error' }, { status: 500 });
   }
 }

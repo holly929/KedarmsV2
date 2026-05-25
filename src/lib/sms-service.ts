@@ -19,7 +19,6 @@ function compileTemplate(template: string, data: Property | Bop | License | Bill
                 const pb = Number(String(getPropertyValue(p, 'Previous Balance') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
                 const tp = Number(String(getPropertyValue(p, 'Total Payment') || getPropertyValue(p, 'Payment') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
                 
-                // For BOP/License
                 const fee = Number(String(getPropertyValue(p, 'Permit Fee') || getPropertyValue(p, 'Property Rate') || getPropertyValue(p, 'License Fee') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
                 const bop = Number(String(getPropertyValue(p, 'Bop Amount') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
                 const arr = Number(String(getPropertyValue(p, 'Arrears') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
@@ -82,7 +81,7 @@ function compileTemplate(template: string, data: Property | Bop | License | Bill
 async function sendSingleSms(phoneNumber: string, message: string): Promise<{ success: boolean; error?: string }> {
     const config = store.settings.smsSettings;
     if (!config || config.provider === 'none') {
-        return { success: false, error: 'SMS Provider not configured.' };
+        return { success: false, error: 'SMS Provider not configured in Settings.' };
     }
 
     try {
@@ -100,10 +99,11 @@ async function sendSingleSms(phoneNumber: string, message: string): Promise<{ su
         if (response.ok && result.success === true) {
             return { success: true };
         } else {
-            return { success: false, error: result.error || 'Provider error' };
+            // Return actual error message from provider if available
+            return { success: false, error: result.error || 'Provider rejected the request.' };
         }
-    } catch (error) {
-        return { success: false, error: 'Network error' };
+    } catch (error: any) {
+        return { success: false, error: error.message || 'Network connection error.' };
     }
 }
 
@@ -136,7 +136,9 @@ export async function sendNewPropertySms(property: Property | Bop | License) {
     const result = await sendSingleSms(String(phoneNumber), message);
     
     if(result.success) {
-        toast({ title: 'SMS Sent', description: `Notification sent to ${phoneNumber}.` });
+        toast({ title: 'SMS Sent', description: `Registration notification sent to ${phoneNumber}.` });
+    } else {
+        toast({ variant: 'destructive', title: 'SMS Failed', description: `Could not notify owner: ${result.error}` });
     }
 }
 
@@ -156,8 +158,13 @@ export async function sendBillGeneratedSms(bills: Bill[]) {
     }));
     
     const sentCount = results.filter(r => r.success).length;
+    const failCount = results.filter(r => !r.success && r.error !== 'No phone number').length;
+
     if (sentCount > 0) {
         toast({ title: 'Notifications Sent', description: `${sentCount} SMS messages dispatched.` });
+    }
+    if (failCount > 0) {
+        toast({ variant: 'destructive', title: 'Batch Errors', description: `${failCount} messages failed. Check SMS settings.` });
     }
 }
 
@@ -175,5 +182,7 @@ export async function sendManualPaymentSms(item: Property | Bop | License, payme
     
     if(result.success) {
         toast({ title: 'Payment SMS Sent', description: `Confirmation sent to ${phoneNumber}.` });
+    } else {
+        toast({ variant: 'destructive', title: 'SMS Failed', description: `Confirmation failed: ${result.error}` });
     }
 }
