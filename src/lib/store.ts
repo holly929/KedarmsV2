@@ -15,17 +15,17 @@ const defaultPermissions: RolePermissions = {
   Admin: {
     dashboard: true, properties: true, billing: true, bop: true, 'bop-billing': true, bills: true, defaulters: true, reports: true,
     users: true, settings: true, 'integrations': true, payment: true, 'activity-logs': true, 'summary-bill': true,
-    license: true, 'license-billing': true,
+    license: true, 'license-billing': true, transactions: true,
   },
   'Data Entry': {
     dashboard: true, properties: true, billing: true, bop: true, 'bop-billing': true, bills: true, defaulters: true, reports: true,
     users: false, settings: false, 'integrations': true, payment: true, 'activity-logs': false, 'summary-bill': true,
-    license: true, 'license-billing': true,
+    license: true, 'license-billing': true, transactions: true,
   },
   Viewer: {
     dashboard: true, properties: false, billing: false, bop: false, 'bop-billing': false, bills: false, defaulters: false, reports: false,
     users: false, settings: false, 'integrations': false, payment: true, 'activity-logs': false, 'summary-bill': false,
-    license: false, 'license-billing': false,
+    license: false, 'license-billing': false, transactions: true,
   },
 };
 

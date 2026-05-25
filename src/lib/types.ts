@@ -98,7 +98,7 @@ export type User = {
 };
 
 export const PERMISSION_PAGES = [
-  'dashboard', 'properties', 'billing', 'bop', 'bop-billing', 'license', 'license-billing', 'bills', 'defaulters', 'reports', 'users', 'settings', 'integrations', 'payment', 'activity-logs', 'summary-bill'
+  'dashboard', 'properties', 'billing', 'bop', 'bop-billing', 'license', 'license-billing', 'bills', 'defaulters', 'reports', 'users', 'settings', 'integrations', 'payment', 'activity-logs', 'summary-bill', 'transactions'
 ] as const;
 
 export type PermissionPage = typeof PERMISSION_PAGES[number];
@@ -131,4 +131,11 @@ export type ActivityLog = {
   userEmail: string;
   action: string;
   details?: string;
+};
+
+export type FlatTransaction = Payment & {
+    sourceId: string;
+    sourceName: string;
+    sourceType: 'property' | 'bop' | 'license';
+    identifier: string;
 };
