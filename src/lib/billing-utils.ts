@@ -1,5 +1,5 @@
 
-import type { Property, Bop } from '@/lib/types';
+import type { Property, Bop, License } from '@/lib/types';
 import { getPropertyValue } from './property-utils';
 
 export type BillStatus = 'Paid' | 'Pending' | 'Overdue' | 'Unbilled';
@@ -30,13 +30,39 @@ export function getBillStatus(property: Property): BillStatus {
 
 export function getBopBillStatus(bop: Bop): BillStatus {
   const permitFee = Number(getPropertyValue(bop, 'Permit Fee')) || 0;
+  const arrears = Number(getPropertyValue(bop, 'Arrears')) || 0;
   const payment = Number(getPropertyValue(bop, 'Payment')) || 0;
 
-  if (permitFee <= 0) {
+  const totalDue = permitFee + arrears;
+
+  if (totalDue <= 0) {
     return 'Unbilled';
   }
 
-  if (payment >= permitFee) {
+  if (payment >= totalDue) {
+    return 'Paid';
+  }
+
+  if (payment > 0) {
+    return 'Pending';
+  }
+
+  return 'Overdue';
+}
+
+export function getLicenseBillStatus(license: License): BillStatus {
+  const licenseFee = Number(getPropertyValue(license, 'License Fee')) || 0;
+  const bopAmt = Number(getPropertyValue(license, 'Bop Amount')) || 0;
+  const arrears = Number(getPropertyValue(license, 'Arrears')) || 0;
+  const payment = Number(getPropertyValue(license, 'Payment')) || 0;
+
+  const totalAmountDue = licenseFee + bopAmt + arrears;
+
+  if (totalAmountDue <= 0) {
+    return 'Unbilled';
+  }
+
+  if (payment >= totalAmountDue) {
     return 'Paid';
   }
 

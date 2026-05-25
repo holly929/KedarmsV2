@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -25,6 +24,8 @@ import {
   CreditCard,
   History,
   ClipboardList,
+  Hotel,
+  Banknote,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
@@ -54,6 +55,9 @@ const navItems = [
   { href: '/billing', icon: ReceiptText, label: 'Billing' },
   { href: '/bop', icon: Store, label: 'BOP Data' },
   { href: '/bop-billing', icon: ReceiptText, label: 'BOP Billing' },
+  { href: '/license', icon: Hotel, label: 'Property Rate (Hotels)' },
+  { href: '/license-billing', icon: ReceiptText, label: 'Hotel Billing' },
+  { href: '/transactions', icon: Banknote, label: 'Transactions' },
   { href: '/summary-bill', icon: ClipboardList, label: 'Summary Bill' },
   { href: '/bills', icon: BookCopy, label: 'Bills' },
   { href: '/defaulters', icon: AlertCircle, label: 'Defaulters' },

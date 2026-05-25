@@ -1,11 +1,10 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useReactToPrint } from 'react-to-print';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, Printer } from 'lucide-react';
+import { ArrowLeft, Loader2, Printer, FileWarning } from 'lucide-react';
 
 import type { Bop, Bill } from '@/lib/types';
 import { PrintableContent } from '@/components/bill-dialog';
@@ -17,6 +16,8 @@ import { useBillData } from '@/context/BillDataContext';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { store } from '@/lib/store';
+import { getPropertyValue } from '@/lib/property-utils';
+import { cn } from '@/lib/utils';
 
 type GeneralSettings = {
   assemblyName?: string;
@@ -34,7 +35,7 @@ type AppearanceSettings = {
   accentColor?: string;
 };
 
-const BillSheet = React.forwardRef<HTMLDivElement, { bops: Bop[], settings: { general: GeneralSettings, appearance: AppearanceSettings }, billsPerPage: number, isCompact: boolean }>(({ bops, settings, billsPerPage, isCompact }, ref) => {
+const BillSheet = React.forwardRef<HTMLDivElement, { bops: Bop[], settings: { general: GeneralSettings, appearance: AppearanceSettings }, billsPerPage: number, isCompact: boolean, isDemandNotice: boolean }>(({ bops, settings, billsPerPage, isCompact, isDemandNotice }, ref) => {
     
     if (billsPerPage === 4) {
         const bopChunks: Bop[][] = [];
@@ -49,7 +50,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { bops: Bop[], settings: { ge
                         {chunk.map((bop) => (
                             <div key={bop.id} className="w-full h-full box-border overflow-hidden flex items-center justify-center border-dashed border-gray-400 [&:nth-child(1)]:border-r [&:nth-child(1)]:border-b [&:nth-child(2)]:border-b [&:nth-child(3)]:border-r">
                                <div className="w-full h-full scale-[0.95] flex items-center justify-center">
-                                    <PrintableContent data={bop} billType="bop" settings={settings} isCompact={true} />
+                                    <PrintableContent data={bop} billType="bop" settings={settings} isCompact={true} isDemandNotice={isDemandNotice} />
                                </div>
                             </div>
                         ))}
@@ -74,7 +75,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { bops: Bop[], settings: { ge
                             <React.Fragment key={bop.id}>
                                <div className="h-[148.5mm] w-full box-border overflow-hidden flex items-center justify-center">
                                    <div className="w-full h-full scale-[0.95] flex items-center justify-center">
-                                        <PrintableContent data={bop} billType="bop" settings={settings} isCompact={isCompact} />
+                                        <PrintableContent data={bop} billType="bop" settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
                                    </div>
                                </div>
                                {chunk.length === 2 && chunkIndex === 0 && (
@@ -96,7 +97,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { bops: Bop[], settings: { ge
                     bops.map((bop) => (
                         <div key={bop.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex items-center justify-center">
                             <div className="w-full h-full scale-[0.95] flex items-center justify-center">
-                                <PrintableContent data={bop} billType="bop" settings={settings} isCompact={isCompact}/>
+                                <PrintableContent data={bop} billType="bop" settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
                             </div>
                         </div>
                     ))
@@ -130,15 +131,21 @@ export default function BulkBopPrintPage() {
   const [progress, setProgress] = useState(0);
   const [billsPerPage, setBillsPerPage] = useState(2);
   const [isCompact, setIsCompact] = useState(false);
+  const [isDemandNotice, setIsDemandNotice] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
     const loadData = () => {
         try {
             const storedBops = localStorage.getItem('selectedBopsForPrinting');
+            const initialDemand = localStorage.getItem('printDemandMode') === 'true';
+            
             if (storedBops) {
                 setAllBops(JSON.parse(storedBops));
             }
+            
+            setIsDemandNotice(initialDemand);
+            
             setSettings({
                 general: store.settings.generalSettings || {},
                 appearance: store.settings.appearanceSettings || {},
@@ -149,15 +156,24 @@ export default function BulkBopPrintPage() {
         }
     }
     loadData();
-  }, []);
+  }, [toast]);
 
   const recordBills = async () => {
     if (renderedBops.length === 0) return;
 
     const newBills: Omit<Bill, 'id'>[] = renderedBops.map(b => {
-        const permitFee = Number(b['Permit Fee']) || 0;
-        const payment = Number(b['Payment']) || 0;
-        const totalAmountDue = permitFee - payment;
+        // Prioritize imported "Amount Due"
+        const importedAmountDue = Number(String(getPropertyValue(b, 'Amount Due') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
+        
+        let totalAmountDue = 0;
+        if (!isNaN(importedAmountDue) && importedAmountDue !== 0) {
+            totalAmountDue = importedAmountDue;
+        } else {
+            const permitFee = Number(String(getPropertyValue(b, 'Permit Fee') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+            const arrears = Number(String(getPropertyValue(b, 'Arrears') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+            const payment = Number(String(getPropertyValue(b, 'Payment') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+            totalAmountDue = (permitFee + arrears) - payment;
+        }
 
         return {
             propertyId: b.id,
@@ -182,11 +198,6 @@ export default function BulkBopPrintPage() {
 
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
-    pageStyle: `@media print { 
-        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .print-page-break { page-break-after: always; } 
-        .no-print { display: none; } 
-    }`,
     onAfterPrint: () => recordBills(),
   });
 
@@ -277,6 +288,12 @@ export default function BulkBopPrintPage() {
             </h1>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+            <div className="flex items-center space-x-2 border px-3 py-1 rounded-md bg-red-50 dark:bg-red-950/20">
+                <Checkbox id="demand-mode" checked={isDemandNotice} onCheckedChange={(checked) => setIsDemandNotice(Boolean(checked))} />
+                <Label htmlFor="demand-mode" className="whitespace-nowrap text-red-700 dark:text-red-400 font-bold flex items-center gap-1">
+                  <FileWarning className="h-3 w-3" /> Demand Notice
+                </Label>
+            </div>
             <div className="flex items-center space-x-2">
                 <Checkbox id="compact-mode" checked={isCompact || billsPerPage === 4} onCheckedChange={(checked) => setIsCompact(Boolean(checked))} disabled={billsPerPage === 4} />
                 <Label htmlFor="compact-mode" className="whitespace-nowrap">Compact Mode</Label>
@@ -294,9 +311,9 @@ export default function BulkBopPrintPage() {
                     </SelectContent>
                 </Select>
             </div>
-            <Button onClick={handleGenerateAndPrint} disabled={renderedBops.length === 0} className="w-full sm:w-auto">
+            <Button onClick={handleGenerateAndPrint} disabled={renderedBops.length === 0} className={cn("w-full sm:w-auto", isDemandNotice ? "bg-red-600 hover:bg-red-700" : "")}>
               <Printer className="mr-2 h-4 w-4" />
-              Print & Record Bills
+              Print & Record
             </Button>
         </div>
       </header>
@@ -307,17 +324,14 @@ export default function BulkBopPrintPage() {
             <p className="text-muted-foreground mt-2">
                 Clicking the print button will open the print dialog and record the bills in your history.
             </p>
-            <p className="text-muted-foreground mt-1">Click the "Print & Record Bills" button above to continue.</p>
+            <p className="text-muted-foreground mt-1">Click the "Print & Record" button above to continue.</p>
          </div>
       </main>
       
-      <div className="invisible h-0 overflow-hidden print:visible print:h-auto print:overflow-visible">
-        <BillSheet ref={componentRef} bops={renderedBops} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} />
+      {/* Hidden print container - positioned off-screen to keep it rendered in DOM */}
+      <div className="absolute -left-[9999px] top-0 pointer-events-none">
+        <BillSheet ref={componentRef} bops={renderedBops} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
       </div>
     </div>
   );
 }
-
-  
-
-    

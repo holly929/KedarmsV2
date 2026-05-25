@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { Download, Loader2, MessageSquare, Trash2, Home, Store, AlertTriangle, Users } from 'lucide-react';
+import { Download, Loader2, MessageSquare, Trash2, Home, Store, AlertTriangle, Users, Hotel } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -16,8 +16,9 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { usePropertyData } from '@/context/PropertyDataContext';
 import { useBopData } from '@/context/BopDataContext';
-import { getBillStatus, getBopBillStatus, BillStatus } from '@/lib/billing-utils';
-import type { Property, Bop, PropertyWithStatus, BopWithStatus } from '@/lib/types';
+import { useLicenseData } from '@/context/LicenseDataContext';
+import { getBillStatus, getBopBillStatus, getLicenseBillStatus, BillStatus } from '@/lib/billing-utils';
+import type { Property, Bop, License, PropertyWithStatus, BopWithStatus, LicenseWithStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getPropertyValue } from '@/lib/property-utils';
@@ -41,16 +42,16 @@ const EmptyState = ({ title, message }: { title: string, message: string }) => (
     </div>
 );
 
-interface DefaulterListProps<T extends Property | Bop> {
-    data: (T extends Property ? PropertyWithStatus : BopWithStatus)[];
+interface DefaulterListProps<T extends Property | Bop | License> {
+    data: (T extends Property ? PropertyWithStatus : T extends Bop ? BopWithStatus : LicenseWithStatus)[];
     headers: string[];
     isMobile: boolean;
     onDelete: (ids: string[]) => void;
-    title: 'property' | 'bop';
+    title: 'property' | 'bop' | 'license';
     isViewer: boolean;
 }
 
-function DefaulterList<T extends Property | Bop>({ data, headers, isMobile, onDelete, title, isViewer }: DefaulterListProps<T>) {
+function DefaulterList<T extends Property | Bop | License>({ data, headers, isMobile, onDelete, title, isViewer }: DefaulterListProps<T>) {
     const { toast } = useToast();
     const [filter, setFilter] = React.useState('');
     const [currentPage, setCurrentPage] = React.useState(1);
@@ -112,7 +113,7 @@ function DefaulterList<T extends Property | Bop>({ data, headers, isMobile, onDe
     const chartDataByTown = React.useMemo(() => {
         const counts: { [key: string]: number } = {};
         filteredData.forEach(item => {
-            const town = getPropertyValue(item, 'Town') || 'Unknown';
+            const town = getPropertyValue(item as any, 'Town') || 'Unknown';
             counts[town] = (counts[town] || 0) + 1;
         });
         return Object.entries(counts).map(([name, count]) => ({ name, count })).sort((a,b) => b.count - a.count);
@@ -121,7 +122,7 @@ function DefaulterList<T extends Property | Bop>({ data, headers, isMobile, onDe
     const chartDataByType = React.useMemo(() => {
         const counts: { [key: string]: number } = {};
         filteredData.forEach(item => {
-            const type = getPropertyValue(item, 'Property Type') || 'Unknown';
+            const type = getPropertyValue(item as any, 'Property Type') || 'Unknown';
             counts[type] = (counts[type] || 0) + 1;
         });
         return Object.entries(counts).map(([name, count]) => ({ name, count })).sort((a,b) => b.count - a.count);
@@ -139,11 +140,19 @@ function DefaulterList<T extends Property | Bop>({ data, headers, isMobile, onDe
                 const due = (rateableValue * rateImpost) + sanitation + previousBalance;
                 const outstanding = due > payment ? due - payment : 0;
                 return acc + outstanding;
-            } else {
+            } else if (title === 'bop') {
                 const b = item as Bop;
                 const permitFee = Number(getPropertyValue(b, 'Permit Fee')) || 0;
                 const payment = Number(getPropertyValue(b, 'Payment')) || 0;
                 const outstanding = permitFee > payment ? permitFee - payment : 0;
+                return acc + outstanding;
+            } else {
+                const l = item as License;
+                const rate = Number(getPropertyValue(l, 'Property Rate')) || 0;
+                const arrears = Number(getPropertyValue(l, 'Arrears')) || 0;
+                const payment = Number(getPropertyValue(l, 'Payment')) || 0;
+                const due = rate + arrears;
+                const outstanding = due > payment ? due - payment : 0;
                 return acc + outstanding;
             }
         }, 0);
@@ -174,7 +183,7 @@ function DefaulterList<T extends Property | Bop>({ data, headers, isMobile, onDe
     }
     
     if (data.length === 0 && !filter) {
-        return <EmptyState title={`No ${title === 'property' ? 'Property' : 'BOP'} Defaulters`} message="All accounts are settled, or no overdue items were found."/>
+        return <EmptyState title={`No ${title.toUpperCase()} Defaulters`} message="All accounts are settled, or no overdue items were found."/>
     }
 
     const renderDesktopView = () => (
@@ -205,7 +214,7 @@ function DefaulterList<T extends Property | Bop>({ data, headers, isMobile, onDe
                 </TableCell>}
                 <TableCell><Badge variant={statusVariant(row.status)}>{row.status}</Badge></TableCell>
                 {headers.map((header, cellIndex) => {
-                  const value = getPropertyValue(row, header);
+                  const value = getPropertyValue(row as any, header);
                   return (
                     <TableCell key={cellIndex} className={cellIndex === 0 ? 'font-medium' : ''}>
                       {typeof value === 'object' && value !== null
@@ -227,7 +236,7 @@ function DefaulterList<T extends Property | Bop>({ data, headers, isMobile, onDe
                 <Card key={row.id} className="transition-shadow hover:shadow-lg">
                     <CardHeader className="flex flex-row items-center gap-4 pb-2">
                         {!isViewer && <Checkbox checked={selectedRows.includes(row.id)} onCheckedChange={(checked) => handleSelectRow(row.id, !!checked)} />}
-                        <CardTitle className="text-base font-semibold">{headers && headers.length > 0 ? getPropertyValue(row as Property, headers[0]) || 'N/A' : 'N/A'}</CardTitle>
+                        <CardTitle className="text-base font-semibold">{headers && headers.length > 0 ? getPropertyValue(row as any, headers[0]) || 'N/A' : 'N/A'}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2 text-sm pl-6 pr-6 pb-4">
                         <div className="flex justify-between items-center text-xs">
@@ -235,7 +244,7 @@ function DefaulterList<T extends Property | Bop>({ data, headers, isMobile, onDe
                           <Badge variant={statusVariant(row.status)}>{row.status}</Badge>
                         </div>
                         {headers && headers.length > 0 && headers.slice(1).map(header => {
-                        const value = getPropertyValue(row as Property, header);
+                        const value = getPropertyValue(row as any, header);
                         if (header.toLowerCase() === 'id' || !value) return null;
                         return (
                             <div key={header} className="flex justify-between items-center text-xs">
@@ -279,7 +288,7 @@ function DefaulterList<T extends Property | Bop>({ data, headers, isMobile, onDe
                 </Card>
                  <Card className="lg:col-span-2">
                     <CardHeader>
-                        <CardTitle className="text-sm font-medium">Defaulters by {title === 'property' ? 'Type' : 'Town'}</CardTitle>
+                        <CardTitle className="text-sm font-medium">Defaulters by {title === 'property' ? 'Type' : 'Area'}</CardTitle>
                     </CardHeader>
                     <CardContent className="pl-2">
                         <ChartContainer config={chartConfig} className="h-[100px] w-full">
@@ -355,6 +364,7 @@ function DefaulterList<T extends Property | Bop>({ data, headers, isMobile, onDe
 export default function DefaultersPage() {
   const { properties, headers: propertyHeaders, deleteProperties } = usePropertyData();
   const { bopData, headers: bopHeaders, deleteBops } = useBopData();
+  const { licenseData, headers: licenseHeaders, deleteLicenses } = useLicenseData();
   const { user: authUser } = useAuth();
   const isViewer = authUser?.role === 'Viewer';
   const isMobile = useIsMobile();
@@ -373,6 +383,12 @@ export default function DefaultersPage() {
       .filter(b => b.status === 'Overdue' || b.status === 'Pending');
   }, [bopData]);
 
+  const licenseDefaulters = React.useMemo<LicenseWithStatus[]>(() => {
+    return licenseData
+      .map(l => ({ ...l, status: getLicenseBillStatus(l) }))
+      .filter(l => l.status === 'Overdue' || l.status === 'Pending');
+  }, [licenseData]);
+
   if (loading) {
     return (
         <div className="flex h-full items-center justify-center">
@@ -387,12 +403,15 @@ export default function DefaultersPage() {
         <h1 className="text-3xl font-bold tracking-tight font-headline">Defaulters</h1>
       </div>
       <Tabs defaultValue="properties" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="properties">
               <Home className="mr-2 h-4 w-4"/> Property Rates ({propertyDefaulters.length})
           </TabsTrigger>
           <TabsTrigger value="bop">
                <Store className="mr-2 h-4 w-4"/> BOP ({bopDefaulters.length})
+          </TabsTrigger>
+          <TabsTrigger value="license">
+               <Hotel className="mr-2 h-4 w-4"/> License ({licenseDefaulters.length})
           </TabsTrigger>
         </TabsList>
         <TabsContent value="properties">
@@ -412,6 +431,16 @@ export default function DefaultersPage() {
                 isMobile={isMobile}
                 onDelete={deleteBops}
                 title="bop"
+                isViewer={isViewer}
+            />
+        </TabsContent>
+        <TabsContent value="license">
+             <DefaulterList 
+                data={licenseDefaulters}
+                headers={licenseHeaders}
+                isMobile={isMobile}
+                onDelete={deleteLicenses}
+                title="license"
                 isViewer={isViewer}
             />
         </TabsContent>

@@ -1,16 +1,6 @@
-
-
-// This file acts as a centralized in-memory database for the application.
-// All data contexts will read from and write to this single source of truth,
-// ensuring that data is shared and consistent across all user sessions
-// within the same server process.
-
-import type { Property, Bop, Bill, User, Payment, ActivityLog } from './types';
-import { PERMISSION_PAGES, type RolePermissions, type UserRole } from '@/context/PermissionsContext';
+import type { Property, Bop, License, Bill, User, Payment, ActivityLog, RolePermissions, SmsSettings } from './types';
 
 const STORE_KEY = 'rateease.store';
-
-// --- Default Data ---
 
 const defaultAdminUser: User = {
     id: 'user-0',
@@ -25,25 +15,27 @@ const defaultPermissions: RolePermissions = {
   Admin: {
     dashboard: true, properties: true, billing: true, bop: true, 'bop-billing': true, bills: true, defaulters: true, reports: true,
     users: true, settings: true, 'integrations': true, payment: true, 'activity-logs': true, 'summary-bill': true,
+    license: true, 'license-billing': true, transactions: true,
   },
   'Data Entry': {
     dashboard: true, properties: true, billing: true, bop: true, 'bop-billing': true, bills: true, defaulters: true, reports: true,
     users: false, settings: false, 'integrations': true, payment: true, 'activity-logs': false, 'summary-bill': true,
+    license: true, 'license-billing': true, transactions: true,
   },
   Viewer: {
     dashboard: true, properties: false, billing: false, bop: false, 'bop-billing': false, bills: false, defaulters: false, reports: false,
     users: false, settings: false, 'integrations': false, payment: true, 'activity-logs': false, 'summary-bill': false,
+    license: false, 'license-billing': false, transactions: true,
   },
 };
-
-
-// --- Central Store ---
 
 interface AppStore {
     properties: Property[];
     propertyHeaders: string[];
     bops: Bop[];
     bopHeaders: string[];
+    licenses: License[];
+    licenseHeaders: string[];
     summaryBillWorkbook: { [sheetName: string]: { data: Bop[], headers: string[] } };
     bills: Bill[];
     users: User[];
@@ -55,9 +47,24 @@ interface AppStore {
 function getDefaultStore(): AppStore {
     return {
         properties: [],
-        propertyHeaders: ['Owner Name', 'Property No', 'Town', 'Rateable Value', 'Total Payment'],
+        propertyHeaders: [
+            'S/N', 
+            'Owner Name', 
+            'Property No', 
+            'Town', 
+            'Suburb', 
+            'Property Type', 
+            'Rateable Value', 
+            'Rate Impost', 
+            'Sanitation Charged', 
+            'Previous Balance', 
+            'Total Payment', 
+            'Amount Due'
+        ],
         bops: [],
-        bopHeaders: ['Business Name', 'Owner Name', 'Phone Number', 'Town', 'Permit Fee', 'Payment'],
+        bopHeaders: ['Business Name', 'Owner Name', 'Phone Number', 'Town', 'Permit Fee', 'Arrears', 'Payment'],
+        licenses: [],
+        licenseHeaders: ['Record Type', 'S/N', 'Name of Hotel/Guest House', 'Property Rate', 'Bop Amount', 'Arrears', 'Amount Due', 'Payment'],
         summaryBillWorkbook: {},
         bills: [],
         users: [defaultAdminUser],
@@ -66,18 +73,21 @@ function getDefaultStore(): AppStore {
         settings: {
             generalSettings: {
                 systemName: 'RateEase',
-                assemblyName: 'District Assembly',
-                postalAddress: 'P.O. Box 1, District Capital',
-                contactPhone: '012-345-6789',
-                contactEmail: 'contact@assembly.gov.gh'
+                assemblyName: 'KWAHU EAST DISTRICT ASSEMBLY',
+                postalAddress: 'P.O. Box 11, ABETIFI',
+                contactPhone: '0242122039/0244971784',
+                contactEmail: 'info@kwahueast.gov.gh'
             },
             appearanceSettings: {},
             integrationsSettings: {},
             smsSettings: {
+                provider: 'none',
                 enableSmsOnNewProperty: true,
-                newPropertyMessageTemplate: "Dear {{Owner Name}}, your property ({{Property No}}) has been registered with the District Assembly. Thank you.",
+                newPropertyMessageTemplate: "Dear {{Owner Name}}, your property/license ({{Property No}}{{Name of Hotel/Guest House}}) has been registered with the District Assembly. Thank you.",
                 enableSmsOnBillGenerated: true,
-                billGeneratedMessageTemplate: "Your bill of GHS {{Total Amount Due}} for property {{Property No}} for the year {{Year}} is ready. Please contact the assembly to arrange payment. Thank you.",
+                billGeneratedMessageTemplate: "Your bill of GHS {{Amount Owed}} for {{Property No}}{{Name of Hotel/Guest House}} for the year {{Year}} is ready. Please contact the assembly to arrange payment. Thank you.",
+                enableSmsOnManualPayment: true,
+                manualPaymentMessageTemplate: "Dear {{Owner Name}}, we have received your payment of GHS {{Amount Paid}} on {{Payment Date}}. Your new balance is GHS {{Amount Owed}}. Receipt No: {{Receipt No}}. Thank you.",
             },
             billDisplaySettings: {},
         },
@@ -101,11 +111,10 @@ function loadStore(): AppStore {
         if (stored) {
             const parsedStore = JSON.parse(stored);
             const defaultStore = getDefaultStore();
-            // Deep merge to ensure all nested default settings are present if missing
             const mergedSettings = {
                 ...defaultStore.settings,
                 ...parsedStore.settings,
-                smsSettings: { // ensure all sms settings are present
+                smsSettings: {
                     ...defaultStore.settings.smsSettings,
                     ...(parsedStore.settings?.smsSettings || {})
                 }
@@ -113,7 +122,6 @@ function loadStore(): AppStore {
             parsedStore.settings = mergedSettings;
             
             store = { ...defaultStore, ...parsedStore };
-
             storeInitialized = true;
             return store;
         }
@@ -128,7 +136,6 @@ function loadStore(): AppStore {
 
 store = loadStore();
 
-
 export function saveStore() {
     if (typeof window !== 'undefined') {
         try {
@@ -139,7 +146,6 @@ export function saveStore() {
     }
 }
 
-// This function is for the restore functionality.
 export function forceSaveStore(data: any) {
     if (typeof window !== 'undefined') {
         try {
@@ -150,5 +156,21 @@ export function forceSaveStore(data: any) {
     }
 }
 
-// Re-export store to be used by contexts
+export function clearAllTransactionsInStore() {
+    store.bills = [];
+    store.properties = store.properties.map(p => ({ ...p, payments: [], 'Total Payment': 0 }));
+    store.bops = store.bops.map(b => ({ ...b, payments: [], 'Payment': 0 }));
+    store.licenses = store.licenses.map(l => ({ ...l, payments: [], 'Payment': 0 }));
+    saveStore();
+}
+
+export function factoryResetStore() {
+    const defaultStore = getDefaultStore();
+    if (typeof window !== 'undefined') {
+        window.localStorage.setItem(STORE_KEY, JSON.stringify(defaultStore));
+        window.localStorage.removeItem('rateease.user');
+        window.location.reload();
+    }
+}
+
 export { store };

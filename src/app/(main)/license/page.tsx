@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -45,32 +44,47 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { Bop } from '@/lib/types';
-import { EditBopDialog } from '@/components/edit-bop-dialog';
-import { BopPaymentHistoryDialog } from '@/components/bop-payment-history-dialog';
+import type { License } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useBopData } from '@/context/BopDataContext';
+import { useLicenseData } from '@/context/LicenseDataContext';
 import { useAuth } from '@/context/AuthContext';
 import { getPropertyValue } from '@/lib/property-utils';
 import { Progress } from '@/components/ui/progress';
+import { EditLicenseDialog } from '@/components/edit-license-dialog';
+import { LicensePaymentHistoryDialog } from '@/components/license-payment-history-dialog';
 
 const ROWS_PER_PAGE = 15;
 const IMPORT_CHUNK_SIZE = 200;
 
-export default function BopPage() {
+const formatValue = (value: any, header: string) => {
+    if (value === undefined || value === null || String(value).trim() === '') return '';
+    
+    const skipFormatting = ['S/N', 'Phone Number', 'ID', 'Hotel', 'Guest House', 'Name', 'Record Type'];
+    const isCurrencyHeader = !skipFormatting.some(k => header.toLowerCase().includes(k.toLowerCase()));
+
+    const num = typeof value === 'number' ? value : Number(String(value).replace(/,/g, ''));
+    
+    if (!isNaN(num) && isCurrencyHeader) {
+        return `GHS ${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    
+    return String(value);
+}
+
+export default function LicensePage() {
   const { toast } = useToast();
   const router = useRouter();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { user: authUser } = useAuth();
   const isViewer = authUser?.role === 'Viewer';
 
-  const { bopData, headers, setBopData, deleteBop, updateBop, deleteAllBop } = useBopData();
+  const { licenseData, headers, setLicenseData, deleteLicense, updateLicense, deleteAllLicense } = useLicenseData();
   const [loading, setLoading] = React.useState(true);
   
   const [filter, setFilter] = React.useState('');
-  const [editingBop, setEditingBop] = React.useState<Bop | null>(null);
-  const [viewingPaymentsBop, setViewingPaymentsBop] = React.useState<Bop | null>(null);
+  const [editingLicense, setEditingLicense] = React.useState<License | null>(null);
+  const [viewingPaymentsLicense, setViewingPaymentsLicense] = React.useState<License | null>(null);
   const [currentPage, setCurrentPage] = React.useState(1);
   const isMobile = useIsMobile();
 
@@ -83,19 +97,19 @@ export default function BopPage() {
   const [isDragging, setIsDragging] = React.useState(false);
   
   React.useEffect(() => {
-    if(bopData.length >= 0) {
+    if(licenseData.length >= 0) {
       setLoading(false);
     }
-  }, [bopData]);
+  }, [licenseData]);
 
   const filteredData = React.useMemo(() => {
-    if (!filter) return bopData;
-    return bopData.filter((row) =>
+    if (!filter) return licenseData;
+    return licenseData.filter((row) =>
       Object.values(row).some((value) =>
         String(value).toLowerCase().includes(filter.toLowerCase())
       )
     );
-  }, [bopData, filter]);
+  }, [licenseData, filter]);
   
   const totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE);
 
@@ -108,7 +122,7 @@ export default function BopPage() {
   
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [bopData, filter]);
+  }, [licenseData, filter]);
 
   const handleFile = (file: File | undefined) => {
     if (importStatus.inProgress) return;
@@ -136,7 +150,7 @@ export default function BopPage() {
         const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
         if (rows.length === 0) throw new Error("No data found in the spreadsheet.");
 
-        // More robust header detection: Find first row with at least 3 non-empty cells
+        // Robust header detection
         let headerRowIndex = rows.findIndex(row => {
             const populatedCells = (row || []).filter(cell => cell !== null && String(cell).trim() !== '').length;
             return populatedCells >= 3;
@@ -160,13 +174,13 @@ export default function BopPage() {
 
         setImportStatus(prev => ({ ...prev, total: dataRows.length }));
         
-        let allNewData: Bop[] = [];
+        let allNewData: License[] = [];
         let currentIndex = 0;
         
         const processChunk = () => {
           try {
             if (currentIndex >= dataRows.length) {
-                setBopData(allNewData, finalHeaders);
+                setLicenseData(allNewData, finalHeaders);
                 setCurrentPage(1);
                 toast({ title: 'Import Successful', description: `${allNewData.length} records have been loaded.` });
                 setImportStatus({ inProgress: false, total: 0, processed: 0 });
@@ -176,15 +190,16 @@ export default function BopPage() {
             const nextIndex = Math.min(currentIndex + IMPORT_CHUNK_SIZE, dataRows.length);
             const chunk = dataRows.slice(currentIndex, nextIndex);
             
-            const chunkData: Bop[] = chunk.map((row, chunkIndex) => {
+            const chunkData: License[] = chunk.map((row, chunkIndex) => {
                 if (!row || row.every(cell => cell === null || String(cell).trim() === '')) return null;
                 const rowIndex = currentIndex + chunkIndex;
-                const rowData: { [key: string]: any } = { id: `bop-imported-${Date.now()}-${rowIndex}` };
+                const rowData: { [key: string]: any } = { id: `license-imported-${Date.now()}-${rowIndex}` };
                 validHeadersWithIndices.forEach(({ header, index }) => {
-                    rowData[header] = row[index];
+                    let val = row[index];
+                    rowData[header] = val;
                 });
-                return rowData as Bop;
-            }).filter((row): row is Bop => row !== null);
+                return rowData as License;
+            }).filter((row): row is License => row !== null);
             
             allNewData.push(...chunkData);
             setImportStatus(prev => ({ ...prev, processed: nextIndex }));
@@ -245,26 +260,26 @@ export default function BopPage() {
     }
   };
 
-  const handleAddBop = () => {
-    router.push('/bop/new');
+  const handleAddLicense = () => {
+    router.push('/license/new');
   };
   
   const handleDeleteRow = (id: string) => {
-    deleteBop(id);
-    toast({ title: 'BOP Record Deleted', description: `Record has been removed.` });
+    deleteLicense(id);
+    toast({ title: 'License Record Deleted', description: `Record has been removed.` });
   }
 
-  const handleBopUpdate = (updatedBop: Bop) => {
-    updateBop(updatedBop);
-    setEditingBop(null);
-    toast({ title: 'BOP Record Updated', description: 'The record has been successfully updated.' });
+  const handleLicenseUpdate = (updatedLicense: License) => {
+    updateLicense(updatedLicense);
+    setEditingLicense(null);
+    toast({ title: 'License Record Updated', description: 'The record has been successfully updated.' });
   };
 
   const handleClearAll = () => {
-    deleteAllBop();
+    deleteAllLicense();
     toast({
-        title: 'All BOP Data Deleted',
-        description: 'Your BOP data has been cleared.',
+        title: 'All License Data Deleted',
+        description: 'Your license data has been cleared.',
     });
   };
 
@@ -287,7 +302,7 @@ export default function BopPage() {
                   <TableCell key={cellIndex} className={cellIndex === 0 ? 'font-medium' : ''}>
                     {typeof getPropertyValue(row, header) === 'object' && getPropertyValue(row, header) !== null
                       ? 'View Payments'
-                      : String(getPropertyValue(row, header) ?? '')}
+                      : formatValue(getPropertyValue(row, header), header)}
                   </TableCell>
                 ))}
                 {!isViewer && 
@@ -301,11 +316,11 @@ export default function BopPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onSelect={() => setViewingPaymentsBop(row)}>
+                        <DropdownMenuItem onSelect={() => setViewingPaymentsLicense(row)}>
                           <Wallet className="mr-2 h-4 w-4" />
                           View Payments
                         </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => setEditingBop(row)}>
+                        <DropdownMenuItem onSelect={() => setEditingLicense(row)}>
                           <FilePenLine className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
@@ -347,10 +362,10 @@ export default function BopPage() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                  <DropdownMenuItem onSelect={() => setViewingPaymentsBop(row)}>
+                  <DropdownMenuItem onSelect={() => setViewingPaymentsLicense(row)}>
                       <Wallet className="mr-2 h-4 w-4" /> View Payments
                   </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => setEditingBop(row)}>
+                  <DropdownMenuItem onSelect={() => setEditingLicense(row)}>
                       <FilePenLine className="mr-2 h-4 w-4" /> Edit
                   </DropdownMenuItem>
                   <DropdownMenuSeparator/>
@@ -364,14 +379,14 @@ export default function BopPage() {
           <CardContent className="space-y-2 text-sm pl-6 pr-6 pb-4">
             {headers.slice(1).map(header => {
               const value = getPropertyValue(row, header);
-              if (header.toLowerCase() === 'id' || !value) return null;
+              if (header.toLowerCase() === 'id' || value === undefined || value === null) return null;
               return (
                 <div key={header} className="flex justify-between items-center text-xs">
                   <span className="font-semibold text-muted-foreground">{header}</span>
                   <span className="text-right">
                     {typeof value === 'object' && value !== null
                       ? 'View Payments'
-                      : String(value)}
+                      : formatValue(value, header)}
                   </span>
                 </div>
               );
@@ -418,9 +433,9 @@ export default function BopPage() {
         )}
         <Card>
             <CardHeader>
-            <CardTitle className="font-headline">Manage BOP Data</CardTitle>
+            <CardTitle className="font-headline">Manage License Data</CardTitle>
             <CardDescription>
-                View, edit, or delete your {bopData.length} imported BOP records.
+                View, edit, or delete your {licenseData.length} imported license records.
             </CardDescription>
             <div className="flex flex-col sm:flex-row items-center gap-2 pt-4">
                 <Input
@@ -495,7 +510,7 @@ export default function BopPage() {
         )}
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center h-[calc(100vh-20rem)]">
             <UploadCloud className="h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">Import Your BOP Data</h3>
+            <h3 className="mt-4 text-lg font-semibold">Import Your License Data</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               Drag and drop an Excel file here or use the import button to get started.
             </p>
@@ -514,10 +529,10 @@ export default function BopPage() {
         disabled={importStatus.inProgress}
       />
       <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-3xl font-bold tracking-tight font-headline">BOP Data</h1>
+        <h1 className="text-3xl font-bold tracking-tight font-headline">License Data</h1>
         {!isViewer && 
           <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
-              {bopData.length > 0 && (
+              {licenseData.length > 0 && (
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="destructive" size="sm">
@@ -529,7 +544,7 @@ export default function BopPage() {
                         <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete all {bopData.length} BOP records from the system.
+                            This action cannot be undone. This will permanently delete all {licenseData.length} license records from the system.
                         </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -545,9 +560,9 @@ export default function BopPage() {
                 {importStatus.inProgress ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : <FileUp className="h-4 w-4 mr-2" />}
                 Import
               </Button>
-              <Button size="sm" onClick={handleAddBop}>
+              <Button size="sm" onClick={handleAddLicense}>
                 <PlusCircle className="h-4 w-4 mr-2" />
-                Add BOP Record
+                Add License Record
               </Button>
           </div>
         }
@@ -557,18 +572,18 @@ export default function BopPage() {
         <div className="flex h-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
-      ) : bopData.length > 0 ? renderDataView() : renderEmptyState()}
+      ) : licenseData.length > 0 ? renderDataView() : renderEmptyState()}
 
-      <EditBopDialog 
-        bop={editingBop}
-        isOpen={!!editingBop}
-        onOpenChange={(isOpen) => !isOpen && setEditingBop(null)}
-        onBopUpdate={handleBopUpdate}
+      <EditLicenseDialog 
+        license={editingLicense}
+        isOpen={!!editingLicense}
+        onOpenChange={(isOpen) => !isOpen && setEditingLicense(null)}
+        onLicenseUpdate={handleLicenseUpdate}
       />
-      <BopPaymentHistoryDialog
-        bop={viewingPaymentsBop}
-        isOpen={!!viewingPaymentsBop}
-        onOpenChange={(isOpen) => !isOpen && setViewingPaymentsBop(null)}
+      <LicensePaymentHistoryDialog
+        license={viewingPaymentsLicense}
+        isOpen={!!viewingPaymentsLicense}
+        onOpenChange={(isOpen) => !isOpen && setViewingPaymentsLicense(null)}
       />
     </>
   );

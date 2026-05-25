@@ -9,6 +9,7 @@ import { PermissionsProvider } from '@/context/PermissionsContext';
 import { ActivityLogProvider } from '@/context/ActivityLogContext';
 import { PropertyProvider } from '@/context/PropertyDataContext';
 import { BopProvider } from '@/context/BopDataContext';
+import { LicenseProvider } from '@/context/LicenseDataContext';
 import { SummaryBillProvider } from '@/context/SummaryBillContext';
 import { BillProvider } from '@/context/BillDataContext';
 
@@ -44,12 +45,14 @@ export default function RootLayout({
                 <ActivityLogProvider>
                   <PropertyProvider>
                     <BopProvider>
-                      <SummaryBillProvider>
-                        <BillProvider>
-                          {children}
-                          <Toaster />
-                        </BillProvider>
-                      </SummaryBillProvider>
+                      <LicenseProvider>
+                        <SummaryBillProvider>
+                          <BillProvider>
+                            {children}
+                            <Toaster />
+                          </BillProvider>
+                        </SummaryBillProvider>
+                      </LicenseProvider>
                     </BopProvider>
                   </PropertyProvider>
                 </ActivityLogProvider>

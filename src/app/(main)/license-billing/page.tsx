@@ -10,7 +10,7 @@ import {
   FilePenLine,
   Loader2,
   MessageSquare,
-  Store,
+  Hotel,
   CreditCard,
   FileWarning,
   Banknote,
@@ -38,34 +38,49 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { Bop } from '@/lib/types';
-import type { BopWithStatus, BillStatus } from '@/lib/types';
+import type { License } from '@/lib/types';
+import type { LicenseWithStatus, BillStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { getBopBillStatus } from '@/lib/billing-utils';
-import { useBopData } from '@/context/BopDataContext';
+import { getLicenseBillStatus } from '@/lib/billing-utils';
+import { useLicenseData } from '@/context/LicenseDataContext';
 import { useAuth } from '@/context/AuthContext';
-import { EditBopDialog } from '@/components/edit-bop-dialog';
 import { getPropertyValue } from '@/lib/property-utils';
 import { SmsDialog } from '@/components/sms-dialog';
+import { EditLicenseDialog } from '@/components/edit-license-dialog';
 import { ManualPaymentDialog } from '@/components/manual-payment-dialog';
 
 const ROWS_PER_PAGE = 15;
 
-export default function BopBillingPage() {
+const formatValue = (value: any, header: string) => {
+    if (value === undefined || value === null || String(value).trim() === '') return '';
+    
+    const skipFormatting = ['S/N', 'SN', 'Phone Number', 'ID', 'Hotel', 'Guest House', 'Name', 'Record Type'];
+    const isCurrencyHeader = !skipFormatting.some(k => header.toLowerCase().includes(k.toLowerCase()));
+
+    const num = typeof value === 'number' ? value : Number(String(value).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
+    
+    if (!isNaN(num) && isCurrencyHeader) {
+        return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    
+    return String(value);
+}
+
+export default function LicenseBillingPage() {
   const { toast } = useToast();
   const router = useRouter();
   const { user: authUser } = useAuth();
   const isViewer = authUser?.role === 'Viewer';
   
-  const { bopData, headers, updateBop, deleteBop, deleteBops } = useBopData();
+  const { licenseData, headers, updateLicense, deleteLicense, deleteLicenses } = useLicenseData();
   const [loading, setLoading] = React.useState(true);
 
   const [filter, setFilter] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('all');
-  const [editingBop, setEditingBop] = React.useState<Bop | null>(null);
-  const [paymentItem, setPaymentItem] = React.useState<Bop | null>(null);
-  const [smsItems, setSmsItems] = React.useState<Bop[]>([]);
+  const [editingLicense, setEditingLicense] = React.useState<License | null>(null);
+  const [paymentItem, setPaymentItem] = React.useState<License | null>(null);
+  const [smsItems, setSmsItems] = React.useState<License[]>([]);
 
   const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
   const isMobile = useIsMobile();
@@ -73,34 +88,34 @@ export default function BopBillingPage() {
   const [isSmsDialogOpen, setIsSmsDialogOpen] = React.useState(false);
   
   React.useEffect(() => {
-    if (bopData.length >= 0) {
+    if (licenseData.length >= 0) {
       setLoading(false);
     }
-  }, [bopData]);
+  }, [licenseData]);
 
-  const handleViewBill = (bop: Bop, isDemand: boolean = false) => {
-    localStorage.setItem('selectedBopsForPrinting', JSON.stringify([bop]));
+  const handleViewBill = (license: License, isDemand: boolean = false) => {
+    localStorage.setItem('selectedLicensesForPrinting', JSON.stringify([license]));
     localStorage.setItem('printDemandMode', isDemand ? 'true' : 'false');
-    router.push('/bop/print-preview');
+    router.push('/license/print-preview');
   };
   
   const handlePrintSelected = () => {
     if (selectedRows.length > 0) {
-      localStorage.setItem('selectedBopsForPrinting', JSON.stringify(selectedBops));
+      localStorage.setItem('selectedLicensesForPrinting', JSON.stringify(selectedLicenses));
       localStorage.setItem('printDemandMode', 'false');
-      router.push('/bop/print-preview');
+      router.push('/license/print-preview');
     } else {
       toast({
         variant: 'destructive',
-        title: 'No BOP Records Selected',
+        title: 'No Records Selected',
         description: 'Please select at least one record to print.',
       });
     }
   };
 
-  const handlePayOnline = (bop: Bop) => {
-    localStorage.setItem('paymentBill', JSON.stringify({ type: 'bop', data: bop }));
-    router.push(`/payment/bop/${bop.id}`);
+  const handlePayOnline = (license: License) => {
+    localStorage.setItem('paymentBill', JSON.stringify({ type: 'license', data: license }));
+    router.push(`/payment/license/${license.id}`);
   };
 
   const handleSendBulkSms = () => {
@@ -112,39 +127,39 @@ export default function BopBillingPage() {
       });
       return;
     }
-    setSmsItems(selectedBops);
+    setSmsItems(selectedLicenses);
     setIsSmsDialogOpen(true);
   };
 
-  const handleSendSingleSms = (bop: Bop) => {
-    setSmsItems([bop]);
+  const handleSendSingleSms = (license: License) => {
+    setSmsItems([license]);
     setIsSmsDialogOpen(true);
   };
   
   const handleDeleteRow = (id: string) => {
-    deleteBop(id);
+    deleteLicense(id);
     setSelectedRows(prev => prev.filter(rowId => rowId !== id));
-    toast({ title: 'BOP Record Deleted', description: `Record has been removed.` });
+    toast({ title: 'License Record Deleted', description: `Record has been removed.` });
   }
   
   const handleDeleteSelected = () => {
-    deleteBops(selectedRows);
-    toast({ title: 'BOP Records Deleted', description: `${selectedRows.length} records have been removed.` });
+    deleteLicenses(selectedRows);
+    toast({ title: 'License Records Deleted', description: `${selectedRows.length} records have been removed.` });
     setSelectedRows([]);
   }
 
-  const handleBopUpdate = (updatedBop: Bop) => {
-    updateBop(updatedBop);
-    setEditingBop(null);
-    toast({ title: 'BOP Record Updated', description: 'The record has been successfully updated.' });
+  const handleLicenseUpdate = (updatedLicense: License) => {
+    updateLicense(updatedLicense);
+    setEditingLicense(null);
+    toast({ title: 'License Record Updated', description: 'The record has been successfully updated.' });
   };
 
-  const bopsWithStatus = React.useMemo<BopWithStatus[]>(() => {
-    return bopData.map(p => ({ ...p, status: getBopBillStatus(p) }));
-  }, [bopData]);
+  const licensesWithStatus = React.useMemo<LicenseWithStatus[]>(() => {
+    return licenseData.map(p => ({ ...p, status: getLicenseBillStatus(p) }));
+  }, [licenseData]);
 
   const filteredData = React.useMemo(() => {
-    let intermediateData = bopsWithStatus;
+    let intermediateData = licensesWithStatus;
 
     if (activeTab !== 'all') {
       intermediateData = intermediateData.filter(
@@ -159,7 +174,7 @@ export default function BopBillingPage() {
         key !== 'id' && String(value).toLowerCase().includes(filter.toLowerCase())
       )
     );
-  }, [bopsWithStatus, filter, activeTab]);
+  }, [licensesWithStatus, filter, activeTab]);
 
   const totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE);
 
@@ -190,9 +205,9 @@ export default function BopBillingPage() {
     }
   };
 
-  const selectedBops = React.useMemo(() => {
-    return bopData.filter(row => selectedRows.includes(row.id));
-  }, [bopData, selectedRows]);
+  const selectedLicenses = React.useMemo(() => {
+    return licenseData.filter(row => selectedRows.includes(row.id));
+  }, [licenseData, selectedRows]);
   
   const statusVariant = (status: BillStatus): 'default' | 'secondary' | 'destructive' | 'outline' => {
       switch(String(status).toLowerCase()) {
@@ -239,13 +254,16 @@ export default function BopBillingPage() {
                 <TableCell>
                   <Badge variant={statusVariant(row.status)}>{row.status}</Badge>
                 </TableCell>
-                {headers.map((header, cellIndex) => (
-                  <TableCell key={cellIndex} className={cellIndex === 0 ? 'font-medium' : ''}>
-                    {typeof getPropertyValue(row, header) === 'object' && getPropertyValue(row, header) !== null
-                      ? 'View Details'
-                      : String(getPropertyValue(row, header) ?? '')}
-                  </TableCell>
-                ))}
+                {headers.map((header, cellIndex) => {
+                  const value = getPropertyValue(row, header);
+                  return (
+                    <TableCell key={cellIndex} className={cellIndex === 0 ? 'font-medium' : ''}>
+                      {typeof value === 'object' && value !== null
+                        ? 'View Details'
+                        : formatValue(value, header)}
+                    </TableCell>
+                  );
+                })}
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -273,7 +291,7 @@ export default function BopBillingPage() {
                         <>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onSelect={() => setPaymentItem(row)}><Banknote className="mr-2 h-4 w-4" /> Record Payment</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => setEditingBop(row)}>
+                          <DropdownMenuItem onSelect={() => setEditingLicense(row)}>
                             <FilePenLine className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
@@ -336,7 +354,7 @@ export default function BopBillingPage() {
                    <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onSelect={() => setPaymentItem(row)}><Banknote className="mr-2 h-4 w-4" /> Record Payment</DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setEditingBop(row)}>
+                    <DropdownMenuItem onSelect={() => setEditingLicense(row)}>
                         <FilePenLine className="mr-2 h-4 w-4" /> Edit
                     </DropdownMenuItem>
                     <DropdownMenuSeparator/>
@@ -355,11 +373,11 @@ export default function BopBillingPage() {
             </div>
             {headers.slice(1).map(header => {
               const value = getPropertyValue(row, header);
-              if (header.toLowerCase() === 'id' || !value) return null;
+              if (header.toLowerCase() === 'id' || value === undefined || value === null) return null;
               return (
                 <div key={header} className="flex justify-between items-center text-xs">
                   <span className="font-semibold text-muted-foreground">{header}</span>
-                  <span className="text-right">{typeof value === 'object' && value !== null ? 'View Details' : String(value)}</span>
+                  <span className="text-right">{typeof value === 'object' && value !== null ? 'View Details' : formatValue(value, header)}</span>
                 </div>
               );
             })}
@@ -381,13 +399,13 @@ export default function BopBillingPage() {
     );
   }
 
-  if (bopData.length === 0) {
+  if (licenseData.length === 0) {
     return (
         <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center h-[calc(100vh-20rem)]">
-            <Store className="h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">No BOP Data Found</h3>
+            <Hotel className="h-12 w-12 text-muted-foreground" />
+            <h3 className="mt-4 text-lg font-semibold">No License Data Found</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please go to the <Button variant="link" onClick={() => router.push('/bop')} className="p-0 h-auto">BOP Data</Button> page to import your data first.
+              Please go to the <Button variant="link" onClick={() => router.push('/license')} className="p-0 h-auto">License Data</Button> page to import your data first.
             </p>
         </div>
     );
@@ -396,7 +414,7 @@ export default function BopBillingPage() {
   return (
     <>
       <div className="flex items-center justify-between space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight font-headline">BOP Billing</h1>
+        <h1 className="text-3xl font-bold tracking-tight font-headline">Hotel/Guest House Billing</h1>
       </div>
       <Tabs defaultValue="all" onValueChange={setActiveTab}>
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -438,7 +456,7 @@ export default function BopBillingPage() {
         <TabsContent value={activeTab}>
             <Card>
                 <CardHeader>
-                <CardTitle>Business Operating Permits</CardTitle>
+                <CardTitle>License Records</CardTitle>
                 <CardDescription>
                     Select records to print bills or perform other actions.
                     {selectedRows.length > 0 && ` (${selectedRows.length} selected of ${filteredData.length})`}
@@ -475,13 +493,13 @@ export default function BopBillingPage() {
             </Card>
         </TabsContent>
       </Tabs>
-      <EditBopDialog
-        bop={editingBop}
-        isOpen={!!editingBop}
-        onOpenChange={(isOpen) => !isOpen && setEditingBop(null)}
-        onBopUpdate={handleBopUpdate}
+      <EditLicenseDialog
+        license={editingLicense}
+        isOpen={!!editingLicense}
+        onOpenChange={(isOpen) => !isOpen && setEditingLicense(null)}
+        onLicenseUpdate={handleLicenseUpdate}
       />
-      <ManualPaymentDialog item={paymentItem} type="bop" isOpen={!!paymentItem} onOpenChange={(open) => !open && setPaymentItem(null)} />
+      <ManualPaymentDialog item={paymentItem} type="license" isOpen={!!paymentItem} onOpenChange={(open) => !open && setPaymentItem(null)} />
       <SmsDialog
         isOpen={isSmsDialogOpen}
         onOpenChange={setIsSmsDialogOpen}

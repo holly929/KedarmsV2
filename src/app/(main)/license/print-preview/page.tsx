@@ -6,7 +6,7 @@ import { useReactToPrint } from 'react-to-print';
 import Link from 'next/link';
 import { ArrowLeft, Loader2, Printer, FileWarning } from 'lucide-react';
 
-import type { Property, Bill } from '@/lib/types';
+import type { License, Bill } from '@/lib/types';
 import { PrintableContent } from '@/components/bill-dialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -15,8 +15,8 @@ import { Label } from '@/components/ui/label';
 import { useBillData } from '@/context/BillDataContext';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
-import { getPropertyValue } from '@/lib/property-utils';
 import { store } from '@/lib/store';
+import { getPropertyValue } from '@/lib/property-utils';
 import { cn } from '@/lib/utils';
 
 type GeneralSettings = {
@@ -35,22 +35,22 @@ type AppearanceSettings = {
   accentColor?: string;
 };
 
-const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], settings: { general: GeneralSettings, appearance: AppearanceSettings }, billsPerPage: number, isCompact: boolean, isDemandNotice: boolean }>(({ properties, settings, billsPerPage, isCompact, isDemandNotice }, ref) => {
+const BillSheet = React.forwardRef<HTMLDivElement, { licenses: License[], settings: { general: GeneralSettings, appearance: AppearanceSettings }, billsPerPage: number, isCompact: boolean, isDemandNotice: boolean }>(({ licenses, settings, billsPerPage, isCompact, isDemandNotice }, ref) => {
     
     if (billsPerPage === 4) {
-        const propertyChunks: Property[][] = [];
-        for (let i = 0; i < properties.length; i += 4) {
-            propertyChunks.push(properties.slice(i, i + 4));
+        const licenseChunks: License[][] = [];
+        for (let i = 0; i < licenses.length; i += 4) {
+            licenseChunks.push(licenses.slice(i, i + 4));
         }
 
         return (
             <div ref={ref}>
-                {propertyChunks.map((chunk, index) => (
+                {licenseChunks.map((chunk, index) => (
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white grid grid-cols-2 grid-rows-2 box-border">
-                        {chunk.map((property) => (
-                            <div key={property.id} className="w-full h-full box-border overflow-hidden flex items-center justify-center border-dashed border-gray-400 [&:nth-child(1)]:border-r [&:nth-child(1)]:border-b [&:nth-child(2)]:border-b [&:nth-child(3)]:border-r">
+                        {chunk.map((license) => (
+                            <div key={license.id} className="w-full h-full box-border overflow-hidden flex items-center justify-center border-dashed border-gray-400 [&:nth-child(1)]:border-r [&:nth-child(1)]:border-b [&:nth-child(2)]:border-b [&:nth-child(3)]:border-r">
                                <div className="w-full h-full scale-[0.95] flex items-center justify-center">
-                                    <PrintableContent property={property} settings={settings} isCompact={true} isDemandNotice={isDemandNotice} />
+                                    <PrintableContent data={license} billType="license" settings={settings} isCompact={true} isDemandNotice={isDemandNotice} />
                                </div>
                             </div>
                         ))}
@@ -62,20 +62,20 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
     }
     
     if (billsPerPage === 2) {
-        const propertyChunks: Property[][] = [];
-        for (let i = 0; i < properties.length; i += 2) {
-            propertyChunks.push(properties.slice(i, i + 2));
+        const licenseChunks: License[][] = [];
+        for (let i = 0; i < licenses.length; i += 2) {
+            licenseChunks.push(licenses.slice(i, i + 2));
         }
 
         return (
             <div ref={ref}>
-                {propertyChunks.map((chunk, index) => (
+                {licenseChunks.map((chunk, index) => (
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex flex-col justify-center items-center box-border">
-                        {chunk.map((property, chunkIndex) => (
-                            <React.Fragment key={property.id}>
+                        {chunk.map((license, chunkIndex) => (
+                            <React.Fragment key={license.id}>
                                <div className="h-[148.5mm] w-full box-border overflow-hidden flex items-center justify-center">
                                    <div className="w-full h-full scale-[0.95] flex items-center justify-center">
-                                        <PrintableContent property={property} settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
+                                        <PrintableContent data={license} billType="license" settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
                                    </div>
                                </div>
                                {chunk.length === 2 && chunkIndex === 0 && (
@@ -93,19 +93,19 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
     return (
         <div ref={ref}>
             <div className="print:space-y-0">
-                {properties.length > 0 ? (
-                    properties.map((property) => (
-                        <div key={property.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex items-center justify-center">
+                {licenses.length > 0 ? (
+                    licenses.map((license) => (
+                        <div key={license.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex items-center justify-center">
                             <div className="w-full h-full scale-[0.95] flex items-center justify-center">
-                                <PrintableContent property={property} settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
+                                <PrintableContent data={license} billType="license" settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
                             </div>
                         </div>
                     ))
                 ) : (
                     <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] text-center">
-                        <h2 className="text-2xl font-semibold">No Properties to Print</h2>
+                        <h2 className="text-2xl font-semibold">No License Records to Print</h2>
                         <p className="text-muted-foreground mt-2">
-                            It seems no properties were selected. Please go back to the Billing page and select some properties to print.
+                            It seems no records were selected. Please go back and select some license records to print.
                         </p>
                     </div>
                 )}
@@ -116,14 +116,14 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
 BillSheet.displayName = 'BillSheet';
 
 
-export default function BulkPrintPage() {
+export default function BulkLicensePrintPage() {
   const router = useRouter();
   const componentRef = useRef<HTMLDivElement>(null);
   const { addBills } = useBillData();
   const { toast } = useToast();
   
-  const [allProperties, setAllProperties] = useState<Property[]>([]);
-  const [renderedProperties, setRenderedProperties] = useState<Property[]>([]);
+  const [allLicenses, setAllLicenses] = useState<License[]>([]);
+  const [renderedLicenses, setRenderedLicenses] = useState<License[]>([]);
   const [settings, setSettings] = useState<{general: GeneralSettings, appearance: AppearanceSettings}>({ general: {}, appearance: {} });
   const [isClient, setIsClient] = useState(false);
 
@@ -137,22 +137,21 @@ export default function BulkPrintPage() {
     setIsClient(true);
     const loadData = () => {
         try {
-            const storedProperties = localStorage.getItem('selectedPropertiesForPrinting');
+            const storedLicenses = localStorage.getItem('selectedLicensesForPrinting');
             const initialDemand = localStorage.getItem('printDemandMode') === 'true';
             
-            if (storedProperties) {
-                setAllProperties(JSON.parse(storedProperties));
+            if (storedLicenses) {
+                setAllLicenses(JSON.parse(storedLicenses));
             }
             
             setIsDemandNotice(initialDemand);
             
-            // Load settings from the central store
             setSettings({
                 general: store.settings.generalSettings || {},
                 appearance: store.settings.appearanceSettings || {},
             });
         } catch (error) {
-            console.error("Could not load data", error);
+            console.error("Could not load data for printing", error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load data for printing.' });
         }
     }
@@ -160,43 +159,41 @@ export default function BulkPrintPage() {
   }, [toast]);
 
   const recordBills = async () => {
-    if (renderedProperties.length === 0) return;
+    if (renderedLicenses.length === 0) return;
 
-    const newBills: Omit<Bill, 'id'>[] = renderedProperties.map(p => {
+    const newBills: Omit<Bill, 'id'>[] = renderedLicenses.map(l => {
         // Prioritize imported "Amount Due"
-        const importedAmountDue = Number(String(getPropertyValue(p, 'Amount Due') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
+        const importedAmountDue = Number(String(getPropertyValue(l, 'Amount Due') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
         
         let totalAmountDue = 0;
         if (!isNaN(importedAmountDue) && importedAmountDue !== 0) {
             totalAmountDue = importedAmountDue;
         } else {
-            const rateableValue = Number(String(getPropertyValue(p, 'Rateable Value') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
-            const rateImpost = Number(String(getPropertyValue(p, 'Rate Impost') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
-            const sanitationCharged = Number(String(getPropertyValue(p, 'Sanitation Charged') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
-            const previousBalance = Number(String(getPropertyValue(p, 'Previous Balance') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
-            const totalPayment = Number(String(getPropertyValue(p, 'Total Payment') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
-
-            const amountCharged = rateableValue * rateImpost;
-            const totalThisYear = amountCharged + sanitationCharged;
-            totalAmountDue = totalThisYear + previousBalance - totalPayment;
+            const rate = Number(String(getPropertyValue(l, 'License Fee') || getPropertyValue(l, 'Property Rate') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+            const bopAmt = Number(String(getPropertyValue(l, 'Bop Amount') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+            const arrears = Number(String(getPropertyValue(l, 'Arrears') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+            const payment = Number(String(getPropertyValue(l, 'Payment') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+            totalAmountDue = rate + bopAmt + arrears - payment;
         }
 
         return {
-            propertyId: p.id,
-            propertySnapshot: p,
+            propertyId: l.id,
+            propertySnapshot: l,
             generatedAt: new Date().toISOString(),
             year: new Date().getFullYear(),
             totalAmountDue: totalAmountDue,
-            billType: 'property',
+            billType: 'license',
         };
-    });
+    }).filter(Boolean) as Omit<Bill, 'id'>[];
     
-    const success = await addBills(newBills);
-    if (success) {
-      toast({
-          title: 'Bills Recorded',
-          description: `${newBills.length} bills have been recorded in the bill history.`,
-      });
+    if (newBills.length > 0) {
+        const success = await addBills(newBills);
+        if (success) {
+          toast({
+              title: 'Bills Recorded',
+              description: `${newBills.length} license bills have been recorded in the bill history.`,
+          });
+        }
     }
   };
 
@@ -206,7 +203,7 @@ export default function BulkPrintPage() {
   });
 
   const handleGenerateAndPrint = () => {
-    if (renderedProperties.length === 0) {
+    if (renderedLicenses.length === 0) {
         toast({
             variant: 'destructive',
             title: 'No Bills Ready',
@@ -218,24 +215,24 @@ export default function BulkPrintPage() {
   };
 
   useEffect(() => {
-    if (allProperties.length > 0 && isClient) {
+    if (allLicenses.length > 0 && isClient) {
         setIsPreparing(true);
-        setRenderedProperties([]);
+        setRenderedLicenses([]);
         setProgress(0);
         
-        const propertiesToRender = [...allProperties];
+        const licensesToRender = [...allLicenses];
         let currentIndex = 0;
         const chunkSize = 20;
 
         const renderChunk = () => {
-            if (currentIndex >= propertiesToRender.length) {
+            if (currentIndex >= licensesToRender.length) {
                 setIsPreparing(false);
                 return;
             }
 
-            const nextIndex = Math.min(currentIndex + chunkSize, propertiesToRender.length);
-            const chunk = propertiesToRender.slice(currentIndex, nextIndex);
-            setRenderedProperties(prev => [...prev, ...chunk]);
+            const nextIndex = Math.min(currentIndex + chunkSize, licensesToRender.length);
+            const chunk = licensesToRender.slice(currentIndex, nextIndex);
+            setRenderedLicenses(prev => [...prev, ...chunk]);
             setProgress(nextIndex);
             currentIndex = nextIndex;
 
@@ -244,7 +241,7 @@ export default function BulkPrintPage() {
         
         renderChunk();
     }
-  }, [allProperties, isClient]);
+  }, [allLicenses, isClient]);
 
   if (!isClient) {
     return (
@@ -264,12 +261,12 @@ export default function BulkPrintPage() {
           <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
           <h2 className="text-2xl font-semibold">Please Wait</h2>
           <p className="text-muted-foreground mt-2 max-w-md">
-            We are preparing {allProperties.length} bills for printing. This may take a moment.
+            We are preparing {allLicenses.length} bills for printing. This may take a moment.
           </p>
           <div className="w-full max-w-md mt-6">
-            <Progress value={allProperties.length > 0 ? (progress / allProperties.length) * 100 : 0} />
+            <Progress value={allLicenses.length > 0 ? (progress / allLicenses.length) * 100 : 0} />
             <p className="text-sm text-muted-foreground mt-2">
-              {progress} / {allProperties.length} bills ready
+              {progress} / {allLicenses.length} bills ready
             </p>
           </div>
         </main>
@@ -282,13 +279,13 @@ export default function BulkPrintPage() {
       <header className="no-print bg-card border-b p-4 flex flex-col sm:flex-row items-center justify-between sticky top-0 z-10 gap-4">
         <div className="flex items-center gap-4 w-full sm:w-auto">
             <Button asChild variant="outline" size="sm">
-                <Link href="/billing">
+                <Link href="/license-billing">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Back
                 </Link>
             </Button>
             <h1 className="text-lg sm:text-xl font-semibold">
-                Print Preview ({allProperties.length} {allProperties.length === 1 ? 'Bill' : 'Bills'})
+                Print Preview ({allLicenses.length} {allLicenses.length === 1 ? 'Bill' : 'Bills'})
             </h1>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
@@ -315,7 +312,7 @@ export default function BulkPrintPage() {
                     </SelectContent>
                 </Select>
             </div>
-            <Button onClick={handleGenerateAndPrint} disabled={renderedProperties.length === 0} className={cn("w-full sm:w-auto", isDemandNotice ? "bg-red-600 hover:bg-red-700" : "")}>
+            <Button onClick={handleGenerateAndPrint} disabled={renderedLicenses.length === 0} className={cn("w-full sm:w-auto", isDemandNotice ? "bg-red-600 hover:bg-red-700" : "")}>
               <Printer className="mr-2 h-4 w-4" />
               Print & Record
             </Button>
@@ -334,7 +331,7 @@ export default function BulkPrintPage() {
       
       {/* Hidden print container - positioned off-screen to keep it rendered in DOM */}
       <div className="absolute -left-[9999px] top-0 pointer-events-none">
-        <BillSheet ref={componentRef} properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
+        <BillSheet ref={componentRef} licenses={renderedLicenses} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
       </div>
     </div>
   );

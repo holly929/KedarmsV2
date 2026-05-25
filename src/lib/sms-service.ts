@@ -1,34 +1,44 @@
-
-
-import type { Property, Bill, Bop } from './types';
+import type { Property, Bill, Bop, License, Payment } from './types';
 import { store } from './store';
 import { getPropertyValue } from './property-utils';
 import { toast } from '@/hooks/use-toast';
 
-function compileTemplate(template: string, data: Property | Bop | Bill): string {
+function compileTemplate(template: string, data: Property | Bop | License | Bill, payment?: Payment): string {
     if (!template) return '';
     const compiled = template.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (match, key) => {
         
         if (key === 'Amount Owed') {
             let amountOwed = 0;
-            if ('billType' in data && 'propertySnapshot' in data) { // It's a Bill
+            if ('billType' in data && 'propertySnapshot' in data) {
                 amountOwed = data.totalAmountDue;
-            } else if ('Property No' in data || getPropertyValue(data, 'Property No')) { // It's a Property
-                const p = data as Property;
-                const rateableValue = Number(getPropertyValue(p, 'Rateable Value')) || 0;
-                const rateImpost = Number(getPropertyValue(p, 'Rate Impost')) || 0;
-                const sanitation = Number(getPropertyValue(p, 'Sanitation Charged')) || 0;
-                const previousBalance = Number(getPropertyValue(p, 'Previous Balance')) || 0;
-                const payment = Number(getPropertyValue(p, 'Total Payment')) || 0;
-                const due = (rateableValue * rateImpost) + sanitation + previousBalance;
-                amountOwed = due > payment ? due - payment : 0;
-            } else { // It's a BOP
-                const b = data as Bop;
-                const permitFee = Number(getPropertyValue(b, 'Permit Fee')) || 0;
-                const payment = Number(getPropertyValue(b, 'Payment')) || 0;
-                amountOwed = permitFee > payment ? permitFee - payment : 0;
+            } else {
+                const p = data as any;
+                const rv = Number(String(getPropertyValue(p, 'Rateable Value') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+                const ri = Number(String(getPropertyValue(p, 'Rate Impost') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+                const sc = Number(String(getPropertyValue(p, 'Sanitation Charged') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+                const pb = Number(String(getPropertyValue(p, 'Previous Balance') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+                const tp = Number(String(getPropertyValue(p, 'Total Payment') || getPropertyValue(p, 'Payment') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+                
+                const fee = Number(String(getPropertyValue(p, 'Permit Fee') || getPropertyValue(p, 'Property Rate') || getPropertyValue(p, 'License Fee') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+                const bop = Number(String(getPropertyValue(p, 'Bop Amount') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+                const arr = Number(String(getPropertyValue(p, 'Arrears') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+
+                const due = rv > 0 ? (rv * ri) + sc + pb : fee + bop + arr;
+                amountOwed = due > tp ? due - tp : 0;
             }
-            return amountOwed.toFixed(2);
+            return amountOwed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        if (key === 'Amount Paid' && payment) {
+            return payment.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        if (key === 'Payment Date' && payment) {
+            return new Date(payment.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+
+        if (key === 'Receipt No' && payment) {
+            return payment.reference || payment.id;
         }
 
         if (key === 'Date') {
@@ -44,19 +54,23 @@ function compileTemplate(template: string, data: Property | Bop | Bill): string 
         }
         
         let value: any;
-        if ('propertySnapshot' in data) { // It's a Bill object
+        if ('propertySnapshot' in data) {
             const bill = data as Bill;
             if (Object.prototype.hasOwnProperty.call(bill, key)) {
                 value = (bill as any)[key];
             } else {
                 value = getPropertyValue(bill.propertySnapshot, key);
             }
-        } else { // It's a Property or Bop object
-            value = getPropertyValue(data as Property, key);
+        } else {
+            value = getPropertyValue(data as any, key);
         }
         
-        if (typeof value === 'number' && ['totalAmountDue', 'Rateable Value', 'Total Payment', 'Permit Fee', 'Payment'].includes(key)) {
-            return value.toFixed(2);
+        if (value !== undefined && value !== null) {
+            const num = Number(String(value).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
+            if (!isNaN(num) && !['Property No', 'Account Number', 'Phone', 'S/N', 'SN'].some(k => key.includes(k))) {
+                if (key.toLowerCase().includes('impost')) return String(value);
+                return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
         }
         
         return value !== null && value !== undefined ? String(value) : '';
@@ -64,55 +78,63 @@ function compileTemplate(template: string, data: Property | Bop | Bill): string 
     return compiled;
 }
 
-
-/**
- * Dispatches a request to the internal backend API to send an SMS.
- * @param phoneNumber The recipient's phone number.
- * @param message The message to send.
- * @returns A promise that resolves to an object with success status and optional error.
- */
-async function sendSingleSms(phoneNumber: string, message: string): Promise<{ success: boolean; error?: string }> {
-    if (!message) {
-        const error = 'SMS message is empty. Cannot send.';
-        console.error(error);
-        return { success: false, error };
+async function sendSingleSms(phoneNumber: string, message: string): Promise<{ success: boolean; error?: string; hint?: string }> {
+    const config = store.settings.smsSettings;
+    if (!config || config.provider === 'none') {
+        return { success: false, error: 'SMS Provider not configured in Settings.' };
     }
 
     try {
         const response = await fetch('/api/sms', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phoneNumber, message }),
+            body: JSON.stringify({ 
+                phoneNumber, 
+                message,
+                config 
+            }),
         });
 
-        const result = await response.json();
+        const result = await response.json().catch(() => ({ 
+            error: 'Server returned a malformed response.',
+            hint: 'The local API route failed. This usually indicates a server-side network restriction.'
+        }));
 
         if (response.ok && result.success === true) {
-            console.log(`SMS dispatched via backend for ${phoneNumber}`);
             return { success: true };
         } else {
-            const errorMessage = result.error || `An unknown error occurred (status: ${response.status}).`;
-            console.error(`Backend SMS API error for ${phoneNumber}:`, errorMessage, result.details);
-            return { success: false, error: errorMessage };
+            return { 
+                success: false, 
+                error: result.error || 'The SMS gateway rejected the request.',
+                hint: result.hint
+            };
         }
-    } catch (error) {
-        const errorMessage = 'Could not connect to the SMS service.';
-        console.error(`Failed to call internal SMS API for ${phoneNumber}:`, error);
-        return { success: false, error: errorMessage };
+    } catch (error: any) {
+        return { 
+            success: false, 
+            error: `Network Connection Error: ${error.message || 'fetch failed'}`,
+            hint: 'The browser could not communicate with the application server route.'
+        };
     }
 }
 
+export async function testSmsConnection(): Promise<{ success: boolean; message?: string; details?: any[]; error?: string; hint?: string }> {
+    const config = store.settings.smsSettings;
+    try {
+        const response = await fetch('/api/sms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phoneNumber: 'DIAGNOSTIC_TEST', config }),
+        });
+        return await response.json();
+    } catch (e: any) {
+        return { success: false, error: e.message, hint: 'Failed to even contact the local API route.' };
+    }
+}
 
-/**
- * Sends SMS to multiple properties with a custom message.
- * Used for bulk messaging.
- * @param items An array of properties or BOPs to send SMS to.
- * @param messageTemplate The custom message template.
- * @returns An array of results for each attempt.
- */
-export async function sendSms(items: (Property | Bop)[], messageTemplate: string): Promise<{ propertyId: string; success: boolean; error?: string }[]> {
+export async function sendSms(items: (Property | Bop | License)[], messageTemplate: string): Promise<{ propertyId: string; success: boolean; error?: string; hint?: string }[]> {
     const smsPromises = items.map(async (item) => {
-        const phoneNumber = getPropertyValue(item, 'Phone Number');
+        const phoneNumber = getPropertyValue(item as any, 'Phone Number');
         if (phoneNumber && String(phoneNumber).trim()) {
             const message = compileTemplate(messageTemplate, item);
             const result = await sendSingleSms(String(phoneNumber), message);
@@ -126,81 +148,66 @@ export async function sendSms(items: (Property | Bop)[], messageTemplate: string
     return results;
 }
 
-/**
- * Sends a notification when a new property is created.
- * Triggered from the PropertyDataContext.
- * @param property The newly created property.
- */
-export async function sendNewPropertySms(property: Property | Bop) {
+export async function sendNewPropertySms(property: Property | Bop | License) {
     const config = store.settings.smsSettings || {};
     const { enableSmsOnNewProperty, newPropertyMessageTemplate } = config;
 
-    if (!enableSmsOnNewProperty || !newPropertyMessageTemplate) {
-        return;
-    }
+    if (!enableSmsOnNewProperty || !newPropertyMessageTemplate) return;
 
-    const phoneNumber = getPropertyValue(property, 'Phone Number');
-    if (!phoneNumber || !String(phoneNumber).trim()) {
-        console.log("Skipping new property SMS: No phone number found for property ID", property.id);
-        return;
-    }
+    const phoneNumber = getPropertyValue(property as any, 'Phone Number');
+    if (!phoneNumber || !String(phoneNumber).trim()) return;
 
     const message = compileTemplate(newPropertyMessageTemplate, property);
     const result = await sendSingleSms(String(phoneNumber), message);
     
     if(result.success) {
-        toast({
-            title: 'SMS Notification Sent',
-            description: `A welcome message was sent to ${phoneNumber}.`,
-        });
+        toast({ title: 'SMS Sent', description: `Registration notification sent to ${phoneNumber}.` });
     } else {
-        toast({
-            variant: 'destructive',
-            title: 'SMS Sending Failed',
-            description: result.error || `Could not send SMS to ${phoneNumber}.`,
-        });
-        console.error(`Failed to send automated new property SMS to ${phoneNumber}.`);
+        toast({ variant: 'destructive', title: 'SMS Failed', description: `Could not notify owner: ${result.error}` });
     }
 }
 
-/**
- * Sends notifications when new bills are generated.
- * Triggered from the BillDataContext.
- * @param bills An array of newly created bills.
- */
 export async function sendBillGeneratedSms(bills: Bill[]) {
     const config = store.settings.smsSettings || {};
     const { enableSmsOnBillGenerated, billGeneratedMessageTemplate } = config;
 
-    if (!enableSmsOnBillGenerated || !billGeneratedMessageTemplate) {
-        return;
-    }
+    if (!enableSmsOnBillGenerated || !billGeneratedMessageTemplate) return;
 
-    const smsPromises = bills.map(bill => {
+    const results = await Promise.all(bills.map(bill => {
         const phoneNumber = getPropertyValue(bill.propertySnapshot, 'Phone Number');
         if (phoneNumber && String(phoneNumber).trim()) {
             const message = compileTemplate(billGeneratedMessageTemplate, bill);
             return sendSingleSms(String(phoneNumber), message);
         }
         return Promise.resolve({ success: false, error: 'No phone number' });
-    });
+    }));
     
-    const results = await Promise.all(smsPromises);
     const sentCount = results.filter(r => r.success).length;
-    const failedResults = results.filter(r => !r.success && r.error !== 'No phone number');
+    const failCount = results.filter(r => !r.success && r.error !== 'No phone number').length;
 
     if (sentCount > 0) {
-        toast({
-            title: 'Bill Notifications Sent',
-            description: `Dispatched ${sentCount} SMS messages to property/business owners.`,
-        });
+        toast({ title: 'Notifications Sent', description: `${sentCount} SMS messages dispatched.` });
     }
+    if (failCount > 0) {
+        toast({ variant: 'destructive', title: 'Batch Errors', description: `${failCount} messages failed. Check SMS settings.` });
+    }
+}
 
-    if (failedResults.length > 0) {
-        toast({
-            variant: 'destructive',
-            title: `${failedResults.length} SMS Notifications Failed`,
-            description: `First error: ${failedResults[0].error}`,
-        });
+export async function sendManualPaymentSms(item: Property | Bop | License, payment: Payment) {
+    const config = store.settings.smsSettings || {};
+    const { enableSmsOnManualPayment, manualPaymentMessageTemplate } = config;
+
+    if (!enableSmsOnManualPayment || !manualPaymentMessageTemplate) return;
+
+    const phoneNumber = getPropertyValue(item as any, 'Phone Number');
+    if (!phoneNumber || !String(phoneNumber).trim()) return;
+
+    const message = compileTemplate(manualPaymentMessageTemplate, item, payment);
+    const result = await sendSingleSms(String(phoneNumber), message);
+    
+    if(result.success) {
+        toast({ title: 'Payment SMS Sent', description: `Confirmation sent to ${phoneNumber}.` });
+    } else {
+        toast({ variant: 'destructive', title: 'SMS Failed', description: `Confirmation failed: ${result.error}` });
     }
 }

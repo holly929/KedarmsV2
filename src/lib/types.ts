@@ -1,9 +1,10 @@
-
 export type Payment = {
   id: string;
   amount: number;
   date: string;
   method: string;
+  reference?: string;
+  recordedBy?: string;
 };
 
 export type Property = {
@@ -33,7 +34,24 @@ export type Bop = {
   'Phone Number'?: string;
   'Town'?: string;
   'Permit Fee'?: number;
+  'Arrears'?: number;
   'Payment'?: number;
+  created_at?: string;
+  payments?: Payment[];
+  [key: string]: any;
+}
+
+export type License = {
+  id: string;
+  'Record Type'?: string;
+  'S/N'?: string;
+  'Name of Hotel/Guest House'?: string;
+  'License Fee'?: number; 
+  'Bop Amount'?: number;
+  'Arrears'?: number;
+  'Amount Due'?: number;
+  'Payment'?: number;
+  'Phone Number'?: string;
   created_at?: string;
   payments?: Payment[];
   [key: string]: any;
@@ -49,32 +67,25 @@ export type BopWithStatus = Bop & {
   status: BillStatus;
 };
 
+export type LicenseWithStatus = License & {
+  status: BillStatus;
+};
+
 export type Bill = {
   id: string;
   propertyId: string;
-  propertySnapshot: Property | Bop; // This will be a JSONB field in Supabase
-  generatedAt: string; // ISO Date string
+  propertySnapshot: Property | Bop | License;
+  generatedAt: string;
   year: number;
   totalAmountDue: number;
   created_at?: string;
-  billType: 'property' | 'bop';
+  billType: 'property' | 'bop' | 'license';
 };
 
 export type PaymentBill = {
-  type: 'property' | 'bop';
-  data: Property | Bop;
+  type: 'property' | 'bop' | 'license';
+  data: Property | Bop | License;
 }
-
-export type RevenueData = {
-  month: string;
-  revenue: number;
-};
-
-export type PaymentStatusData = {
-  name: 'Paid' | 'Pending' | 'Overdue' | 'Unbilled';
-  value: number;
-  fill: string;
-};
 
 export type User = {
   id: string;
@@ -86,9 +97,30 @@ export type User = {
   created_at?: string;
 };
 
-export type RevenueByPropertyType = {
-  name: string;
-  revenue: number;
+export const PERMISSION_PAGES = [
+  'dashboard', 'properties', 'billing', 'bop', 'bop-billing', 'license', 'license-billing', 'bills', 'defaulters', 'reports', 'users', 'settings', 'integrations', 'payment', 'activity-logs', 'summary-bill', 'transactions'
+] as const;
+
+export type PermissionPage = typeof PERMISSION_PAGES[number];
+export type UserRole = User['role'];
+export type RolePermissions = Record<UserRole, Partial<Record<PermissionPage, boolean>>>;
+
+export type SmsProvider = 'arkesel' | 'twilio' | 'sms_gh' | 'none';
+
+export type SmsSettings = {
+  provider: SmsProvider;
+  apiKey?: string;
+  apiSecret?: string;
+  senderId?: string;
+  twilioSid?: string;
+  twilioToken?: string;
+  twilioFrom?: string;
+  enableSmsOnNewProperty: boolean;
+  newPropertyMessageTemplate: string;
+  enableSmsOnBillGenerated: boolean;
+  billGeneratedMessageTemplate: string;
+  enableSmsOnManualPayment: boolean;
+  manualPaymentMessageTemplate: string;
 };
 
 export type ActivityLog = {
@@ -99,4 +131,11 @@ export type ActivityLog = {
   userEmail: string;
   action: string;
   details?: string;
+};
+
+export type FlatTransaction = Payment & {
+    sourceId: string;
+    sourceName: string;
+    sourceType: 'property' | 'bop' | 'license';
+    identifier: string;
 };

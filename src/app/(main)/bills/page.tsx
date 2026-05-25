@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, Loader2, Calendar, Filter, BookCopy, MoreHorizontal, Printer, Building, Home, Wallet } from 'lucide-react';
+import { Eye, Loader2, Calendar, Filter, BookCopy, MoreHorizontal, Printer, Building, Home, Wallet, Hotel } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { useBillData } from '@/context/BillDataContext';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
-import type { Bill, Property, Bop } from '@/lib/types';
+import type { Bill, Property, Bop, License } from '@/lib/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { BillDialog } from '@/components/bill-dialog';
 import { PaymentHistoryDialog } from '@/components/payment-history-dialog';
@@ -114,7 +114,7 @@ export default function BillsPage() {
       return;
     }
     const selectedBills = bills.filter(bill => selectedRows.includes(bill.id));
-    const propertiesToPrint = selectedBills.map(bill => bill.propertySnapshot);
+    const snapshotsToPrint = selectedBills.map(bill => bill.propertySnapshot);
     const billType = selectedBills[0]?.billType;
 
     if (selectedBills.some(b => b.billType !== billType)) {
@@ -123,11 +123,14 @@ export default function BillsPage() {
     }
 
     if (billType === 'property') {
-      localStorage.setItem('selectedPropertiesForPrinting', JSON.stringify(propertiesToPrint));
+      localStorage.setItem('selectedPropertiesForPrinting', JSON.stringify(snapshotsToPrint));
       router.push('/properties/print-preview');
     } else if (billType === 'bop') {
-      localStorage.setItem('selectedBopsForPrinting', JSON.stringify(propertiesToPrint));
+      localStorage.setItem('selectedBopsForPrinting', JSON.stringify(snapshotsToPrint));
       router.push('/bop/print-preview');
+    } else if (billType === 'license') {
+      localStorage.setItem('selectedLicensesForPrinting', JSON.stringify(snapshotsToPrint));
+      router.push('/license/print-preview');
     }
   };
 
@@ -157,15 +160,19 @@ export default function BillsPage() {
   const identifyBillName = (bill: Bill): string => {
     if (bill.billType === 'property') {
       return getPropertyValue(bill.propertySnapshot as Property, 'Owner Name') || '';
+    } else if (bill.billType === 'bop') {
+      return getPropertyValue(bill.propertySnapshot as Bop, 'Business Name') || '';
     }
-    return getPropertyValue(bill.propertySnapshot as Bop, 'Business Name') || '';
+    return getPropertyValue(bill.propertySnapshot as License, 'Name of Hotel/Guest House') || '';
   }
 
   const identifyBillIdentifier = (bill: Bill): {key: string, value: string} => {
     if (bill.billType === 'property') {
       return { key: 'Property No', value: getPropertyValue(bill.propertySnapshot as Property, 'Property No') || '' };
+    } else if (bill.billType === 'bop') {
+      return { key: 'Business Name', value: getPropertyValue(bill.propertySnapshot as Bop, 'Business Name') || '' };
     }
-    return { key: 'Business Name', value: getPropertyValue(bill.propertySnapshot as Bop, 'Business Name') || '' };
+    return { key: 'S/N', value: getPropertyValue(bill.propertySnapshot as License, 'S/N') || '' };
   }
 
 
@@ -185,7 +192,7 @@ export default function BillsPage() {
           <TableHead>Billed To</TableHead>
           <TableHead>Date Generated</TableHead>
           <TableHead>Year</TableHead>
-          <TableHead className="text-right">Amount Due</TableHead>
+          <TableHead className="text-right">Amount Payable</TableHead>
           <TableHead><span className="sr-only">Actions</span></TableHead>
         </TableRow>
       </TableHeader>
@@ -202,12 +209,12 @@ export default function BillsPage() {
                     />
               </TableCell>
               <TableCell>
-                <Badge variant={bill.billType === 'property' ? 'secondary' : 'outline'} className="capitalize">
-                    {bill.billType === 'property' ? <Home className="h-3 w-3 mr-1" /> : <Building className="h-3 w-3 mr-1" />}
-                    {bill.billType}
+                <Badge variant={bill.billType === 'property' ? 'secondary' : bill.billType === 'bop' ? 'outline' : 'default'} className="capitalize">
+                    {bill.billType === 'property' ? <Home className="h-3 w-3 mr-1" /> : bill.billType === 'bop' ? <Building className="h-3 w-3 mr-1" /> : <Hotel className="h-3 w-3 mr-1" />}
+                    {bill.billType === 'license' ? 'Hotel/Guest House' : bill.billType}
                 </Badge>
               </TableCell>
-              <TableCell className="font-medium">{identifier.value}</TableCell>
+              <TableCell className="font-medium">{String(identifier.value)}</TableCell>
               <TableCell>{identifyBillName(bill)}</TableCell>
               <TableCell>{formatDate(bill.generatedAt)}</TableCell>
               <TableCell><Badge variant="outline">{bill.year}</Badge></TableCell>
@@ -251,7 +258,7 @@ export default function BillsPage() {
                     />
                   <div>
                     <CardTitle className="text-base font-semibold">{identifyBillName(bill)}</CardTitle>
-                    <CardDescription>{identifier.key}: {identifier.value}</CardDescription>
+                    <CardDescription>{identifier.key}: {String(identifier.value)}</CardDescription>
                   </div>
                 </div>
                  <DropdownMenu>
@@ -275,9 +282,9 @@ export default function BillsPage() {
             <CardContent className="space-y-2 text-sm pl-16">
                <div className="flex justify-between items-center text-xs text-muted-foreground">
                   <span className="font-semibold">Type</span>
-                   <Badge variant={bill.billType === 'property' ? 'secondary' : 'outline'} className="capitalize">
-                      {bill.billType === 'property' ? <Home className="h-3 w-3 mr-1" /> : <Building className="h-3 w-3 mr-1" />}
-                      {bill.billType}
+                   <Badge variant={bill.billType === 'property' ? 'secondary' : bill.billType === 'bop' ? 'outline' : 'default'} className="capitalize">
+                      {bill.billType === 'property' ? <Home className="h-3 w-3 mr-1" /> : bill.billType === 'bop' ? <Building className="h-3 w-3 mr-1" /> : <Hotel className="h-3 w-3 mr-1" />}
+                      {bill.billType === 'license' ? 'Hotel/Guest House' : bill.billType}
                   </Badge>
               </div>
                <div className="flex justify-between items-center text-xs text-muted-foreground">
@@ -289,7 +296,7 @@ export default function BillsPage() {
                    <Badge variant="outline">{bill.year}</Badge>
               </div>
               <div className="flex justify-between items-center pt-2 border-t mt-2">
-                  <span className="font-semibold">Amount Due</span>
+                  <span className="font-semibold">Amount Payable</span>
                   <span className="font-bold text-base text-foreground">{formatCurrency(bill.totalAmountDue)}</span>
               </div>
             </CardContent>
@@ -324,6 +331,7 @@ export default function BillsPage() {
                 <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="property">Property Rate</SelectItem>
                 <SelectItem value="bop">BOP</SelectItem>
+                <SelectItem value="license">Property Rate (Hotel)</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filterYear} onValueChange={setFilterYear}>
