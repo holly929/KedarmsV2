@@ -119,6 +119,8 @@ export type SmsSettings = {
   newPropertyMessageTemplate: string;
   enableSmsOnBillGenerated: boolean;
   billGeneratedMessageTemplate: string;
+  enableSmsOnManualPayment: boolean;
+  manualPaymentMessageTemplate: string;
 };
 
 export type ActivityLog = {

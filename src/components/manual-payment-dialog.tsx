@@ -16,6 +16,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getPropertyValue } from '@/lib/property-utils';
 import type { Payment, Property, Bop, License } from '@/lib/types';
 import { ReceiptDialog } from './receipt-dialog';
+import { sendManualPaymentSms } from '@/lib/sms-service';
 
 const paymentSchema = z.object({
   amount: z.coerce.number().positive('Amount must be positive'),
@@ -81,6 +82,10 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
 
     setLastPayment(newPayment);
     toast({ title: 'Payment Recorded', description: `GHS ${values.amount.toFixed(2)} added to records.` });
+    
+    // Trigger SMS notification
+    sendManualPaymentSms(updatedItem, newPayment);
+    
     setShowReceipt(true);
   };
 
@@ -91,7 +96,7 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
           <DialogHeader>
             <DialogTitle>Record Manual Payment</DialogTitle>
             <DialogDescription>
-              Enter payment details for {getPropertyValue(item, 'Owner Name') || getPropertyValue(item, 'Business Name')}.
+              Enter payment details for {getPropertyValue(item, 'Owner Name') || getPropertyValue(item, 'Business Name') || getPropertyValue(item, 'Name of Hotel/Guest House')}.
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>

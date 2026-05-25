@@ -1,9 +1,9 @@
-import type { Property, Bill, Bop } from './types';
+import type { Property, Bill, Bop, License, Payment } from './types';
 import { store } from './store';
 import { getPropertyValue } from './property-utils';
 import { toast } from '@/hooks/use-toast';
 
-function compileTemplate(template: string, data: Property | Bop | Bill): string {
+function compileTemplate(template: string, data: Property | Bop | License | Bill, payment?: Payment): string {
     if (!template) return '';
     const compiled = template.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (match, key) => {
         
@@ -11,22 +11,35 @@ function compileTemplate(template: string, data: Property | Bop | Bill): string 
             let amountOwed = 0;
             if ('billType' in data && 'propertySnapshot' in data) {
                 amountOwed = data.totalAmountDue;
-            } else if ('Property No' in data || getPropertyValue(data, 'Property No')) {
-                const p = data as Property;
-                const rv = Number(String(getPropertyValue(p, 'Rateable Value') || 0).replace(/,/g, '')) || 0;
-                const ri = Number(String(getPropertyValue(p, 'Rate Impost') || 0).replace(/,/g, '')) || 0;
-                const sc = Number(String(getPropertyValue(p, 'Sanitation Charged') || 0).replace(/,/g, '')) || 0;
-                const pb = Number(String(getPropertyValue(p, 'Previous Balance') || 0).replace(/,/g, '')) || 0;
-                const tp = Number(String(getPropertyValue(p, 'Total Payment') || 0).replace(/,/g, '')) || 0;
-                const due = (rv * ri) + sc + pb;
-                amountOwed = due > tp ? due - tp : 0;
             } else {
-                const fee = Number(String(getPropertyValue(data as any, 'Permit Fee') || getPropertyValue(data as any, 'License Fee') || 0).replace(/,/g, '')) || 0;
-                const arr = Number(String(getPropertyValue(data as any, 'Arrears') || 0).replace(/,/g, '')) || 0;
-                const pay = Number(String(getPropertyValue(data as any, 'Payment') || 0).replace(/,/g, '')) || 0;
-                amountOwed = (fee + arrears) - pay;
+                const p = data as any;
+                const rv = Number(String(getPropertyValue(p, 'Rateable Value') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+                const ri = Number(String(getPropertyValue(p, 'Rate Impost') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+                const sc = Number(String(getPropertyValue(p, 'Sanitation Charged') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+                const pb = Number(String(getPropertyValue(p, 'Previous Balance') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+                const tp = Number(String(getPropertyValue(p, 'Total Payment') || getPropertyValue(p, 'Payment') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+                
+                // For BOP/License
+                const fee = Number(String(getPropertyValue(p, 'Permit Fee') || getPropertyValue(p, 'Property Rate') || getPropertyValue(p, 'License Fee') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+                const bop = Number(String(getPropertyValue(p, 'Bop Amount') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+                const arr = Number(String(getPropertyValue(p, 'Arrears') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+
+                const due = rv > 0 ? (rv * ri) + sc + pb : fee + bop + arr;
+                amountOwed = due > tp ? due - tp : 0;
             }
-            return amountOwed.toFixed(2);
+            return amountOwed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        if (key === 'Amount Paid' && payment) {
+            return payment.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        if (key === 'Payment Date' && payment) {
+            return new Date(payment.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+
+        if (key === 'Receipt No' && payment) {
+            return payment.reference || payment.id;
         }
 
         if (key === 'Date') {
@@ -50,14 +63,14 @@ function compileTemplate(template: string, data: Property | Bop | Bill): string 
                 value = getPropertyValue(bill.propertySnapshot, key);
             }
         } else {
-            value = getPropertyValue(data as Property, key);
+            value = getPropertyValue(data as any, key);
         }
         
         if (value !== undefined && value !== null) {
-            const num = Number(String(value).replace(/,/g, ''));
-            if (!isNaN(num) && !['Property No', 'Account Number', 'Phone', 'S/N'].some(k => key.includes(k))) {
+            const num = Number(String(value).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
+            if (!isNaN(num) && !['Property No', 'Account Number', 'Phone', 'S/N', 'SN'].some(k => key.includes(k))) {
                 if (key.toLowerCase().includes('impost')) return String(value);
-                return num.toFixed(2);
+                return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             }
         }
         
@@ -94,7 +107,7 @@ async function sendSingleSms(phoneNumber: string, message: string): Promise<{ su
     }
 }
 
-export async function sendSms(items: (Property | Bop)[], messageTemplate: string): Promise<{ propertyId: string; success: boolean; error?: string }[]> {
+export async function sendSms(items: (Property | Bop | License)[], messageTemplate: string): Promise<{ propertyId: string; success: boolean; error?: string }[]> {
     const smsPromises = items.map(async (item) => {
         const phoneNumber = getPropertyValue(item, 'Phone Number');
         if (phoneNumber && String(phoneNumber).trim()) {
@@ -110,7 +123,7 @@ export async function sendSms(items: (Property | Bop)[], messageTemplate: string
     return results;
 }
 
-export async function sendNewPropertySms(property: Property | Bop) {
+export async function sendNewPropertySms(property: Property | Bop | License) {
     const config = store.settings.smsSettings || {};
     const { enableSmsOnNewProperty, newPropertyMessageTemplate } = config;
 
@@ -145,5 +158,22 @@ export async function sendBillGeneratedSms(bills: Bill[]) {
     const sentCount = results.filter(r => r.success).length;
     if (sentCount > 0) {
         toast({ title: 'Notifications Sent', description: `${sentCount} SMS messages dispatched.` });
+    }
+}
+
+export async function sendManualPaymentSms(item: Property | Bop | License, payment: Payment) {
+    const config = store.settings.smsSettings || {};
+    const { enableSmsOnManualPayment, manualPaymentMessageTemplate } = config;
+
+    if (!enableSmsOnManualPayment || !manualPaymentMessageTemplate) return;
+
+    const phoneNumber = getPropertyValue(item, 'Phone Number');
+    if (!phoneNumber || !String(phoneNumber).trim()) return;
+
+    const message = compileTemplate(manualPaymentMessageTemplate, item, payment);
+    const result = await sendSingleSms(String(phoneNumber), message);
+    
+    if(result.success) {
+        toast({ title: 'Payment SMS Sent', description: `Confirmation sent to ${phoneNumber}.` });
     }
 }

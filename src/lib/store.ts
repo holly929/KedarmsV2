@@ -73,6 +73,8 @@ function getDefaultStore(): AppStore {
                 newPropertyMessageTemplate: "Dear {{Owner Name}}, your property/license ({{Property No}}{{Name of Hotel/Guest House}}) has been registered with the District Assembly. Thank you.",
                 enableSmsOnBillGenerated: true,
                 billGeneratedMessageTemplate: "Your bill of GHS {{Amount Owed}} for {{Property No}}{{Name of Hotel/Guest House}} for the year {{Year}} is ready. Please contact the assembly to arrange payment. Thank you.",
+                enableSmsOnManualPayment: true,
+                manualPaymentMessageTemplate: "Dear {{Owner Name}}, we have received your payment of GHS {{Amount Paid}} on {{Payment Date}}. Your new balance is GHS {{Amount Owed}}. Receipt No: {{Receipt No}}. Thank you.",
             },
             billDisplaySettings: {},
         },

@@ -18,9 +18,9 @@ import { useBopData } from '@/context/BopDataContext';
 import { useLicenseData } from '@/context/LicenseDataContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
-import { PERMISSION_PAGES, usePermissions, UserRole, PermissionPage } from '@/context/PermissionsContext';
+import { PERMISSION_PAGES, usePermissions } from '@/context/PermissionsContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { Property, Bop, License } from '@/lib/types';
+import type { Property, Bop, License, UserRole, PermissionPage } from '@/lib/types';
 import { PrintableContent } from '@/components/bill-dialog';
 import { Loader2, Server, Download, UploadCloud, MessageSquare, Phone } from 'lucide-react';
 import { store, saveStore } from '@/lib/store';
@@ -37,7 +37,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { getPropertyValue } from '@/lib/property-utils';
-import { sendSms } from '@/lib/sms-service';
 
 const generalFormSchema = z.object({
   systemName: z.string().min(3, 'System name must be at least 3 characters.'),
@@ -75,22 +74,25 @@ const smsFormSchema = z.object({
   newPropertyMessageTemplate: z.string().max(320).optional(),
   enableSmsOnBillGenerated: z.boolean().default(false),
   billGeneratedMessageTemplate: z.string().max(320).optional(),
+  enableSmsOnManualPayment: z.boolean().default(false),
+  manualPaymentMessageTemplate: z.string().max(320).optional(),
 });
 
 const ImageUploadPreview = ({ src, alt }: { src: string | null, alt: string }) => {
     if (!src) return null;
     return (
         <div className="mt-2 relative aspect-video w-full max-w-[200px] overflow-hidden rounded-md border bg-muted/50 flex items-center justify-center">
+             {/* eslint-disable-next-line @next/next/no-img-element */}
              <img src={src} alt={alt} style={{ height: '80%', objectFit: 'contain' }} />
         </div>
     )
 }
 
-const PlaceholderGuide = ({ common, property, bop, license }: { common: string[], property: string[], bop: string[], license: string[] }) => (
+const PlaceholderGuide = ({ common, property, bop, license, payment }: { common: string[], property: string[], bop: string[], license: string[], payment?: string[] }) => (
     <div className="text-xs text-muted-foreground space-y-2 rounded-lg border bg-background/50 p-3 mt-2">
         <p className="font-bold mb-1">Available Placeholders:</p>
         <div className="flex flex-wrap gap-1">
-            {[...common, ...property, ...bop, ...license].map(p => (
+            {[...common, ...property, ...bop, ...license, ...(payment || [])].map(p => (
                 <code key={p} className="rounded bg-muted px-1 font-mono">{`{{${p}}}`}</code>
             ))}
         </div>
@@ -104,11 +106,8 @@ export default function SettingsPage() {
   const { licenseData } = useLicenseData();
   const { permissions, updatePermissions } = usePermissions();
   const [loading, setLoading] = useState(true);
-  const [isSendingNewYearSms, setIsSendingNewYearSms] = useState(false);
-  const [restoreFile, setRestoreFile] = useState<File | null>(null);
 
   const [billFields, setBillFields] = useState<Record<string, boolean>>({});
-  const [localPermissions, setLocalPermissions] = useState(permissions);
 
   const generalForm = useForm<z.infer<typeof generalFormSchema>>({
     resolver: zodResolver(generalFormSchema),
@@ -134,7 +133,7 @@ export default function SettingsPage() {
     smsForm.reset(store.settings.smsSettings);
     setBillFields(store.settings.billDisplaySettings || {});
     setLoading(false);
-  }, []);
+  }, [generalForm, appearanceForm, smsForm]);
 
   const onGeneralSave = (data: z.infer<typeof generalFormSchema>) => {
     store.settings.generalSettings = data;
@@ -274,19 +273,42 @@ export default function SettingsPage() {
                     </div>
                   )}
 
-                  <div className="border-t pt-6 space-y-4">
-                    <h3 className="font-bold">Automated Messaging</h3>
-                    <FormField control={smsForm.control} name="enableSmsOnBillGenerated" render={({ field }) => (
-                      <FormItem className="flex items-center justify-between p-3 border rounded-md">
-                        <div><FormLabel>Enable Auto-SMS on Bill Generation</FormLabel></div>
-                        <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                      </FormItem>
-                    )} />
-                     <FormField control={smsForm.control} name="billGeneratedMessageTemplate" render={({ field }) => (
-                        <FormItem><FormLabel>Bill Notification Template</FormLabel><FormControl><Textarea {...field} /></FormControl>
-                        <PlaceholderGuide common={['Owner Name', 'Amount Owed', 'Year']} property={[]} bop={[]} license={[]} />
+                  <div className="border-t pt-6 space-y-6">
+                    <h3 className="font-bold text-lg">Automated Messaging</h3>
+                    
+                    <div className="space-y-4">
+                      <FormField control={smsForm.control} name="enableSmsOnManualPayment" render={({ field }) => (
+                        <FormItem className="flex items-center justify-between p-3 border rounded-md">
+                          <div>
+                            <FormLabel>Enable Auto-SMS on Manual Payment</FormLabel>
+                            <FormDescription>Send a receipt confirmation after recording cash/manual payments.</FormDescription>
+                          </div>
+                          <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                         </FormItem>
-                    )} />
+                      )} />
+                      <FormField control={smsForm.control} name="manualPaymentMessageTemplate" render={({ field }) => (
+                          <FormItem><FormLabel>Payment Confirmation Template</FormLabel><FormControl><Textarea {...field} /></FormControl>
+                          <PlaceholderGuide common={['Owner Name', 'Amount Owed', 'Year']} property={[]} bop={[]} license={[]} payment={['Amount Paid', 'Payment Date', 'Receipt No']} />
+                          </FormItem>
+                      )} />
+                    </div>
+
+                    <div className="space-y-4 pt-4 border-t">
+                      <FormField control={smsForm.control} name="enableSmsOnBillGenerated" render={({ field }) => (
+                        <FormItem className="flex items-center justify-between p-3 border rounded-md">
+                          <div>
+                            <FormLabel>Enable Auto-SMS on Bill Generation</FormLabel>
+                            <FormDescription>Notify users when a new bill is printed or recorded.</FormDescription>
+                          </div>
+                          <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                      )} />
+                       <FormField control={smsForm.control} name="billGeneratedMessageTemplate" render={({ field }) => (
+                          <FormItem><FormLabel>Bill Notification Template</FormLabel><FormControl><Textarea {...field} /></FormControl>
+                          <PlaceholderGuide common={['Owner Name', 'Amount Owed', 'Year']} property={[]} bop={[]} license={[]} />
+                          </FormItem>
+                      )} />
+                    </div>
                   </div>
                 </CardContent>
                 <CardFooter><Button type="submit">Activate SMS Gateway</Button></CardFooter>
