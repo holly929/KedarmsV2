@@ -149,9 +149,9 @@ export default function SettingsPage() {
         const result = await testSmsConnection();
         setTestResult(result);
         if(result.success) {
-            toast({ title: 'Gateway Reachable', description: 'At least one endpoint is responding.' });
+            toast({ title: 'Connection Diagnostic Run', description: 'Check results below.' });
         } else {
-            toast({ variant: 'destructive', title: 'Connection Failed', description: 'Check the diagnostic results below.' });
+            toast({ variant: 'destructive', title: 'Connection Blocked', description: 'The server cannot reach the SMS gateways.' });
         }
     } catch (e: any) {
         setTestResult({ success: false, error: e.message });
@@ -400,7 +400,7 @@ export default function SettingsPage() {
                             disabled={testingSms || watchedProvider === 'none'}
                         >
                             {testingSms ? <Loader2 className="h-3 w-3 mr-2 animate-spin" /> : <Activity className="h-3 w-3 mr-2" />}
-                            Test Connectivity
+                            Diagnose Network
                         </Button>
                     </div>
                     <CardDescription>Configure your provider to enable automated notifications.</CardDescription>
@@ -433,26 +433,29 @@ export default function SettingsPage() {
 
                   {testResult && (
                       <div className="space-y-3">
-                        <Alert variant={testResult.success ? 'default' : 'destructive'} className={testResult.success ? "bg-green-50 border-green-200 text-green-800" : ""}>
+                        <Alert variant={testResult.success ? 'default' : 'destructive'} className={testResult.success ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}>
                             {testResult.success ? <ShieldCheck className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-                            <AlertTitle>{testResult.success ? 'Gateway Reachable' : 'Diagnostic Error'}</AlertTitle>
+                            <AlertTitle>{testResult.success ? 'Connectivity Verified' : 'Network Restricted'}</AlertTitle>
                             <AlertDescription className="text-xs mt-1">
-                                {testResult.message || testResult.error}
+                                {testResult.message}
                                 {testResult.hint && <p className="mt-2 font-bold opacity-80">{testResult.hint}</p>}
                             </AlertDescription>
                         </Alert>
                         
                         <Card className="border-dashed">
                             <CardHeader className="py-2 px-4 bg-muted/20 border-b">
-                                <CardTitle className="text-[10px] uppercase font-bold flex items-center gap-2"><Network className="h-3 w-3" /> Raw Trace Data</CardTitle>
+                                <CardTitle className="text-[10px] uppercase font-bold flex items-center gap-2"><Network className="h-3 w-3" /> Redundancy Check Log</CardTitle>
                             </CardHeader>
                             <CardContent className="p-3">
                                 <div className="space-y-2">
                                     {testResult.details?.map((res, i) => (
                                         <div key={i} className="flex justify-between items-center text-[10px] font-mono border-b pb-1 last:border-0">
-                                            <span className="truncate max-w-[150px]">{res.url.replace('https://', '')}</span>
+                                            <div className="flex flex-col">
+                                                <span className="font-bold">{res.name}</span>
+                                                <span className="truncate max-w-[150px] opacity-60">{res.url}</span>
+                                            </div>
                                             <span className={res.success ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
-                                                {res.success ? `SUCCESS (${res.status} ${res.time})` : `FAILED (${res.error})`}
+                                                {res.success ? `OPEN (${res.status} ${res.time})` : `BLOCKED (${res.error})`}
                                             </span>
                                         </div>
                                     ))}
@@ -463,14 +466,15 @@ export default function SettingsPage() {
                         {!testResult.success && (
                             <Alert className="bg-blue-50 border-blue-200">
                                 <Info className="h-4 w-4 text-blue-600" />
-                                <AlertTitle className="text-blue-700">How to Fix This</AlertTitle>
+                                <AlertTitle className="text-blue-700">Action Required</AlertTitle>
                                 <AlertDescription className="text-blue-600 text-xs">
-                                    <p className="mb-2">Your hosting environment is blocking outbound requests. Please share the following details with your IT team:</p>
-                                    <ul className="list-disc pl-4 space-y-1">
-                                        <li><strong>Action:</strong> White-list outbound HTTPS traffic on <strong>Port 443</strong></li>
-                                        <li><strong>Domains to Allow:</strong> openapi.arkesel.com, api.arkesel.com</li>
-                                        <li><strong>Static IPs:</strong> Arkesel does not provide static IPs; whitelisting must be done by domain.</li>
+                                    <p className="mb-2">Your server is blocking the app from communicating with Arkesel. Please provide these domains to your Network Team for whitelisting on <strong>Port 443</strong>:</p>
+                                    <ul className="list-disc pl-4 space-y-1 font-mono font-bold">
+                                        <li>openapi.arkesel.com</li>
+                                        <li>api.arkesel.com</li>
+                                        <li>sms.arkesel.com</li>
                                     </ul>
+                                    <p className="mt-2">Also, ensure your Arkesel account has a sufficient <strong>SMS Balance</strong>.</p>
                                 </AlertDescription>
                             </Alert>
                         )}
