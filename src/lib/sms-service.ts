@@ -66,10 +66,22 @@ function compileTemplate(template: string, data: Property | Bop | License | Bill
         }
         
         if (value !== undefined && value !== null) {
-            const num = Number(String(value).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
-            if (!isNaN(num) && !['Property No', 'Account Number', 'Phone', 'S/N', 'SN'].some(k => key.includes(k))) {
-                if (key.toLowerCase().includes('impost')) return String(value);
-                return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const strVal = String(value).trim();
+            // List of keys that should NEVER be formatted as currency (Identification fields)
+            const idKeys = ['name', 'no', 'sn', 'phone', 'account', 'town', 'suburb', 'type', 'hotel', 'business', 'establishment', 'entity', 'owner'];
+            const isIdKey = idKeys.some(k => key.toLowerCase().includes(k));
+
+            if (!isIdKey) {
+                // Robust numeric check: only format if the string purely represents a number
+                const numericPattern = /^-?[\d,]+(\.\d+)?$/;
+                if (numericPattern.test(strVal)) {
+                    const num = Number(strVal.replace(/,/g, ''));
+                    if (!isNaN(num)) {
+                         // Skip currency formatting for Rate Impost as it's a small multiplier
+                         if (key.toLowerCase().includes('impost')) return strVal;
+                         return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    }
+                }
             }
         }
         
