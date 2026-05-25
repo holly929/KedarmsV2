@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
@@ -10,6 +9,7 @@ import { useAuth } from './AuthContext';
 const ActivityLogStateContext = createContext<ActivityLog[] | undefined>(undefined);
 // Context for the dispatch function
 const ActivityLogDispatchContext = createContext<((action: string, details?: string) => void) | undefined>(undefined);
+const ActivityLogClearContext = createContext<(() => void) | undefined>(undefined);
 
 export function ActivityLogProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
@@ -39,10 +39,18 @@ export function ActivityLogProvider({ children }: { children: React.ReactNode })
         });
     }, [user]);
 
+    const clearLogs = useCallback(() => {
+        setActivityLogsState([]);
+        store.activityLogs = [];
+        saveStore();
+    }, []);
+
     return (
         <ActivityLogStateContext.Provider value={activityLogs}>
             <ActivityLogDispatchContext.Provider value={addLog}>
-                {children}
+                <ActivityLogClearContext.Provider value={clearLogs}>
+                    {children}
+                </ActivityLogClearContext.Provider>
             </ActivityLogDispatchContext.Provider>
         </ActivityLogStateContext.Provider>
     );
@@ -62,6 +70,14 @@ export function useActivityLogDispatch() {
     const context = useContext(ActivityLogDispatchContext);
     if (context === undefined) {
         throw new Error('useActivityLogDispatch must be used within an ActivityLogProvider');
+    }
+    return context;
+}
+
+export function useActivityLogClear() {
+    const context = useContext(ActivityLogClearContext);
+    if (context === undefined) {
+        throw new Error('useActivityLogClear must be used within an ActivityLogProvider');
     }
     return context;
 }

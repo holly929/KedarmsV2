@@ -156,4 +156,21 @@ export function forceSaveStore(data: any) {
     }
 }
 
+export function clearAllTransactionsInStore() {
+    store.bills = [];
+    store.properties = store.properties.map(p => ({ ...p, payments: [], 'Total Payment': 0 }));
+    store.bops = store.bops.map(b => ({ ...b, payments: [], 'Payment': 0 }));
+    store.licenses = store.licenses.map(l => ({ ...l, payments: [], 'Payment': 0 }));
+    saveStore();
+}
+
+export function factoryResetStore() {
+    const defaultStore = getDefaultStore();
+    if (typeof window !== 'undefined') {
+        window.localStorage.setItem(STORE_KEY, JSON.stringify(defaultStore));
+        window.localStorage.removeItem('rateease.user');
+        window.location.reload();
+    }
+}
+
 export { store };

@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState } from 'react';
@@ -11,6 +10,7 @@ import { useActivityLogDispatch } from './ActivityLogContext';
 interface BillContextType {
     bills: Bill[];
     addBills: (newBills: Omit<Bill, 'id'>[]) => Promise<boolean>;
+    deleteAllBills: () => void;
 }
 
 const BillContext = createContext<BillContextType | undefined>(undefined);
@@ -49,8 +49,14 @@ export function BillProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const deleteAllBills = () => {
+        const count = store.bills.length;
+        setAndPersistBills([]);
+        addLog('Deleted All Bills', `${count} bill history records removed.`);
+    };
+
     return (
-        <BillContext.Provider value={{ bills, addBills }}>
+        <BillContext.Provider value={{ bills, addBills, deleteAllBills }}>
             {children}
         </BillContext.Provider>
     );

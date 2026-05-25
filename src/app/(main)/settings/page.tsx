@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -15,9 +14,25 @@ import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
 import { PrintableContent } from '@/components/bill-dialog';
-import { Loader2, Download, UploadCloud, Type, Palette, ShieldCheck, Image as ImageIcon } from 'lucide-react';
-import { store, saveStore } from '@/lib/store';
+import { Loader2, Download, UploadCloud, Type, Palette, ShieldCheck, Image as ImageIcon, Trash2, RefreshCcw, RotateCcw, ShieldAlert, History } from 'lucide-react';
+import { store, saveStore, clearAllTransactionsInStore, factoryResetStore } from '@/lib/store';
 import { Separator } from '@/components/ui/separator';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { usePropertyData } from '@/context/PropertyDataContext';
+import { useBopData } from '@/context/BopDataContext';
+import { useLicenseData } from '@/context/LicenseDataContext';
+import { useBillData } from '@/context/BillDataContext';
+import { useActivityLogClear, useActivityLogDispatch } from '@/context/ActivityLogContext';
 
 const generalFormSchema = z.object({
   systemName: z.string().min(3, 'System name must be at least 3 characters.'),
@@ -70,6 +85,13 @@ const DUMMY_PROPERTY = {
 export default function SettingsPage() {
   useRequirePermission();
   const [loading, setLoading] = useState(true);
+  
+  const { deleteAllProperties } = usePropertyData();
+  const { deleteAllBop } = useBopData();
+  const { deleteAllLicense } = useLicenseData();
+  const { deleteAllBills } = useBillData();
+  const clearLogs = useActivityLogClear();
+  const addLog = useActivityLogDispatch();
 
   const generalForm = useForm<z.infer<typeof generalFormSchema>>({
     resolver: zodResolver(generalFormSchema),
@@ -127,6 +149,13 @@ export default function SettingsPage() {
     }
   };
 
+  const handleClearTransactions = () => {
+    clearAllTransactionsInStore();
+    addLog('System Maintenance', 'All transaction payments were cleared.');
+    toast({ title: 'Transactions Cleared', description: 'All payments across the system have been reset to zero.' });
+    setTimeout(() => window.location.reload(), 1000);
+  };
+
   if (loading) return <div className="flex h-full items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
   return (
@@ -138,7 +167,7 @@ export default function SettingsPage() {
           <TabsTrigger value="general" className="py-2">General</TabsTrigger>
           <TabsTrigger value="appearance" className="py-2">Appearance & Branding</TabsTrigger>
           <TabsTrigger value="sms" className="py-2">SMS Gateway</TabsTrigger>
-          <TabsTrigger value="backup" className="py-2">Backup & Data</TabsTrigger>
+          <TabsTrigger value="backup" className="py-2">Maintenance & Data</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
@@ -382,25 +411,151 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="backup">
-            <Card>
-                <CardHeader><CardTitle>Data Maintenance</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="p-4 border rounded-lg flex items-center justify-between">
-                        <div>
-                            <h4 className="font-bold">System Database Backup</h4>
-                            <p className="text-sm text-muted-foreground">Download your local database as a portable JSON file.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Download className="h-5 w-5" /> Data Backup</CardTitle>
+                        <CardDescription>Export and safeguard your local database.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="p-4 border rounded-lg flex items-center justify-between gap-4">
+                            <div>
+                                <h4 className="font-bold">System Database Backup</h4>
+                                <p className="text-sm text-muted-foreground">Download your local database as a portable JSON file.</p>
+                            </div>
+                            <Button variant="outline" onClick={() => {
+                                const data = localStorage.getItem('rateease.store');
+                                const blob = new Blob([data || '{}'], {type: 'application/json'});
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url; a.download = `rateease-backup-${new Date().toISOString().split('T')[0]}.json`;
+                                a.click();
+                            }}><Download className="mr-2 h-4 w-4" /> Download</Button>
                         </div>
-                        <Button variant="outline" onClick={() => {
-                            const data = localStorage.getItem('rateease.store');
-                            const blob = new Blob([data || '{}'], {type: 'application/json'});
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url; a.download = `rateease-backup-${new Date().toISOString().split('T')[0]}.json`;
-                            a.click();
-                        }}><Download className="mr-2 h-4 w-4" /> Download Backup</Button>
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-destructive/20 bg-destructive/[0.02]">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-destructive"><ShieldAlert className="h-5 w-5" /> System Maintenance</CardTitle>
+                        <CardDescription>Destructive actions to reset or clear system data.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {/* Clear Transactions */}
+                        <div className="p-3 border rounded-lg flex items-center justify-between bg-background">
+                            <div>
+                                <h4 className="text-sm font-bold">Clear All Transactions</h4>
+                                <p className="text-xs text-muted-foreground">Resets all payments to zero across properties and BOPs.</p>
+                            </div>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="outline" size="sm" className="text-destructive border-destructive/20 hover:bg-destructive hover:text-white">
+                                        <RotateCcw className="mr-2 h-3 w-3" /> Clear
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Clear All Transactions?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will reset all payments made to Properties, BOPs, and Hotels to zero. Owner data and imported properties will NOT be deleted.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleClearTransactions} className="bg-destructive text-white">Reset Payments</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+
+                        {/* Clear Bill History */}
+                        <div className="p-3 border rounded-lg flex items-center justify-between bg-background">
+                            <div>
+                                <h4 className="text-sm font-bold">Clear Bill History</h4>
+                                <p className="text-xs text-muted-foreground">Deletes the log of all generated and printed bills.</p>
+                            </div>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="outline" size="sm" className="text-destructive border-destructive/20 hover:bg-destructive hover:text-white">
+                                        <History className="mr-2 h-3 w-3" /> Clear
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Clear Bill History?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This only removes the history of printed bills. It does not affect payments or property data.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={deleteAllBills} className="bg-destructive text-white">Clear History</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+
+                        {/* Clear Activity Logs */}
+                        <div className="p-3 border rounded-lg flex items-center justify-between bg-background">
+                            <div>
+                                <h4 className="text-sm font-bold">Clear Activity Logs</h4>
+                                <p className="text-xs text-muted-foreground">Wipes the chronological log of user actions.</p>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={() => { clearLogs(); toast({ title: 'Logs Cleared' }); }}>
+                                <Trash2 className="mr-2 h-3 w-3" /> Wipe
+                            </Button>
+                        </div>
+
+                        <Separator className="my-2" />
+
+                        {/* Factory Reset */}
+                        <div className="p-3 border-2 border-dashed border-destructive/30 rounded-lg flex items-center justify-between bg-destructive/[0.05]">
+                            <div>
+                                <h4 className="text-sm font-bold text-destructive">Factory System Reset</h4>
+                                <p className="text-xs text-muted-foreground">Total wipe of all data, settings, branding, and users.</p>
+                            </div>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" size="sm">
+                                        <RefreshCcw className="mr-2 h-3 w-3" /> RESET SYSTEM
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle className="text-destructive">PERMANENT SYSTEM RESET</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This is a high-level destructive action. ALL properties, BOPs, payments, users, and branding settings will be permanently destroyed. The system will return to its original blank state.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Abort Action</AlertDialogCancel>
+                                        <AlertDialogAction onClick={factoryResetStore} className="bg-destructive text-white">PROCEED WITH RESET</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Module-Specific Resets */}
+                <Card className="md:col-span-2 border-orange-200 bg-orange-50/20">
+                     <CardHeader>
+                        <CardTitle className="text-sm flex items-center gap-2 text-orange-600"><Trash2 className="h-4 w-4" /> Reset Module Data</CardTitle>
+                        <CardDescription>Delete all records from specific modules to start fresh.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <Button variant="outline" className="border-orange-200 hover:bg-orange-500 hover:text-white" onClick={() => { deleteAllProperties(); toast({ title: 'Properties Deleted' }); }}>
+                            Reset All Properties
+                        </Button>
+                        <Button variant="outline" className="border-orange-200 hover:bg-orange-500 hover:text-white" onClick={() => { deleteAllBop(); toast({ title: 'BOP Data Deleted' }); }}>
+                            Reset All BOPs
+                        </Button>
+                        <Button variant="outline" className="border-orange-200 hover:bg-orange-500 hover:text-white" onClick={() => { deleteAllLicense(); toast({ title: 'Hotel Data Deleted' }); }}>
+                            Reset All Hotels
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
         </TabsContent>
       </Tabs>
     </div>
