@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -109,7 +108,9 @@ export default function ReportsPage() {
         
         const statusChartData = statusChartDataArray.filter(d => d.value > 0);
 
-        const typeChartData = Object.entries(typeRevenue).map(([name, revenue]) => ({ name, revenue })).filter(d => d.revenue > 0);
+        const typeChartData: RevenueByPropertyType[] = Object.entries(typeRevenue)
+          .map(([name, revenue]) => ({ name, revenue }))
+          .filter(d => d.revenue > 0);
 
         setChartData({ status: statusChartData, byType: typeChartData });
       }
