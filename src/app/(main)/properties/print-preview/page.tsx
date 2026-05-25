@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { getPropertyValue } from '@/lib/property-utils';
 import { store } from '@/lib/store';
+import { cn } from '@/lib/utils';
 
 type GeneralSettings = {
   assemblyName?: string;
@@ -137,9 +138,14 @@ export default function BulkPrintPage() {
     const loadData = () => {
         try {
             const storedProperties = localStorage.getItem('selectedPropertiesForPrinting');
+            const initialDemand = localStorage.getItem('printDemandMode') === 'true';
+            
             if (storedProperties) {
                 setAllProperties(JSON.parse(storedProperties));
             }
+            
+            setIsDemandNotice(initialDemand);
+            
             // Load settings from the central store
             setSettings({
                 general: store.settings.generalSettings || {},

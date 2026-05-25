@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -13,6 +12,7 @@ import {
   MessageSquare,
   Store,
   CreditCard,
+  FileWarning,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -74,14 +74,16 @@ export default function BopBillingPage() {
     }
   }, [bopData]);
 
-  const handleViewBill = (bop: Bop) => {
+  const handleViewBill = (bop: Bop, isDemand: boolean = false) => {
     localStorage.setItem('selectedBopsForPrinting', JSON.stringify([bop]));
+    localStorage.setItem('printDemandMode', isDemand ? 'true' : 'false');
     router.push('/bop/print-preview');
   };
   
   const handlePrintSelected = () => {
     if (selectedRows.length > 0) {
       localStorage.setItem('selectedBopsForPrinting', JSON.stringify(selectedBops));
+      localStorage.setItem('printDemandMode', 'false');
       router.push('/bop/print-preview');
     } else {
       toast({
@@ -244,20 +246,21 @@ export default function BopBillingPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      {getPropertyValue(row, 'Business Name') && getPropertyValue(row, 'Permit Fee') ? (
-                        <>
-                        <DropdownMenuItem onSelect={() => handleViewBill(row)}>
-                          <View className="mr-2 h-4 w-4" />
-                          View Bill
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handlePayOnline(row)}>
-                          <CreditCard className="mr-2 h-4 w-4" />
-                          Pay Online
-                        </DropdownMenuItem>
-                        </>
-                      ) : null}
+                      <DropdownMenuItem onSelect={() => handleViewBill(row, false)}>
+                        <View className="mr-2 h-4 w-4" />
+                        View Bill
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => handleViewBill(row, true)} className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                        <FileWarning className="mr-2 h-4 w-4" />
+                        View Demand Notice
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => handlePayOnline(row)}>
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        Pay Online
+                      </DropdownMenuItem>
                       {!isViewer && (
                         <>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem onSelect={() => setEditingBop(row)}>
                             <FilePenLine className="mr-2 h-4 w-4" />
                             Edit
@@ -307,18 +310,18 @@ export default function BopBillingPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                {getPropertyValue(row, 'Business Name') && getPropertyValue(row, 'Permit Fee') ? (
-                  <>
-                  <DropdownMenuItem onSelect={() => handleViewBill(row)}>
+                <DropdownMenuItem onSelect={() => handleViewBill(row, false)}>
                     <View className="mr-2 h-4 w-4" /> View Bill
-                  </DropdownMenuItem>
-                   <DropdownMenuItem onSelect={() => handlePayOnline(row)}>
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => handleViewBill(row, true)} className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                    <FileWarning className="mr-2 h-4 w-4" /> View Demand Notice
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => handlePayOnline(row)}>
                     <CreditCard className="mr-2 h-4 w-4" /> Pay Online
-                  </DropdownMenuItem>
-                  </>
-                ) : null}
+                </DropdownMenuItem>
                  {!isViewer && (
                    <>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onSelect={() => setEditingBop(row)}>
                         <FilePenLine className="mr-2 h-4 w-4" /> Edit
                     </DropdownMenuItem>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -13,6 +12,7 @@ import {
   MessageSquare,
   Hotel,
   CreditCard,
+  FileWarning,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -89,14 +89,16 @@ export default function LicenseBillingPage() {
     }
   }, [licenseData]);
 
-  const handleViewBill = (license: License) => {
+  const handleViewBill = (license: License, isDemand: boolean = false) => {
     localStorage.setItem('selectedLicensesForPrinting', JSON.stringify([license]));
+    localStorage.setItem('printDemandMode', isDemand ? 'true' : 'false');
     router.push('/license/print-preview');
   };
   
   const handlePrintSelected = () => {
     if (selectedRows.length > 0) {
       localStorage.setItem('selectedLicensesForPrinting', JSON.stringify(selectedLicenses));
+      localStorage.setItem('printDemandMode', 'false');
       router.push('/license/print-preview');
     } else {
       toast({
@@ -262,20 +264,21 @@ export default function LicenseBillingPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      {(getPropertyValue(row, 'Name of Hotel/Guest House') || getPropertyValue(row, 'Hotel')) ? (
-                        <>
-                        <DropdownMenuItem onSelect={() => handleViewBill(row)}>
-                          <View className="mr-2 h-4 w-4" />
-                          View Bill
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handlePayOnline(row)}>
-                          <CreditCard className="mr-2 h-4 w-4" />
-                          Pay Online
-                        </DropdownMenuItem>
-                        </>
-                      ) : null}
+                      <DropdownMenuItem onSelect={() => handleViewBill(row, false)}>
+                        <View className="mr-2 h-4 w-4" />
+                        View Bill
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => handleViewBill(row, true)} className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                        <FileWarning className="mr-2 h-4 w-4" />
+                        View Demand Notice
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => handlePayOnline(row)}>
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        Pay Online
+                      </DropdownMenuItem>
                       {!isViewer && (
                         <>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem onSelect={() => setEditingLicense(row)}>
                             <FilePenLine className="mr-2 h-4 w-4" />
                             Edit
@@ -325,18 +328,18 @@ export default function LicenseBillingPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                {(getPropertyValue(row, 'Name of Hotel/Guest House') || getPropertyValue(row, 'Hotel')) ? (
-                  <>
-                  <DropdownMenuItem onSelect={() => handleViewBill(row)}>
+                <DropdownMenuItem onSelect={() => handleViewBill(row, false)}>
                     <View className="mr-2 h-4 w-4" /> View Bill
-                  </DropdownMenuItem>
-                   <DropdownMenuItem onSelect={() => handlePayOnline(row)}>
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => handleViewBill(row, true)} className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                    <FileWarning className="mr-2 h-4 w-4" /> View Demand Notice
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => handlePayOnline(row)}>
                     <CreditCard className="mr-2 h-4 w-4" /> Pay Online
-                  </DropdownMenuItem>
-                  </>
-                ) : null}
+                </DropdownMenuItem>
                  {!isViewer && (
                    <>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onSelect={() => setEditingLicense(row)}>
                         <FilePenLine className="mr-2 h-4 w-4" /> Edit
                     </DropdownMenuItem>

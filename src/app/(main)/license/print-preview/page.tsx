@@ -138,15 +138,20 @@ export default function BulkLicensePrintPage() {
     const loadData = () => {
         try {
             const storedLicenses = localStorage.getItem('selectedLicensesForPrinting');
+            const initialDemand = localStorage.getItem('printDemandMode') === 'true';
+            
             if (storedLicenses) {
                 setAllLicenses(JSON.parse(storedLicenses));
             }
+            
+            setIsDemandNotice(initialDemand);
+            
             setSettings({
                 general: store.settings.generalSettings || {},
                 appearance: store.settings.appearanceSettings || {},
             });
         } catch (error) {
-            console.error("Could not load data", error);
+            console.error("Could not load data for printing", error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load data for printing.' });
         }
     }

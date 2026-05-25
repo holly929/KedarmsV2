@@ -138,9 +138,14 @@ export default function BulkBopPrintPage() {
     const loadData = () => {
         try {
             const storedBops = localStorage.getItem('selectedBopsForPrinting');
+            const initialDemand = localStorage.getItem('printDemandMode') === 'true';
+            
             if (storedBops) {
                 setAllBops(JSON.parse(storedBops));
             }
+            
+            setIsDemandNotice(initialDemand);
+            
             setSettings({
                 general: store.settings.generalSettings || {},
                 appearance: store.settings.appearanceSettings || {},

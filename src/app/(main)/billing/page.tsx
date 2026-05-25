@@ -12,6 +12,7 @@ import {
   MessageSquare,
   CreditCard,
   Banknote,
+  FileWarning,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -83,8 +84,9 @@ export default function BillingPage() {
     if (properties.length >= 0) setLoading(false);
   }, [properties]);
 
-  const handleViewBill = (property: Property) => {
+  const handleViewBill = (property: Property, isDemand: boolean = false) => {
     localStorage.setItem('selectedPropertiesForPrinting', JSON.stringify([property]));
+    localStorage.setItem('printDemandMode', isDemand ? 'true' : 'false');
     router.push('/properties/print-preview');
   };
 
@@ -169,9 +171,11 @@ export default function BillingPage() {
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onSelect={() => handleViewBill(row)}><View className="mr-2 h-4 w-4" /> View Bill</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleViewBill(row, false)}><View className="mr-2 h-4 w-4" /> View Bill</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleViewBill(row, true)} className="text-red-600 focus:text-red-600 focus:bg-red-50"><FileWarning className="mr-2 h-4 w-4" /> View Demand Notice</DropdownMenuItem>
                                     {!isViewer && (
                                         <>
+                                        <DropdownMenuSeparator />
                                         <DropdownMenuItem onSelect={() => setPaymentItem(row)}><Banknote className="mr-2 h-4 w-4" /> Record Payment</DropdownMenuItem>
                                         <DropdownMenuItem onSelect={() => setEditingProperty(row)}><FilePenLine className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
                                         </>
