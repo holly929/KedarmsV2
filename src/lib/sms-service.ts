@@ -96,19 +96,20 @@ async function sendSingleSms(phoneNumber: string, message: string): Promise<{ su
         });
 
         let result;
+        const text = await response.text();
         try {
-            result = await response.json();
+            result = JSON.parse(text);
         } catch (jsonErr) {
-            return { success: false, error: `Critical API Error: Server returned an invalid response (${response.status})` };
+            return { success: false, error: `Critical API Error: Provider returned an invalid format. Check if domain is blocked.` };
         }
 
         if (response.ok && result.success === true) {
             return { success: true };
         } else {
-            return { success: false, error: result.error || 'Provider rejected the request.' };
+            return { success: false, error: result.error || 'The SMS gateway rejected the request.' };
         }
     } catch (error: any) {
-        return { success: false, error: `Connection Error: ${error.message || 'Check your internet connection'}` };
+        return { success: false, error: `Network Connection Error: The server could not reach the gateway. Please check firewall settings.` };
     }
 }
 

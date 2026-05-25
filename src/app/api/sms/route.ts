@@ -33,12 +33,18 @@ export async function POST(request: Request) {
   const provider = config.provider;
 
   try {
+    const commonHeaders = {
+      'User-Agent': 'RateEase-Revenue-System/1.0',
+    };
+
     if (provider === 'arkesel') {
         const sender = String(config.senderId || 'RateEase').substring(0, 11);
         
         const response = await fetch(`https://openapi.arkesel.com/api/v2/sms/send`, {
             method: 'POST',
+            cache: 'no-store',
             headers: {
+                ...commonHeaders,
                 'api-key': config.apiKey || '',
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
@@ -50,7 +56,14 @@ export async function POST(request: Request) {
             })
         });
 
-        const result = await response.json();
+        const contentType = response.headers.get('content-type');
+        let result;
+        if (contentType && contentType.includes('application/json')) {
+            result = await response.json();
+        } else {
+            const text = await response.text();
+            throw new Error(`Provider returned non-JSON response: ${text.substring(0, 100)}`);
+        }
         
         if (response.ok) {
             return NextResponse.json({ success: true, data: result });
@@ -70,7 +83,10 @@ export async function POST(request: Request) {
             from: String(config.senderId || 'RateEase').substring(0, 11),
             msg: message,
         });
-        const res = await fetch(`https://api.smsgh.com/v3/messages/send?${params.toString()}`);
+        const res = await fetch(`https://api.smsgh.com/v3/messages/send?${params.toString()}`, {
+            cache: 'no-store',
+            headers: commonHeaders
+        });
         if (res.ok) return NextResponse.json({ success: true });
         
         const errorText = await res.text();
@@ -78,10 +94,12 @@ export async function POST(request: Request) {
     } 
     
     if (provider === 'twilio') {
-        const auth = btoa(`${config.twilioSid}:${config.twilioToken}`);
+        const auth = Buffer.from(`${config.twilioSid}:${config.twilioToken}`).toString('base64');
         const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${config.twilioSid}/Messages.json`, {
             method: 'POST',
+            cache: 'no-store',
             headers: {
+                ...commonHeaders,
                 'Authorization': `Basic ${auth}`,
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
@@ -102,8 +120,8 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error("SMS API Route Runtime Error:", error);
     return NextResponse.json({ 
-        error: `Provider Connection Failed: ${error.message || 'Unreachable'}`,
-        hint: 'This usually means the application cannot reach the SMS provider over the internet. Check your firewall or proxy settings.'
+        error: `Provider Connection Failed: ${error.message || 'The server could not reach the gateway'}`,
+        hint: 'Verify your internet connection and ensure that the SMS provider\'s domain is not blocked by a firewall or proxy.'
     }, { status: 500 });
   }
 }
