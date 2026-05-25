@@ -27,6 +27,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getPropertyValue } from '@/lib/property-utils';
+import { normalizePhoneNumber } from '@/lib/utils';
 
 interface EditPropertyDialogProps {
   property: Property | null;
@@ -102,12 +103,19 @@ export function EditPropertyDialog({
 
   function onSubmit(data: z.infer<typeof propertyFormSchema>) {
     if (property) {
-      // Use override if provided
+      // Correct phone format on save
+      const formattedPhone = normalizePhoneNumber(data['Phone Number']);
+      
       const finalAmountDue = data['Amount Due'] !== undefined && data['Amount Due'] !== null 
           ? data['Amount Due'] 
           : calculatedPayable;
 
-      onPropertyUpdate({ ...property, ...data, 'Amount Due': finalAmountDue });
+      onPropertyUpdate({ 
+        ...property, 
+        ...data, 
+        'Phone Number': formattedPhone,
+        'Amount Due': finalAmountDue 
+      });
       onOpenChange(false);
     }
   }
@@ -147,6 +155,7 @@ export function EditPropertyDialog({
                         <FormItem>
                           <FormLabel>Phone Number</FormLabel>
                           <FormControl><Input {...field} value={field.value ?? ''}/></FormControl>
+                          <FormDescription>Will be cleaned to 233 format.</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

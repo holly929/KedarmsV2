@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect } from 'react';
@@ -19,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { getPropertyValue } from '@/lib/property-utils';
+import { normalizePhoneNumber } from '@/lib/utils';
 
 interface EditBopDialogProps {
   bop: Bop | null;
@@ -98,7 +99,9 @@ export function EditBopDialog({
 
   function onSubmit(data: z.infer<typeof bopFormSchema>) {
     if (bop) {
-      onBopUpdate({ ...bop, ...data });
+      // Fix phone number on save
+      const formattedPhone = normalizePhoneNumber(data['Phone Number']);
+      onBopUpdate({ ...bop, ...data, 'Phone Number': formattedPhone });
       onOpenChange(false);
     }
   }
@@ -139,6 +142,7 @@ export function EditBopDialog({
                         <FormItem>
                           <FormLabel>Phone Number</FormLabel>
                           <FormControl><Input placeholder="e.g. 0244123456" {...field} value={field.value ?? ''}/></FormControl>
+                          <FormDescription>Will be formatted for SMS delivery.</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

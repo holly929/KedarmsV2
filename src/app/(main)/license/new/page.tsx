@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -8,7 +7,7 @@ import * as z from 'zod';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
@@ -19,7 +18,7 @@ import { CalendarIcon, RefreshCcw } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { cn, normalizePhoneNumber } from '@/lib/utils';
 import { store } from '@/lib/store';
 
 const licenseFormSchema = z.object({
@@ -79,8 +78,12 @@ export default function NewLicensePage() {
 
     function onSubmit(data: z.infer<typeof licenseFormSchema>) {
         try {
+            // Clean phone number for Arkesel compatibility
+            const formattedPhone = normalizePhoneNumber(data['Phone Number']);
+            
             const finalData = {
                 ...data,
+                'Phone Number': formattedPhone,
                 'Record Type': data['Record Type'].join(', '),
                 'Amount Due': totalAmountDue,
                 created_at: data.created_at?.toISOString() ?? new Date().toISOString(),
@@ -88,7 +91,7 @@ export default function NewLicensePage() {
             addLicense(finalData as any);
             toast({
                 title: 'Record Added',
-                description: `The record for ${data['Name of Hotel/Guest House']} has been successfully created.`,
+                description: `The record for ${data['Name of Hotel/Guest House']} has been successfully created. Phone formatted for SMS.`,
             });
             router.push('/license');
         } catch (error) {
@@ -199,6 +202,7 @@ export default function NewLicensePage() {
                         <FormItem>
                           <FormLabel>Phone Number</FormLabel>
                           <FormControl><Input placeholder="e.g. 0244123456" {...field} /></FormControl>
+                          <FormDescription>Saved in international 233 format.</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

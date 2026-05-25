@@ -1,28 +1,5 @@
 import { NextResponse } from 'next/server';
-
-/**
- * Normalizes phone numbers to the 233XXXXXXXXX format required by Ghanaian gateways.
- */
-function normalizePhoneNumber(phone: string): string {
-  const cleaned = String(phone || '').replace(/\D/g, '');
-  
-  // If starts with 0 and is 10 digits (e.g. 0244123456)
-  if (cleaned.startsWith('0') && cleaned.length === 10) {
-    return '233' + cleaned.substring(1);
-  }
-  
-  // If starts with 233 and is 12 digits (e.g. 233244123456)
-  if (cleaned.startsWith('233') && cleaned.length === 12) {
-    return cleaned;
-  }
-  
-  // If it's exactly 9 digits, assume it's a GH number missing the leading zero
-  if (cleaned.length === 9) {
-    return '233' + cleaned;
-  }
-  
-  return cleaned;
-}
+import { normalizePhoneNumber } from '@/lib/utils';
 
 const ARKESEL_V2_ENDPOINTS = [
     'https://openapi.arkesel.com/api/v2/sms/send',
@@ -31,7 +8,7 @@ const ARKESEL_V2_ENDPOINTS = [
 
 const ARKESEL_V1_ENDPOINT = 'https://sms.arkesel.com/sms/api';
 
-async function fetchWithTimeout(url: string, options: RequestInit, timeout = 20000) {
+async function fetchWithTimeout(url: string, options: RequestInit, timeout = 25000) {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeout);
     try {
@@ -68,6 +45,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'SMS service is not fully configured in Settings.' }, { status: 400 });
   }
 
+  // Ensure number is in 233 format for Arkesel
   const normalizedPhone = normalizePhoneNumber(phoneNumber);
   const provider = config.provider;
 
@@ -87,13 +65,14 @@ export async function POST(request: Request) {
                         'api-key': apiKey,
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
+                        'User-Agent': 'RateEase/1.0'
                     },
                     body: JSON.stringify({
                         sender: sender,
                         message: message,
                         recipients: [normalizedPhone]
                     }),
-                    next: { revalidate: 0 }
+                    cache: 'no-store'
                 });
 
                 if (response.ok) {
@@ -105,12 +84,10 @@ export async function POST(request: Request) {
                 }
             } catch (e: any) {
                 lastError = e.message || 'V2 Connection failed';
-                console.warn(`Arkesel V2 attempt at ${endpoint} failed: ${lastError}`);
             }
         }
 
         // 2. ATTEMPT ARKESEL V1 FALLBACK (Legacy GET API) 
-        // This is often more resilient to firewall filters and SSL issues in limited environments
         try {
             const v1Params = new URLSearchParams({
                 action: 'send-sms',
@@ -122,25 +99,23 @@ export async function POST(request: Request) {
             
             const v1Response = await fetchWithTimeout(`${ARKESEL_V1_ENDPOINT}?${v1Params.toString()}`, {
                 method: 'GET',
-                next: { revalidate: 0 }
+                cache: 'no-store'
             });
             
             if (v1Response.ok) {
                 const result = await v1Response.text();
-                // V1 success is typically indicated by a response starting with '1000'
                 return NextResponse.json({ success: true, data: result, api: 'v1' });
             } else {
                 lastError = `V1 also failed (${v1Response.status})`;
             }
         } catch (e: any) {
             lastError = `V1 Fallback failed: ${e.message}`;
-            console.error("Arkesel V1 absolute failure:", e);
         }
 
         return NextResponse.json({ 
             error: 'All Arkesel connection paths failed.',
             details: lastError,
-            hint: 'Your hosting environment is blocking outbound traffic to openapi.arkesel.com and sms.arkesel.com. You must white-list these domains on Port 443.'
+            hint: 'The server cannot reach Arkesel. Whitelist openapi.arkesel.com and sms.arkesel.com on Port 443.'
         }, { status: 502 });
     } 
     
@@ -167,10 +142,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Provider not implemented.' }, { status: 501 });
 
   } catch (error: any) {
-    console.error("SMS API Fatal Error:", error);
     return NextResponse.json({ 
-        error: `Network Failure: ${error.message || 'fetch failed'}`,
-        hint: 'The server environment cannot reach external gateways. Contact your network administrator to open Port 443 egress traffic.'
+        error: `Provider Connection Failed: ${error.message || 'fetch failed'}`,
+        hint: 'Verify that the server has an active internet connection and that the provider\'s domain (e.g. openapi.arkesel.com) is not blocked by a firewall or proxy.'
     }, { status: 500 });
   }
 }
@@ -190,7 +164,7 @@ async function performConnectivityTest(config: any) {
     for (const target of targets) {
         try {
             const start = Date.now();
-            const res = await fetchWithTimeout(target.url, { method: 'HEAD', next: { revalidate: 0 } }, 10000);
+            const res = await fetchWithTimeout(target.url, { method: 'HEAD', cache: 'no-store' }, 10000);
             const end = Date.now();
             
             results.push({

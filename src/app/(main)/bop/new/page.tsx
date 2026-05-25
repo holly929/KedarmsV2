@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -8,7 +7,7 @@ import * as z from 'zod';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -18,7 +17,7 @@ import { CalendarIcon } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { cn, normalizePhoneNumber } from '@/lib/utils';
 
 const bopFormSchema = z.object({
   'Business Name': z.string().min(3, 'Business name is required.'),
@@ -61,14 +60,18 @@ export default function NewBopPage() {
 
     function onSubmit(data: z.infer<typeof bopFormSchema>) {
         try {
+            // Clean phone number for Arkesel compatibility
+            const formattedPhone = normalizePhoneNumber(data['Phone Number']);
+            
             const finalData = {
                 ...data,
+                'Phone Number': formattedPhone,
                 created_at: data.created_at?.toISOString() ?? new Date().toISOString(),
             };
             addBop(finalData);
             toast({
                 title: 'BOP Record Added',
-                description: `The BOP record for ${data['Business Name']} has been successfully created.`,
+                description: `The BOP record for ${data['Business Name']} has been successfully created. Phone formatted for SMS.`,
             });
             router.push('/bop');
         } catch (error) {
@@ -123,6 +126,7 @@ export default function NewBopPage() {
                         <FormItem>
                           <FormLabel>Phone Number</FormLabel>
                           <FormControl><Input placeholder="e.g. 0244123456" {...field} /></FormControl>
+                          <FormDescription>Stored in international 233 format.</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

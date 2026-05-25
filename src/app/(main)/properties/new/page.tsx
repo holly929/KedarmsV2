@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -19,7 +18,7 @@ import { CalendarIcon, RefreshCcw } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { cn, normalizePhoneNumber } from '@/lib/utils';
 import { store } from '@/lib/store';
 
 const propertyFormSchema = z.object({
@@ -89,19 +88,23 @@ export default function NewPropertyPage() {
 
     function onSubmit(data: z.infer<typeof propertyFormSchema>) {
         try {
+            // Clean phone number before saving to ensure SMS capability
+            const formattedPhone = normalizePhoneNumber(data['Phone Number']);
+            
             const finalAmountDue = data['Amount Due'] !== undefined && data['Amount Due'] !== null 
                 ? data['Amount Due'] 
                 : calculatedPayable;
 
             const finalData = {
                 ...data,
+                'Phone Number': formattedPhone,
                 'Amount Due': finalAmountDue,
                 created_at: data.created_at?.toISOString() ?? new Date().toISOString(),
             };
             addProperty(finalData);
             toast({
                 title: 'Property Added',
-                description: `The property for ${data['Owner Name']} has been successfully created.`,
+                description: `The property for ${data['Owner Name']} has been successfully created. Phone formatted for SMS.`,
             });
             router.push('/properties');
         } catch (error) {
@@ -163,6 +166,7 @@ export default function NewPropertyPage() {
                             <FormItem>
                             <FormLabel>Phone Number</FormLabel>
                             <FormControl><Input placeholder="e.g. 024XXXXXXX" {...field} /></FormControl>
+                            <FormDescription>Saved in 233 format for Arkesel.</FormDescription>
                             <FormMessage />
                             </FormItem>
                         )} />

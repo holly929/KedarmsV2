@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect } from 'react';
@@ -19,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -27,6 +27,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { getPropertyValue } from '@/lib/property-utils';
+import { normalizePhoneNumber } from '@/lib/utils';
 
 interface EditLicenseDialogProps {
   license: License | null;
@@ -105,9 +106,13 @@ export function EditLicenseDialog({
 
   function onSubmit(data: z.infer<typeof licenseFormSchema>) {
     if (license) {
+      // Fix phone number on save
+      const formattedPhone = normalizePhoneNumber(data['Phone Number']);
+      
       onLicenseUpdate({ 
         ...license, 
         ...data, 
+        'Phone Number': formattedPhone,
         'Record Type': data['Record Type'].join(', '),
         'Amount Due': totalAmountDue 
       } as any);
@@ -198,6 +203,7 @@ export function EditLicenseDialog({
                         <FormItem>
                           <FormLabel>Phone Number</FormLabel>
                           <FormControl><Input placeholder="e.g. 0244123456" {...field} value={field.value ?? ''}/></FormControl>
+                          <FormDescription>Will be saved in 233 format.</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
