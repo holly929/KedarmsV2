@@ -1,11 +1,10 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useReactToPrint } from 'react-to-print';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, Printer } from 'lucide-react';
+import { ArrowLeft, Loader2, Printer, FileWarning } from 'lucide-react';
 
 import type { Property, Bill } from '@/lib/types';
 import { PrintableContent } from '@/components/bill-dialog';
@@ -35,7 +34,7 @@ type AppearanceSettings = {
   accentColor?: string;
 };
 
-const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], settings: { general: GeneralSettings, appearance: AppearanceSettings }, billsPerPage: number, isCompact: boolean }>(({ properties, settings, billsPerPage, isCompact }, ref) => {
+const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], settings: { general: GeneralSettings, appearance: AppearanceSettings }, billsPerPage: number, isCompact: boolean, isDemandNotice: boolean }>(({ properties, settings, billsPerPage, isCompact, isDemandNotice }, ref) => {
     
     if (billsPerPage === 4) {
         const propertyChunks: Property[][] = [];
@@ -50,7 +49,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
                         {chunk.map((property) => (
                             <div key={property.id} className="w-full h-full box-border overflow-hidden flex items-center justify-center border-dashed border-gray-400 [&:nth-child(1)]:border-r [&:nth-child(1)]:border-b [&:nth-child(2)]:border-b [&:nth-child(3)]:border-r">
                                <div className="w-full h-full scale-[0.95] flex items-center justify-center">
-                                    <PrintableContent property={property} settings={settings} isCompact={true} />
+                                    <PrintableContent property={property} settings={settings} isCompact={true} isDemandNotice={isDemandNotice} />
                                </div>
                             </div>
                         ))}
@@ -75,7 +74,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
                             <React.Fragment key={property.id}>
                                <div className="h-[148.5mm] w-full box-border overflow-hidden flex items-center justify-center">
                                    <div className="w-full h-full scale-[0.95] flex items-center justify-center">
-                                        <PrintableContent property={property} settings={settings} isCompact={isCompact} />
+                                        <PrintableContent property={property} settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
                                    </div>
                                </div>
                                {chunk.length === 2 && chunkIndex === 0 && (
@@ -97,7 +96,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
                     properties.map((property) => (
                         <div key={property.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex items-center justify-center">
                             <div className="w-full h-full scale-[0.95] flex items-center justify-center">
-                                <PrintableContent property={property} settings={settings} isCompact={isCompact}/>
+                                <PrintableContent property={property} settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
                             </div>
                         </div>
                     ))
@@ -131,7 +130,7 @@ export default function BulkPrintPage() {
   const [progress, setProgress] = useState(0);
   const [billsPerPage, setBillsPerPage] = useState(2);
   const [isCompact, setIsCompact] = useState(false);
-
+  const [isDemandNotice, setIsDemandNotice] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -287,6 +286,12 @@ export default function BulkPrintPage() {
             </h1>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+            <div className="flex items-center space-x-2 border px-3 py-1 rounded-md bg-red-50 dark:bg-red-950/20">
+                <Checkbox id="demand-mode" checked={isDemandNotice} onCheckedChange={(checked) => setIsDemandNotice(Boolean(checked))} />
+                <Label htmlFor="demand-mode" className="whitespace-nowrap text-red-700 dark:text-red-400 font-bold flex items-center gap-1">
+                  <FileWarning className="h-3 w-3" /> Demand Notice
+                </Label>
+            </div>
             <div className="flex items-center space-x-2">
                 <Checkbox id="compact-mode" checked={isCompact || billsPerPage === 4} onCheckedChange={(checked) => setIsCompact(Boolean(checked))} disabled={billsPerPage === 4} />
                 <Label htmlFor="compact-mode" className="whitespace-nowrap">Compact Mode</Label>
@@ -304,9 +309,9 @@ export default function BulkPrintPage() {
                     </SelectContent>
                 </Select>
             </div>
-            <Button onClick={handleGenerateAndPrint} disabled={renderedProperties.length === 0} className="w-full sm:w-auto">
+            <Button onClick={handleGenerateAndPrint} disabled={renderedProperties.length === 0} className={cn("w-full sm:w-auto", isDemandNotice ? "bg-red-600 hover:bg-red-700" : "")}>
               <Printer className="mr-2 h-4 w-4" />
-              Print & Record Bills
+              Print & Record
             </Button>
         </div>
       </header>
@@ -317,13 +322,13 @@ export default function BulkPrintPage() {
             <p className="text-muted-foreground mt-2">
                 Clicking the print button will open the print dialog and record the bills in your history.
             </p>
-            <p className="text-muted-foreground mt-1">Click the "Print & Record Bills" button above to continue.</p>
+            <p className="text-muted-foreground mt-1">Click the "Print & Record" button above to continue.</p>
          </div>
       </main>
       
       {/* Hidden print container - positioned off-screen to keep it rendered in DOM */}
       <div className="absolute -left-[9999px] top-0 pointer-events-none">
-        <BillSheet ref={componentRef} properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} />
+        <BillSheet ref={componentRef} properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
       </div>
     </div>
   );

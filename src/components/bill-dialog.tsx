@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -7,10 +6,12 @@ import JsBarcode from 'jsbarcode';
 import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import type { Property, Bop, License, Bill } from '@/lib/types';
-import { Printer, Loader2 } from 'lucide-react';
+import { Printer, Loader2, FileWarning } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getPropertyValue } from '@/lib/property-utils';
 import { store } from '@/lib/store';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface BillDialogProps {
   bill: Bill | null;
@@ -78,9 +79,10 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     billType?: 'property' | 'bop' | 'license';
     settings: { general?: GeneralSettings, appearance?: AppearanceSettings }; 
     isCompact?: boolean; 
+    isDemandNotice?: boolean;
     displaySettings?: Record<string, boolean>;
 }>(
-  ({ property: propertyProp, data: dataProp, billType: billTypeProp, settings, isCompact = false, displaySettings: displaySettingsProp }, ref) => {
+  ({ property: propertyProp, data: dataProp, billType: billTypeProp, settings, isCompact = false, isDemandNotice = false, displaySettings: displaySettingsProp }, ref) => {
     
     const data = dataProp || propertyProp;
     const billType = billTypeProp || 'property';
@@ -106,8 +108,8 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     }), [finalFontSize]);
 
     const accentStyle = useMemo(() => ({
-        backgroundColor: accentColor || '#F1F5F9'
-    }), [accentColor]);
+        backgroundColor: isDemandNotice ? '#FEE2E2' : (accentColor || '#F1F5F9')
+    }), [accentColor, isDemandNotice]);
 
     useEffect(() => {
         if (displaySettingsProp && Object.keys(displaySettingsProp).length > 0) {
@@ -418,10 +420,10 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                     <h1 className="font-extrabold tracking-tight uppercase leading-none mb-1" style={{ fontSize: `${finalFontSize * 1.8}px` }}>{assemblyName}</h1>
                     <p className="font-semibold text-muted-foreground" style={{ fontSize: `${finalFontSize * 1.1}px` }}>{postalAddress}</p>
                     <p className="font-semibold text-muted-foreground" style={{ fontSize: `${finalFontSize}px` }}>TEL: {contactPhone}</p>
-                    <div className="mt-3 inline-block px-4 py-1 border-2 border-black font-black tracking-[0.2em] uppercase bg-black text-white" style={{ fontSize: `${finalFontSize * 1.2}px` }}>
-                      {billType === 'bop' ? 'B.O.P. BILL' : 'PROPERTY RATE BILL'}
+                    <div className={cn("mt-3 inline-block px-4 py-1 border-2 border-black font-black tracking-[0.2em] uppercase", isDemandNotice ? "bg-red-600 text-white border-red-700" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 1.4}px` }}>
+                      {isDemandNotice ? 'DEMAND NOTICE' : 'PROPERTY RATE & B.O.P BILL'}
                     </div>
-                    <div className="mt-1 font-bold text-[0.8em] tracking-wider uppercase">PROPERTY RATE & B.O.P BILL</div>
+                    {!isDemandNotice && <div className="mt-1 font-bold text-[0.8em] tracking-wider uppercase">PROPERTY RATE & B.O.P BILL</div>}
                 </div>
                 <div className="w-1/5 flex justify-end items-center">
                     {settings.appearance?.assemblyLogo && (
@@ -456,8 +458,11 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
                         <p className="border-t-2 border-black font-black uppercase text-[0.8em] pt-1">COORDINATING DIRECTOR</p>
                     </div>
                 </div>
-                <div className="font-black text-center p-2 border-2 border-black bg-black text-white tracking-[0.1em] text-[1.1em]">
-                    {settings.appearance?.billWarningText || 'PAY AT ONCE OR FACE LEGAL ACTION'}
+                <div className={cn("font-black text-center p-2 border-2 border-black tracking-[0.1em] text-[1.1em]", isDemandNotice ? "bg-red-600 text-white border-red-700" : "bg-black text-white")}>
+                    {isDemandNotice 
+                      ? 'FAILURE TO PAY WITHIN 14 DAYS WILL RESULT IN LEGAL ACTION WITHOUT FURTHER NOTICE.'
+                      : (settings.appearance?.billWarningText || 'PAY AT ONCE OR FACE LEGAL ACTION')
+                    }
                 </div>
             </footer>
           </div>
@@ -473,6 +478,7 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
   const [settings, setSettings] = useState<{general?: GeneralSettings, appearance?: AppearanceSettings}>({});
   const componentRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDemandNotice, setIsDemandNotice] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -493,32 +499,62 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden border-0">
-        <div className="max-h-[85vh] overflow-y-auto bg-slate-900/10 p-4 md:p-8">
-             {isLoading || !settings.general ? (
-                <div className="flex flex-col items-center justify-center h-[297mm] bg-white rounded-lg shadow-xl">
-                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                    <p className="mt-4 font-medium">Generating Document...</p>
-                </div>
-             ) : (
-                <div className="w-[210mm] min-h-[297mm] mx-auto bg-white shadow-2xl">
-                <PrintableContent 
-                    ref={componentRef} 
-                    data={bill.propertySnapshot} 
-                    billType={bill.billType} 
-                    settings={settings}
-                    displaySettings={store.settings.billDisplaySettings}
-                />
-                </div>
-             )}
+      <DialogContent className="sm:max-w-[950px] p-0 overflow-hidden border-0">
+        <div className="flex h-[90vh]">
+          <div className="w-[300px] border-r bg-muted/30 p-6 space-y-6">
+            <h3 className="text-lg font-bold flex items-center gap-2">
+                <FileWarning className="h-5 w-5 text-primary" />
+                Bill Options
+            </h3>
+            <div className="space-y-4">
+               <div className="flex items-center justify-between space-x-2 border p-3 rounded-lg bg-background">
+                  <div className="flex flex-col space-y-1">
+                    <Label htmlFor="demand-notice-toggle">Demand Notice</Label>
+                    <span className="text-[10px] text-muted-foreground">Switch to legal demand notice mode</span>
+                  </div>
+                  <Switch 
+                    id="demand-notice-toggle" 
+                    checked={isDemandNotice} 
+                    onCheckedChange={setIsDemandNotice} 
+                  />
+               </div>
+            </div>
+            <div className="pt-4 space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Demand notices use a red header and specific legal language in the warning section to emphasize urgency.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex-1 flex flex-col">
+            <div className="flex-1 overflow-y-auto bg-slate-900/10 p-4 md:p-8">
+                 {isLoading || !settings.general ? (
+                    <div className="flex flex-col items-center justify-center h-[297mm] bg-white rounded-lg shadow-xl">
+                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                        <p className="mt-4 font-medium">Generating Document...</p>
+                    </div>
+                 ) : (
+                    <div className="w-[210mm] min-h-[297mm] mx-auto bg-white shadow-2xl">
+                    <PrintableContent 
+                        ref={componentRef} 
+                        data={bill.propertySnapshot} 
+                        billType={bill.billType} 
+                        settings={settings}
+                        isDemandNotice={isDemandNotice}
+                        displaySettings={store.settings.billDisplaySettings}
+                    />
+                    </div>
+                 )}
+            </div>
+            <DialogFooter className="p-4 bg-white sm:justify-end border-t gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Close Viewer</Button>
+              <Button onClick={handlePrint} disabled={isLoading} className={cn("shadow-lg", isDemandNotice ? "bg-red-600 hover:bg-red-700" : "")}>
+                <Printer className="mr-2 h-4 w-4" />
+                Print {isDemandNotice ? 'Demand Notice' : 'Official Copy'}
+              </Button>
+            </DialogFooter>
+          </div>
         </div>
-        <DialogFooter className="p-4 bg-white sm:justify-end border-t gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Close Viewer</Button>
-          <Button onClick={handlePrint} disabled={isLoading} className="shadow-lg">
-            <Printer className="mr-2 h-4 w-4" />
-            Print Official Copy
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
