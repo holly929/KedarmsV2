@@ -395,7 +395,6 @@ PrintableContent.displayName = 'PrintableContent';
 export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
   const [settings, setSettings] = useState<{general?: GeneralSettings, appearance?: AppearanceSettings}>({});
   const componentRef = useRef<HTMLDivElement>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [isDemandNotice, setIsDemandNotice] = useState(false);
 
   useEffect(() => {
@@ -404,6 +403,7 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
           general: store.settings.generalSettings || {},
           appearance: store.settings.appearanceSettings || {},
       });
+      setIsDemandNotice(false);
     }
   }, [isOpen]);
 
@@ -439,10 +439,10 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
 
           <div className="flex-1 flex flex-col">
             <div className="flex-1 overflow-y-auto bg-slate-900/10 p-4 md:p-8">
-                 {isLoading || !settings.general ? (
+                 {!settings.general ? (
                     <div className="flex flex-col items-center justify-center h-[297mm] bg-white rounded-lg shadow-xl">
                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                        <p className="mt-4 font-medium">Generating Document...</p>
+                        <p className="mt-4 font-medium">Preparing Document...</p>
                     </div>
                  ) : (
                     <div className="w-[210mm] min-h-[297mm] mx-auto bg-white shadow-2xl">
@@ -459,7 +459,7 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
             </div>
             <DialogFooter className="p-4 bg-white sm:justify-end border-t gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
-              <Button onClick={handlePrint} disabled={isLoading} className={cn("shadow-lg", isDemandNotice ? "bg-red-600 hover:bg-red-700" : "")}>
+              <Button onClick={handlePrint} className={cn("shadow-lg", isDemandNotice ? "bg-red-600 hover:bg-red-700" : "")}>
                 <Printer className="mr-2 h-4 w-4" />
                 Print {isDemandNotice ? 'Demand Notice' : 'Official Copy'}
               </Button>

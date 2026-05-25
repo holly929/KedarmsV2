@@ -1,4 +1,3 @@
-
 import type { Property, License } from '@/lib/types';
 
 const STANDARD_ALIASES: Record<string, string[]> = {
@@ -27,14 +26,15 @@ const STANDARD_ALIASES: Record<string, string[]> = {
 
 /**
  * Gets a property value using a standardized key, searching through common aliases.
- * This function is designed to be robust against variations in Excel column headers.
+ * Optimized for performance by using direct access and normalized exact matches.
  */
 export const getPropertyValue = (data: Property | License | null, standardKey: string): any => {
     if (!data) return undefined;
 
     // 1. Try direct access first (fastest)
-    if (data[standardKey] !== undefined && data[standardKey] !== null && String(data[standardKey]).trim() !== '') {
-        return data[standardKey];
+    const directVal = data[standardKey];
+    if (directVal !== undefined && directVal !== null && String(directVal).trim() !== '') {
+        return directVal;
     }
 
     const keyAliases = STANDARD_ALIASES[standardKey] || [standardKey];
@@ -54,7 +54,7 @@ export const getPropertyValue = (data: Property | License | null, standardKey: s
         }
     }
     
-    // 3. Try fuzzy substring matching
+    // 3. Try fuzzy substring matching (only for longer keys)
     for (const alias of keyAliases) {
         const normalizedAlias = normalize(alias);
         if (normalizedAlias.length < 3) continue;
