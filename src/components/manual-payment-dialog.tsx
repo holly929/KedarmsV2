@@ -75,8 +75,27 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
     }
   }, [isOpen, form]);
 
+  const handleInitiateOnline = () => {
+    if (!item) return;
+    const amount = form.getValues('amount');
+    if (amount <= 0) {
+      toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Enter an amount before paying online.' });
+      return;
+    }
+    
+    localStorage.setItem('paymentBill', JSON.stringify({ type, data: item }));
+    router.push(`/payment/${type}/${item.id}`);
+    onOpenChange(false);
+  };
+
   const onSubmit = (values: z.infer<typeof paymentSchema>) => {
     if (!item || !user) return;
+
+    // AUTOMATIC PAYSTACK INITIATION for non-cash methods
+    if (values.method === 'Mobile Money' || values.method === 'Bank Transfer') {
+        handleInitiateOnline();
+        return;
+    }
 
     const newPayment: Payment = {
       id: `man-${Date.now()}`,
@@ -112,19 +131,6 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
     setShowReceipt(true);
   };
 
-  const handleInitiateOnline = () => {
-    if (!item) return;
-    const amount = form.getValues('amount');
-    if (amount <= 0) {
-      toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Enter an amount before paying online.' });
-      return;
-    }
-    
-    localStorage.setItem('paymentBill', JSON.stringify({ type, data: item }));
-    router.push(`/payment/${type}/${item.id}`);
-    onOpenChange(false);
-  };
-
   const selectedMethod = form.watch('method');
 
   return (
@@ -150,8 +156,8 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="Cash">Cash (Manual)</SelectItem>
-                      <SelectItem value="Mobile Money">Mobile Money (MoMo)</SelectItem>
-                      <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                      <SelectItem value="Mobile Money">Mobile Money (MoMo Checkout)</SelectItem>
+                      <SelectItem value="Bank Transfer">Bank Transfer (Checkout)</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -178,41 +184,41 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
                 </FormItem>
               )} />
 
-              <FormField control={form.control} name="reference" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Receipt / Transaction Ref</FormLabel>
-                  <div className="flex gap-2">
-                    <FormControl>
-                      <Input placeholder="REF-XXXXXX" {...field} />
-                    </FormControl>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="icon" 
-                      onClick={() => form.setValue('reference', generateReceiptNo())}
-                    >
-                      <RefreshCcw className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <FormDescription>Official receipt or network transaction ID.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              {selectedMethod === 'Cash' && (
+                <FormField control={form.control} name="reference" render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Receipt / Transaction Ref</FormLabel>
+                    <div className="flex gap-2">
+                        <FormControl>
+                        <Input placeholder="REF-XXXXXX" {...field} />
+                        </FormControl>
+                        <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="icon" 
+                        onClick={() => form.setValue('reference', generateReceiptNo())}
+                        >
+                        <RefreshCcw className="h-4 w-4" />
+                        </Button>
+                    </div>
+                    <FormDescription>Official receipt or network transaction ID.</FormDescription>
+                    <FormMessage />
+                    </FormItem>
+                )} />
+              )}
 
               {(selectedMethod === 'Mobile Money' || selectedMethod === 'Bank Transfer') && (
                 <div className="bg-primary/5 p-4 rounded-lg border border-primary/20 space-y-2">
-                   <p className="text-xs font-semibold text-primary uppercase">Paystack Integration</p>
-                   <p className="text-xs text-muted-foreground">You can initiate a real-time MoMo push or card payment via Paystack.</p>
-                   <Button type="button" variant="secondary" className="w-full" onClick={handleInitiateOnline}>
-                      <CreditCard className="mr-2 h-4 w-4" />
-                      Initiate Paystack Payment
-                   </Button>
+                   <p className="text-xs font-semibold text-primary uppercase">Direct Checkout Enabled</p>
+                   <p className="text-xs text-muted-foreground italic">Clicking "Initiate Secure Payment" below will open the Paystack portal automatically.</p>
                 </div>
               )}
 
               <DialogFooter className="pt-4 gap-2">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                <Button type="submit">Record & Print Receipt</Button>
+                <Button type="submit">
+                    {selectedMethod === 'Cash' ? 'Record & Print Receipt' : 'Initiate Secure Payment'}
+                </Button>
               </DialogFooter>
             </form>
           </Form>

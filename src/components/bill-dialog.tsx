@@ -87,25 +87,6 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     const data = dataProp || propertyProp;
     const billType = billTypeProp || 'property';
     
-    // Stabilized initialization to avoid infinite loops
-    const [displaySettings, setDisplaySettings] = useState<Record<string, boolean>>(() => {
-        if (displaySettingsProp && Object.keys(displaySettingsProp).length > 0) return displaySettingsProp;
-        if (data) {
-             return Object.keys(data).reduce((acc, key) => {
-                acc[key] = true;
-                return acc;
-            }, {} as Record<string, boolean>);
-        }
-        return {};
-    });
-
-    // Update settings only if changed to prevent recursion
-    useEffect(() => {
-        if (displaySettingsProp && JSON.stringify(displaySettingsProp) !== JSON.stringify(displaySettings)) {
-            setDisplaySettings(displaySettingsProp);
-        }
-    }, [displaySettingsProp, displaySettings]);
-
     const { fontFamily, fontSize, accentColor } = settings.appearance || {};
 
     const fontClass = useMemo(() => ({
