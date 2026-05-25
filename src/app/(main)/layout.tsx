@@ -26,6 +26,7 @@ import {
   ClipboardList,
   Hotel,
   Banknote,
+  MessageSquare,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
@@ -65,6 +66,7 @@ const navItems = [
   { href: '/reports', icon: LineChart, label: 'Reports' },
   { href: '/integrations', icon: Plug, label: 'Integrations' },
   { href: '/users', icon: Users, label: 'User Management' },
+  { href: '/sms-logs', icon: MessageSquare, label: 'SMS Logs' },
   { href: '/activity-logs', icon: History, label: 'Activity Logs' },
   { href: '/settings', icon: Settings, label: 'Settings' },
 ];

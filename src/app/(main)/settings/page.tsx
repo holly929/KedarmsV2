@@ -14,7 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
 import { PrintableContent } from '@/components/bill-dialog';
-import { Loader2, Download, UploadCloud, Type, Palette, ShieldCheck, Image as ImageIcon, Trash2, RefreshCcw, RotateCcw, ShieldAlert, History, Activity, AlertCircle, Network, Info } from 'lucide-react';
+import { Loader2, Download, UploadCloud, Type, Palette, ShieldCheck, Image as ImageIcon, Trash2, RefreshCcw, RotateCcw, ShieldAlert, History, Activity, AlertCircle, Network, Info, MessageSquare } from 'lucide-react';
 import { store, saveStore, clearAllTransactionsInStore, factoryResetStore } from '@/lib/store';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -32,6 +32,7 @@ import { usePropertyData } from '@/context/PropertyDataContext';
 import { useBopData } from '@/context/BopDataContext';
 import { useLicenseData } from '@/context/LicenseDataContext';
 import { useBillData } from '@/context/BillDataContext';
+import { useSmsLogs } from '@/context/SmsLogContext';
 import { useActivityLogClear, useActivityLogDispatch } from '@/context/ActivityLogContext';
 import { testSmsConnection } from '@/lib/sms-service';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -94,6 +95,7 @@ export default function SettingsPage() {
   const { deleteAllBop } = useBopData();
   const { deleteAllLicense } = useLicenseData();
   const { deleteAllBills } = useBillData();
+  const { clearSmsLogs } = useSmsLogs();
   const clearLogs = useActivityLogClear();
   const addLog = useActivityLogDispatch();
 
@@ -578,6 +580,33 @@ export default function SettingsPage() {
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                                         <AlertDialogAction onClick={deleteAllBills} className="bg-destructive text-white">Clear History</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+
+                        {/* Clear SMS Logs */}
+                        <div className="p-3 border rounded-lg flex items-center justify-between bg-background">
+                            <div>
+                                <h4 className="text-sm font-bold">Clear SMS Logs</h4>
+                                <p className="text-xs text-muted-foreground">Wipes the entire history of sent/failed messages.</p>
+                            </div>
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="outline" size="sm" className="text-destructive border-destructive/20 hover:bg-destructive hover:text-white">
+                                        <MessageSquare className="mr-2 h-3 w-3" /> Clear
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Clear SMS Logs?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will permanently delete the history of all SMS notifications sent from the system.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={clearSmsLogs} className="bg-destructive text-white">Clear SMS history</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>

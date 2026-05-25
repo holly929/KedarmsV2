@@ -1,4 +1,4 @@
-import type { Property, Bop, License, Bill, User, Payment, ActivityLog, RolePermissions, SmsSettings } from './types';
+import type { Property, Bop, License, Bill, User, Payment, ActivityLog, RolePermissions, SmsSettings, SmsLog } from './types';
 
 const STORE_KEY = 'rateease.store';
 
@@ -15,17 +15,17 @@ const defaultPermissions: RolePermissions = {
   Admin: {
     dashboard: true, properties: true, billing: true, bop: true, 'bop-billing': true, bills: true, defaulters: true, reports: true,
     users: true, settings: true, 'integrations': true, payment: true, 'activity-logs': true, 'summary-bill': true,
-    license: true, 'license-billing': true, transactions: true,
+    license: true, 'license-billing': true, transactions: true, 'sms-logs': true,
   },
   'Data Entry': {
     dashboard: true, properties: true, billing: true, bop: true, 'bop-billing': true, bills: true, defaulters: true, reports: true,
     users: false, settings: false, 'integrations': true, payment: true, 'activity-logs': false, 'summary-bill': true,
-    license: true, 'license-billing': true, transactions: true,
+    license: true, 'license-billing': true, transactions: true, 'sms-logs': true,
   },
   Viewer: {
     dashboard: true, properties: false, billing: false, bop: false, 'bop-billing': false, bills: false, defaulters: false, reports: false,
     users: false, settings: false, 'integrations': false, payment: true, 'activity-logs': false, 'summary-bill': false,
-    license: false, 'license-billing': false, transactions: true,
+    license: false, 'license-billing': false, transactions: true, 'sms-logs': false,
   },
 };
 
@@ -41,6 +41,7 @@ interface AppStore {
     users: User[];
     permissions: RolePermissions;
     activityLogs: ActivityLog[];
+    smsLogs: SmsLog[];
     settings: { [key: string]: any };
 }
 
@@ -70,6 +71,7 @@ function getDefaultStore(): AppStore {
         users: [defaultAdminUser],
         permissions: defaultPermissions,
         activityLogs: [],
+        smsLogs: [],
         settings: {
             generalSettings: {
                 systemName: 'RateEase',

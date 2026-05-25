@@ -98,7 +98,7 @@ export type User = {
 };
 
 export const PERMISSION_PAGES = [
-  'dashboard', 'properties', 'billing', 'bop', 'bop-billing', 'license', 'license-billing', 'bills', 'defaulters', 'reports', 'users', 'settings', 'integrations', 'payment', 'activity-logs', 'summary-bill', 'transactions'
+  'dashboard', 'properties', 'billing', 'bop', 'bop-billing', 'license', 'license-billing', 'bills', 'defaulters', 'reports', 'users', 'settings', 'integrations', 'payment', 'activity-logs', 'summary-bill', 'transactions', 'sms-logs'
 ] as const;
 
 export type PermissionPage = typeof PERMISSION_PAGES[number];
@@ -121,6 +121,17 @@ export type SmsSettings = {
   billGeneratedMessageTemplate: string;
   enableSmsOnManualPayment: boolean;
   manualPaymentMessageTemplate: string;
+};
+
+export type SmsLog = {
+  id: string;
+  timestamp: string;
+  recipientName: string;
+  recipientPhone: string;
+  message: string;
+  status: 'Success' | 'Failed';
+  error?: string;
+  provider: string;
 };
 
 export type ActivityLog = {

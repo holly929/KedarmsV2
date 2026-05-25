@@ -1,4 +1,3 @@
-
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
@@ -12,6 +11,7 @@ import { BopProvider } from '@/context/BopDataContext';
 import { LicenseProvider } from '@/context/LicenseDataContext';
 import { SummaryBillProvider } from '@/context/SummaryBillContext';
 import { BillProvider } from '@/context/BillDataContext';
+import { SmsLogProvider } from '@/context/SmsLogContext';
 
 export const metadata: Metadata = {
   title: 'RateEase',
@@ -48,8 +48,10 @@ export default function RootLayout({
                       <LicenseProvider>
                         <SummaryBillProvider>
                           <BillProvider>
-                            {children}
-                            <Toaster />
+                            <SmsLogProvider>
+                                {children}
+                                <Toaster />
+                            </SmsLogProvider>
                           </BillProvider>
                         </SummaryBillProvider>
                       </LicenseProvider>

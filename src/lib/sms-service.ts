@@ -1,5 +1,5 @@
-import type { Property, Bill, Bop, License, Payment } from './types';
-import { store } from './store';
+import type { Property, Bill, Bop, License, Payment, SmsLog } from './types';
+import { store, saveStore } from './store';
 import { getPropertyValue } from './property-utils';
 import { toast } from '@/hooks/use-toast';
 
@@ -90,11 +90,15 @@ function compileTemplate(template: string, data: Property | Bop | License | Bill
     return compiled;
 }
 
-async function sendSingleSms(phoneNumber: string, message: string): Promise<{ success: boolean; error?: string; hint?: string }> {
+async function sendSingleSms(phoneNumber: string, message: string, recipientName: string = 'Unknown'): Promise<{ success: boolean; error?: string; hint?: string }> {
     const config = store.settings.smsSettings;
     if (!config || config.provider === 'none') {
         return { success: false, error: 'SMS Provider not configured in Settings.' };
     }
+
+    let success = false;
+    let errorMsg = '';
+    let hintMsg = '';
 
     try {
         const response = await fetch('/api/sms', {
@@ -113,21 +117,32 @@ async function sendSingleSms(phoneNumber: string, message: string): Promise<{ su
         }));
 
         if (response.ok && result.success === true) {
-            return { success: true };
+            success = true;
         } else {
-            return { 
-                success: false, 
-                error: result.error || 'The SMS gateway rejected the request.',
-                hint: result.hint
-            };
+            errorMsg = result.error || 'The SMS gateway rejected the request.';
+            hintMsg = result.hint;
         }
     } catch (error: any) {
-        return { 
-            success: false, 
-            error: `Network Connection Error: ${error.message || 'fetch failed'}`,
-            hint: 'The browser could not communicate with the application server route.'
-        };
+        errorMsg = `Network Connection Error: ${error.message || 'fetch failed'}`;
+        hintMsg = 'The browser could not communicate with the application server route.';
     }
+
+    // RECORD LOG
+    const log: SmsLog = {
+        id: `sms-${Date.now()}-${Math.random()}`,
+        timestamp: new Date().toISOString(),
+        recipientName,
+        recipientPhone: phoneNumber,
+        message,
+        status: success ? 'Success' : 'Failed',
+        error: errorMsg,
+        provider: config.provider
+    };
+    
+    store.smsLogs = [log, ...(store.smsLogs || [])];
+    saveStore();
+
+    return { success, error: errorMsg, hint: hintMsg };
 }
 
 export async function testSmsConnection(): Promise<{ success: boolean; message?: string; details?: any[]; error?: string; hint?: string }> {
@@ -147,9 +162,11 @@ export async function testSmsConnection(): Promise<{ success: boolean; message?:
 export async function sendSms(items: (Property | Bop | License)[], messageTemplate: string): Promise<{ propertyId: string; success: boolean; error?: string; hint?: string }[]> {
     const smsPromises = items.map(async (item) => {
         const phoneNumber = getPropertyValue(item as any, 'Phone Number');
+        const name = getPropertyValue(item as any, 'Owner Name') || getPropertyValue(item as any, 'Business Name') || getPropertyValue(item as any, 'Name of Hotel/Guest House') || 'Unknown';
+        
         if (phoneNumber && String(phoneNumber).trim()) {
             const message = compileTemplate(messageTemplate, item);
-            const result = await sendSingleSms(String(phoneNumber), message);
+            const result = await sendSingleSms(String(phoneNumber), message, String(name));
             return { propertyId: item.id, ...result };
         } else {
             return { propertyId: item.id, success: false, error: 'No phone number' };
@@ -167,10 +184,12 @@ export async function sendNewPropertySms(property: Property | Bop | License) {
     if (!enableSmsOnNewProperty || !newPropertyMessageTemplate) return;
 
     const phoneNumber = getPropertyValue(property as any, 'Phone Number');
+    const name = getPropertyValue(property as any, 'Owner Name') || getPropertyValue(property as any, 'Business Name') || getPropertyValue(property as any, 'Name of Hotel/Guest House') || 'Unknown';
+    
     if (!phoneNumber || !String(phoneNumber).trim()) return;
 
     const message = compileTemplate(newPropertyMessageTemplate, property);
-    const result = await sendSingleSms(String(phoneNumber), message);
+    const result = await sendSingleSms(String(phoneNumber), message, String(name));
     
     if(result.success) {
         toast({ title: 'SMS Sent', description: `Registration notification sent to ${phoneNumber}.` });
@@ -187,9 +206,11 @@ export async function sendBillGeneratedSms(bills: Bill[]) {
 
     const results = await Promise.all(bills.map(bill => {
         const phoneNumber = getPropertyValue(bill.propertySnapshot, 'Phone Number');
+        const name = getPropertyValue(bill.propertySnapshot, 'Owner Name') || getPropertyValue(bill.propertySnapshot, 'Business Name') || getPropertyValue(bill.propertySnapshot, 'Name of Hotel/Guest House') || 'Unknown';
+        
         if (phoneNumber && String(phoneNumber).trim()) {
             const message = compileTemplate(billGeneratedMessageTemplate, bill);
-            return sendSingleSms(String(phoneNumber), message);
+            return sendSingleSms(String(phoneNumber), message, String(name));
         }
         return Promise.resolve({ success: false, error: 'No phone number' });
     }));
@@ -212,10 +233,12 @@ export async function sendManualPaymentSms(item: Property | Bop | License, payme
     if (!enableSmsOnManualPayment || !manualPaymentMessageTemplate) return;
 
     const phoneNumber = getPropertyValue(item as any, 'Phone Number');
+    const name = getPropertyValue(item as any, 'Owner Name') || getPropertyValue(item as any, 'Business Name') || getPropertyValue(item as any, 'Name of Hotel/Guest House') || 'Unknown';
+    
     if (!phoneNumber || !String(phoneNumber).trim()) return;
 
     const message = compileTemplate(manualPaymentMessageTemplate, item, payment);
-    const result = await sendSingleSms(String(phoneNumber), message);
+    const result = await sendSingleSms(String(phoneNumber), message, String(name));
     
     if(result.success) {
         toast({ title: 'Payment SMS Sent', description: `Confirmation sent to ${phoneNumber}.` });
