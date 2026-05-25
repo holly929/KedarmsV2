@@ -87,6 +87,7 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     const data = dataProp || propertyProp;
     const billType = billTypeProp || 'property';
     
+    // Stabilized initialization to avoid infinite loops
     const [displaySettings, setDisplaySettings] = useState<Record<string, boolean>>(() => {
         if (displaySettingsProp && Object.keys(displaySettingsProp).length > 0) return displaySettingsProp;
         if (data) {
@@ -97,6 +98,13 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
         }
         return {};
     });
+
+    // Update settings only if changed to prevent recursion
+    useEffect(() => {
+        if (displaySettingsProp && JSON.stringify(displaySettingsProp) !== JSON.stringify(displaySettings)) {
+            setDisplaySettings(displaySettingsProp);
+        }
+    }, [displaySettingsProp, displaySettings]);
 
     const { fontFamily, fontSize, accentColor } = settings.appearance || {};
 
@@ -119,12 +127,6 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     const accentStyle = useMemo(() => ({
         backgroundColor: isDemandNotice ? '#FEE2E2' : (accentColor || '#F1F5F9')
     }), [accentColor, isDemandNotice]);
-
-    useEffect(() => {
-        if (displaySettingsProp && Object.keys(displaySettingsProp).length > 0) {
-            setDisplaySettings(displaySettingsProp);
-        }
-    }, [displaySettingsProp]);
     
     const getNumericValue = useCallback((key: string): number => {
         if (!data) return 0;
