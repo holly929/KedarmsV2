@@ -78,7 +78,7 @@ function compileTemplate(template: string, data: Property | Bop | License | Bill
     return compiled;
 }
 
-async function sendSingleSms(phoneNumber: string, message: string): Promise<{ success: boolean; error?: string }> {
+async function sendSingleSms(phoneNumber: string, message: string): Promise<{ success: boolean; error?: string; hint?: string }> {
     const config = store.settings.smsSettings;
     if (!config || config.provider === 'none') {
         return { success: false, error: 'SMS Provider not configured in Settings.' };
@@ -95,25 +95,30 @@ async function sendSingleSms(phoneNumber: string, message: string): Promise<{ su
             }),
         });
 
-        let result;
-        const text = await response.text();
-        try {
-            result = JSON.parse(text);
-        } catch (jsonErr) {
-            return { success: false, error: `Critical API Error: Provider returned an invalid format. Check if domain is blocked.` };
-        }
+        const result = await response.json().catch(() => ({ 
+            error: 'Server returned a malformed response.',
+            hint: 'The local API route failed to produce valid JSON. This usually indicates a Next.js runtime crash.'
+        }));
 
         if (response.ok && result.success === true) {
             return { success: true };
         } else {
-            return { success: false, error: result.error || 'The SMS gateway rejected the request.' };
+            return { 
+                success: false, 
+                error: result.error || 'The SMS gateway rejected the request.',
+                hint: result.hint
+            };
         }
     } catch (error: any) {
-        return { success: false, error: `Network Connection Error: The server could not reach the gateway. Please check firewall settings.` };
+        return { 
+            success: false, 
+            error: `Network Connection Error: ${error.message || 'fetch failed'}`,
+            hint: 'The browser could not communicate with the local server API.'
+        };
     }
 }
 
-export async function sendSms(items: (Property | Bop | License)[], messageTemplate: string): Promise<{ propertyId: string; success: boolean; error?: string }[]> {
+export async function sendSms(items: (Property | Bop | License)[], messageTemplate: string): Promise<{ propertyId: string; success: boolean; error?: string; hint?: string }[]> {
     const smsPromises = items.map(async (item) => {
         const phoneNumber = getPropertyValue(item as any, 'Phone Number');
         if (phoneNumber && String(phoneNumber).trim()) {

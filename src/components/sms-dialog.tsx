@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Loader2, MessageSquare, AlertCircle } from 'lucide-react';
+import { Loader2, MessageSquare, AlertCircle, Info } from 'lucide-react';
 
 import type { Property, Bop, License } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -30,7 +30,7 @@ const smsFormSchema = z.object({
 export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialogProps) {
   const { toast } = useToast();
   const [isSending, setIsSending] = useState(false);
-  const [lastError, setLastError] = useState<string | null>(null);
+  const [lastError, setLastError] = useState<{message: string, hint?: string} | null>(null);
   
   const form = useForm<z.infer<typeof smsFormSchema>>({
     resolver: zodResolver(smsFormSchema),
@@ -94,18 +94,24 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
         }
 
         if (failedSends.length > 0) {
-            setLastError(failedSends[0].error || "Check your SMS provider settings.");
+            setLastError({ 
+                message: failedSends[0].error || "Check your SMS provider settings.",
+                hint: failedSends[0].hint 
+            });
         }
         
         if (successfulSends === 0 && failedSends.length === 0) {
-             setLastError("None of the selected items have a valid phone number.");
+             setLastError({ message: "None of the selected items have a valid phone number." });
         }
 
         if (successfulSends > 0 && failedSends.length === 0) {
             onOpenChange(false);
         }
     } catch (error: any) {
-        setLastError(error.message || "An unexpected system error occurred.");
+        setLastError({ 
+            message: error.message || "An unexpected system error occurred.",
+            hint: "Check the server logs for more technical details."
+        });
     } finally {
         setIsSending(false);
     }
@@ -127,11 +133,22 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
         </DialogHeader>
         
         {lastError && (
-            <Alert variant="destructive" className="my-2">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Dispatch Failed</AlertTitle>
-                <AlertDescription>{lastError}</AlertDescription>
-            </Alert>
+            <div className="space-y-2 my-2">
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Dispatch Failed</AlertTitle>
+                    <AlertDescription>{lastError.message}</AlertDescription>
+                </Alert>
+                {lastError.hint && (
+                    <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800">
+                        <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <AlertTitle className="text-blue-700 dark:text-blue-300">Technical Hint</AlertTitle>
+                        <AlertDescription className="text-blue-600 dark:text-blue-400 text-xs">
+                            {lastError.hint}
+                        </AlertDescription>
+                    </Alert>
+                )}
+            </div>
         )}
 
         <Form {...form}>

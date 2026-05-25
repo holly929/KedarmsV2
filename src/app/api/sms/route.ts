@@ -9,7 +9,7 @@ function normalizePhoneNumber(phone: string): string {
     return '233' + cleaned.substring(1);
   }
   
-  // If it's already correct (starts with 233 and is 12 digits), or other format, return it
+  // Return cleaned number (expecting 233XXXXXXXXX format)
   return cleaned;
 }
 
@@ -32,9 +32,14 @@ export async function POST(request: Request) {
   const normalizedPhone = normalizePhoneNumber(phoneNumber);
   const provider = config.provider;
 
+  // Set up an abort controller for a 12-second timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
+
   try {
     const commonHeaders = {
       'User-Agent': 'RateEase-Revenue-System/1.0',
+      'Accept': 'application/json',
     };
 
     if (provider === 'arkesel') {
@@ -43,11 +48,11 @@ export async function POST(request: Request) {
         const response = await fetch(`https://openapi.arkesel.com/api/v2/sms/send`, {
             method: 'POST',
             cache: 'no-store',
+            signal: controller.signal,
             headers: {
                 ...commonHeaders,
                 'api-key': config.apiKey || '',
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
             },
             body: JSON.stringify({
                 sender: sender,
@@ -56,13 +61,15 @@ export async function POST(request: Request) {
             })
         });
 
+        clearTimeout(timeoutId);
+
         const contentType = response.headers.get('content-type');
         let result;
         if (contentType && contentType.includes('application/json')) {
             result = await response.json();
         } else {
             const text = await response.text();
-            throw new Error(`Provider returned non-JSON response: ${text.substring(0, 100)}`);
+            throw new Error(`Provider returned non-JSON response (likely a gateway block or 404): ${text.substring(0, 100)}`);
         }
         
         if (response.ok) {
@@ -85,8 +92,11 @@ export async function POST(request: Request) {
         });
         const res = await fetch(`https://api.smsgh.com/v3/messages/send?${params.toString()}`, {
             cache: 'no-store',
+            signal: controller.signal,
             headers: commonHeaders
         });
+        clearTimeout(timeoutId);
+
         if (res.ok) return NextResponse.json({ success: true });
         
         const errorText = await res.text();
@@ -98,6 +108,7 @@ export async function POST(request: Request) {
         const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${config.twilioSid}/Messages.json`, {
             method: 'POST',
             cache: 'no-store',
+            signal: controller.signal,
             headers: {
                 ...commonHeaders,
                 'Authorization': `Basic ${auth}`,
@@ -110,6 +121,7 @@ export async function POST(request: Request) {
             })
         });
         
+        clearTimeout(timeoutId);
         const result = await res.json();
         if (res.ok) return NextResponse.json({ success: true, data: result });
         
@@ -118,10 +130,20 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ error: 'SMS Provider not supported.' }, { status: 500 });
   } catch (error: any) {
+    clearTimeout(timeoutId);
     console.error("SMS API Route Runtime Error:", error);
+
+    let message = error.message || 'fetch failed';
+    let hint = 'Verify that the server has an active internet connection and that the provider\'s domain is not blocked by a firewall.';
+
+    if (error.name === 'AbortError') {
+      message = 'Request Timed Out';
+      hint = 'The SMS gateway took too long to respond. This often happens due to high network latency or a proxy server delay.';
+    }
+
     return NextResponse.json({ 
-        error: `Provider Connection Failed: ${error.message || 'The server could not reach the gateway'}`,
-        hint: 'Verify your internet connection and ensure that the SMS provider\'s domain is not blocked by a firewall or proxy.'
+        error: `Provider Connection Failed: ${message}`,
+        hint: hint
     }, { status: 500 });
   }
 }
