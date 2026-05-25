@@ -13,6 +13,7 @@ import {
   Store,
   CreditCard,
   FileWarning,
+  Banknote,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +48,7 @@ import { useAuth } from '@/context/AuthContext';
 import { EditBopDialog } from '@/components/edit-bop-dialog';
 import { getPropertyValue } from '@/lib/property-utils';
 import { SmsDialog } from '@/components/sms-dialog';
+import { ManualPaymentDialog } from '@/components/manual-payment-dialog';
 
 const ROWS_PER_PAGE = 15;
 
@@ -62,6 +64,8 @@ export default function BopBillingPage() {
   const [filter, setFilter] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('all');
   const [editingBop, setEditingBop] = React.useState<Bop | null>(null);
+  const [paymentItem, setPaymentItem] = React.useState<Bop | null>(null);
+  const [smsItems, setSmsItems] = React.useState<Bop[]>([]);
 
   const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
   const isMobile = useIsMobile();
@@ -99,7 +103,7 @@ export default function BopBillingPage() {
     router.push(`/payment/bop/${bop.id}`);
   };
 
-  const handleSendSms = () => {
+  const handleSendBulkSms = () => {
     if (selectedRows.length === 0) {
       toast({
         variant: 'destructive',
@@ -108,6 +112,12 @@ export default function BopBillingPage() {
       });
       return;
     }
+    setSmsItems(selectedBops);
+    setIsSmsDialogOpen(true);
+  };
+
+  const handleSendSingleSms = (bop: Bop) => {
+    setSmsItems([bop]);
     setIsSmsDialogOpen(true);
   };
   
@@ -254,6 +264,7 @@ export default function BopBillingPage() {
                         <FileWarning className="mr-2 h-4 w-4" />
                         View Demand Notice
                       </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => handleSendSingleSms(row)}><MessageSquare className="mr-2 h-4 w-4" /> Send SMS</DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => handlePayOnline(row)}>
                         <CreditCard className="mr-2 h-4 w-4" />
                         Pay Online
@@ -261,6 +272,7 @@ export default function BopBillingPage() {
                       {!isViewer && (
                         <>
                           <DropdownMenuSeparator />
+                          <DropdownMenuItem onSelect={() => setPaymentItem(row)}><Banknote className="mr-2 h-4 w-4" /> Record Payment</DropdownMenuItem>
                           <DropdownMenuItem onSelect={() => setEditingBop(row)}>
                             <FilePenLine className="mr-2 h-4 w-4" />
                             Edit
@@ -316,12 +328,14 @@ export default function BopBillingPage() {
                 <DropdownMenuItem onSelect={() => handleViewBill(row, true)} className="text-red-600 focus:text-red-600 focus:bg-red-50">
                     <FileWarning className="mr-2 h-4 w-4" /> View Demand Notice
                 </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => handleSendSingleSms(row)}><MessageSquare className="mr-2 h-4 w-4" /> Send SMS</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => handlePayOnline(row)}>
                     <CreditCard className="mr-2 h-4 w-4" /> Pay Online
                 </DropdownMenuItem>
                  {!isViewer && (
                    <>
                     <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => setPaymentItem(row)}><Banknote className="mr-2 h-4 w-4" /> Record Payment</DropdownMenuItem>
                     <DropdownMenuItem onSelect={() => setEditingBop(row)}>
                         <FilePenLine className="mr-2 h-4 w-4" /> Edit
                     </DropdownMenuItem>
@@ -407,7 +421,7 @@ export default function BopBillingPage() {
                         </Button>
                         {!isViewer && 
                         <>
-                          <Button variant="outline" size="sm" onClick={handleSendSms}>
+                          <Button variant="outline" size="sm" onClick={handleSendBulkSms}>
                               <MessageSquare className="h-4 w-4 mr-2"/>
                               Send SMS ({selectedRows.length})
                           </Button>
@@ -467,10 +481,11 @@ export default function BopBillingPage() {
         onOpenChange={(isOpen) => !isOpen && setEditingBop(null)}
         onBopUpdate={handleBopUpdate}
       />
+      <ManualPaymentDialog item={paymentItem} type="bop" isOpen={!!paymentItem} onOpenChange={(open) => !open && setPaymentItem(null)} />
       <SmsDialog
         isOpen={isSmsDialogOpen}
         onOpenChange={setIsSmsDialogOpen}
-        selectedProperties={selectedBops}
+        selectedProperties={smsItems}
       />
     </>
   );

@@ -74,11 +74,11 @@ export default function BillingPage() {
   const [activeTab, setActiveTab] = React.useState('all');
   const [editingProperty, setEditingProperty] = React.useState<Property | null>(null);
   const [paymentItem, setPaymentItem] = React.useState<Property | null>(null);
+  const [smsItems, setSmsItems] = React.useState<Property[]>([]);
+  const [isSmsDialogOpen, setIsSmsDialogOpen] = React.useState(false);
 
-  const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
   const isMobile = useIsMobile();
   const [currentPage, setCurrentPage] = React.useState(1);
-  const [isSmsDialogOpen, setIsSmsDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (properties.length >= 0) setLoading(false);
@@ -123,6 +123,11 @@ export default function BillingPage() {
           default: return 'outline' as const;
       }
   }
+
+  const handleSendSingleSms = (property: Property) => {
+      setSmsItems([property]);
+      setIsSmsDialogOpen(true);
+  };
 
   if (loading) return <div className="flex h-full items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
@@ -173,6 +178,7 @@ export default function BillingPage() {
                                     <DropdownMenuContent align="end">
                                     <DropdownMenuItem onSelect={() => handleViewBill(row, false)}><View className="mr-2 h-4 w-4" /> View Bill</DropdownMenuItem>
                                     <DropdownMenuItem onSelect={() => handleViewBill(row, true)} className="text-red-600 focus:text-red-600 focus:bg-red-50"><FileWarning className="mr-2 h-4 w-4" /> View Demand Notice</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleSendSingleSms(row)}><MessageSquare className="mr-2 h-4 w-4" /> Send SMS</DropdownMenuItem>
                                     {!isViewer && (
                                         <>
                                         <DropdownMenuSeparator />
@@ -194,6 +200,7 @@ export default function BillingPage() {
       
       <EditPropertyDialog property={editingProperty} isOpen={!!editingProperty} onOpenChange={(open) => !open && setEditingProperty(null)} onPropertyUpdate={handlePropertyUpdate} />
       <ManualPaymentDialog item={paymentItem} type="property" isOpen={!!paymentItem} onOpenChange={(open) => !open && setPaymentItem(null)} />
+      <SmsDialog isOpen={isSmsDialogOpen} onOpenChange={setIsSmsDialogOpen} selectedProperties={smsItems} />
     </>
   );
 }

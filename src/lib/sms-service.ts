@@ -109,7 +109,7 @@ async function sendSingleSms(phoneNumber: string, message: string): Promise<{ su
 
 export async function sendSms(items: (Property | Bop | License)[], messageTemplate: string): Promise<{ propertyId: string; success: boolean; error?: string }[]> {
     const smsPromises = items.map(async (item) => {
-        const phoneNumber = getPropertyValue(item, 'Phone Number');
+        const phoneNumber = getPropertyValue(item as any, 'Phone Number');
         if (phoneNumber && String(phoneNumber).trim()) {
             const message = compileTemplate(messageTemplate, item);
             const result = await sendSingleSms(String(phoneNumber), message);
@@ -129,7 +129,7 @@ export async function sendNewPropertySms(property: Property | Bop | License) {
 
     if (!enableSmsOnNewProperty || !newPropertyMessageTemplate) return;
 
-    const phoneNumber = getPropertyValue(property, 'Phone Number');
+    const phoneNumber = getPropertyValue(property as any, 'Phone Number');
     if (!phoneNumber || !String(phoneNumber).trim()) return;
 
     const message = compileTemplate(newPropertyMessageTemplate, property);
@@ -167,7 +167,7 @@ export async function sendManualPaymentSms(item: Property | Bop | License, payme
 
     if (!enableSmsOnManualPayment || !manualPaymentMessageTemplate) return;
 
-    const phoneNumber = getPropertyValue(item, 'Phone Number');
+    const phoneNumber = getPropertyValue(item as any, 'Phone Number');
     if (!phoneNumber || !String(phoneNumber).trim()) return;
 
     const message = compileTemplate(manualPaymentMessageTemplate, item, payment);

@@ -13,6 +13,7 @@ import {
   Hotel,
   CreditCard,
   FileWarning,
+  Banknote,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +48,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getPropertyValue } from '@/lib/property-utils';
 import { SmsDialog } from '@/components/sms-dialog';
 import { EditLicenseDialog } from '@/components/edit-license-dialog';
+import { ManualPaymentDialog } from '@/components/manual-payment-dialog';
 
 const ROWS_PER_PAGE = 15;
 
@@ -77,6 +79,8 @@ export default function LicenseBillingPage() {
   const [filter, setFilter] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('all');
   const [editingLicense, setEditingLicense] = React.useState<License | null>(null);
+  const [paymentItem, setPaymentItem] = React.useState<License | null>(null);
+  const [smsItems, setSmsItems] = React.useState<License[]>([]);
 
   const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
   const isMobile = useIsMobile();
@@ -114,7 +118,7 @@ export default function LicenseBillingPage() {
     router.push(`/payment/license/${license.id}`);
   };
 
-  const handleSendSms = () => {
+  const handleSendBulkSms = () => {
     if (selectedRows.length === 0) {
       toast({
         variant: 'destructive',
@@ -123,6 +127,12 @@ export default function LicenseBillingPage() {
       });
       return;
     }
+    setSmsItems(selectedLicenses);
+    setIsSmsDialogOpen(true);
+  };
+
+  const handleSendSingleSms = (license: License) => {
+    setSmsItems([license]);
     setIsSmsDialogOpen(true);
   };
   
@@ -272,6 +282,7 @@ export default function LicenseBillingPage() {
                         <FileWarning className="mr-2 h-4 w-4" />
                         View Demand Notice
                       </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => handleSendSingleSms(row)}><MessageSquare className="mr-2 h-4 w-4" /> Send SMS</DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => handlePayOnline(row)}>
                         <CreditCard className="mr-2 h-4 w-4" />
                         Pay Online
@@ -279,6 +290,7 @@ export default function LicenseBillingPage() {
                       {!isViewer && (
                         <>
                           <DropdownMenuSeparator />
+                          <DropdownMenuItem onSelect={() => setPaymentItem(row)}><Banknote className="mr-2 h-4 w-4" /> Record Payment</DropdownMenuItem>
                           <DropdownMenuItem onSelect={() => setEditingLicense(row)}>
                             <FilePenLine className="mr-2 h-4 w-4" />
                             Edit
@@ -334,12 +346,14 @@ export default function LicenseBillingPage() {
                 <DropdownMenuItem onSelect={() => handleViewBill(row, true)} className="text-red-600 focus:text-red-600 focus:bg-red-50">
                     <FileWarning className="mr-2 h-4 w-4" /> View Demand Notice
                 </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => handleSendSingleSms(row)}><MessageSquare className="mr-2 h-4 w-4" /> Send SMS</DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => handlePayOnline(row)}>
                     <CreditCard className="mr-2 h-4 w-4" /> Pay Online
                 </DropdownMenuItem>
                  {!isViewer && (
                    <>
                     <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => setPaymentItem(row)}><Banknote className="mr-2 h-4 w-4" /> Record Payment</DropdownMenuItem>
                     <DropdownMenuItem onSelect={() => setEditingLicense(row)}>
                         <FilePenLine className="mr-2 h-4 w-4" /> Edit
                     </DropdownMenuItem>
@@ -425,7 +439,7 @@ export default function LicenseBillingPage() {
                         </Button>
                         {!isViewer && 
                         <>
-                          <Button variant="outline" size="sm" onClick={handleSendSms}>
+                          <Button variant="outline" size="sm" onClick={handleSendBulkSms}>
                               <MessageSquare className="h-4 w-4 mr-2"/>
                               Send SMS ({selectedRows.length})
                           </Button>
@@ -485,10 +499,11 @@ export default function LicenseBillingPage() {
         onOpenChange={(isOpen) => !isOpen && setEditingLicense(null)}
         onLicenseUpdate={handleLicenseUpdate}
       />
+      <ManualPaymentDialog item={paymentItem} type="license" isOpen={!!paymentItem} onOpenChange={(open) => !open && setPaymentItem(null)} />
       <SmsDialog
         isOpen={isSmsDialogOpen}
         onOpenChange={setIsSmsDialogOpen}
-        selectedProperties={selectedLicenses}
+        selectedProperties={smsItems}
       />
     </>
   );

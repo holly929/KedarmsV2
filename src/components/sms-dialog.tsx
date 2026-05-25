@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -7,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2, MessageSquare } from 'lucide-react';
 
-import type { Property, Bop } from '@/lib/types';
+import type { Property, Bop, License } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -15,12 +14,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { sendSms } from '@/lib/sms-service';
 import { getPropertyValue } from '@/lib/property-utils';
-import { getBopBillStatus, getBillStatus } from '@/lib/billing-utils';
+import { getBopBillStatus, getBillStatus, getLicenseBillStatus } from '@/lib/billing-utils';
 
 interface SmsDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  selectedProperties: (Property | Bop)[];
+  selectedProperties: (Property | Bop | License)[];
 }
 
 const smsFormSchema = z.object({
@@ -39,24 +38,33 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
   });
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && selectedProperties.length > 0) {
       const firstItem = selectedProperties[0];
-      let isBop = false;
-      let isDefaulter = false;
-
-      if (firstItem) {
-          isBop = !!getPropertyValue(firstItem, 'Business Name');
-          const status = isBop ? getBopBillStatus(firstItem as Bop) : getBillStatus(firstItem as Property);
-          isDefaulter = status === 'Overdue' || status === 'Pending';
+      const isBop = !!getPropertyValue(firstItem as any, 'Business Name');
+      const isHotel = !!getPropertyValue(firstItem as any, 'Name of Hotel/Guest House');
+      
+      let status = 'Unbilled';
+      if (isBop) {
+          status = getBopBillStatus(firstItem as Bop);
+      } else if (isHotel) {
+          status = getLicenseBillStatus(firstItem as License);
+      } else {
+          status = getBillStatus(firstItem as Property);
       }
+
+      const isDefaulter = status === 'Overdue' || status === 'Pending';
 
       let defaultMessage = "";
       if (isDefaulter) {
-         defaultMessage = isBop
-            ? "Dear {{Owner Name}}, your BOP payment of GHS {{Amount Owed}} for '{{Business Name}}' is overdue as of {{Date}}. Please contact the District Assembly."
-            : "Dear {{Owner Name}}, your property rate payment of GHS {{Amount Owed}} for property '{{Property No}}' is overdue as of {{Date}}. Please contact the assembly to arrange payment.";
+         if (isBop) {
+             defaultMessage = "Dear {{Owner Name}}, your BOP payment of GHS {{Amount Owed}} for '{{Business Name}}' is overdue as of {{Date}}. Please contact the District Assembly.";
+         } else if (isHotel) {
+             defaultMessage = "Dear {{Name of Hotel/Guest House}}, your license/rate payment of GHS {{Amount Owed}} is overdue as of {{Date}}. Please contact the District Assembly.";
+         } else {
+            defaultMessage = "Dear {{Owner Name}}, your property rate payment of GHS {{Amount Owed}} for property '{{Property No}}' is overdue as of {{Date}}. Please contact the assembly to arrange payment.";
+         }
       } else {
-        defaultMessage = "Dear {{Owner Name}}, this is a notification from the District Assembly regarding your property: {{Property No}}. Thank you.";
+        defaultMessage = "Dear {{Owner Name}}, this is a notification from the District Assembly regarding your records. Current balance: GHS {{Amount Owed}}. Thank you.";
       }
 
       form.reset({ message: defaultMessage });
@@ -64,47 +72,50 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
     }
   }, [isOpen, form, selectedProperties]);
 
-  const recipientCount = selectedProperties.filter(p => getPropertyValue(p, 'Phone Number')).length;
+  const recipientCount = selectedProperties.filter(p => getPropertyValue(p as any, 'Phone Number')).length;
 
   async function onSubmit(data: z.infer<typeof smsFormSchema>) {
     setIsSending(true);
 
-    const results = await sendSms(selectedProperties, data.message);
-    const successfulSends = results.filter(r => r.success).length;
-    const failedSends = results.filter(r => !r.success && r.error !== 'No phone number');
+    try {
+        const results = await sendSms(selectedProperties, data.message);
+        const successfulSends = results.filter(r => r.success).length;
+        const failedSends = results.filter(r => !r.success && r.error !== 'No phone number');
 
-    setIsSending(false);
-    
-    if (successfulSends > 0) {
-       toast({
-        title: 'SMS Sending Complete',
-        description: `Successfully dispatched ${successfulSends} messages.`,
-      });
-    }
-
-    if (failedSends.length > 0) {
-         toast({
-            variant: 'destructive',
-            title: `${failedSends.length} Messages Failed`,
-            description: `Could not send messages. First error: ${failedSends[0].error}`,
-        });
-    }
-    
-    if (successfulSends === 0 && failedSends.length === 0) {
-        const noNumberCount = selectedProperties.length - recipientCount;
-        let description = `None of the selected items have a valid phone number.`;
-        if (noNumberCount > 0) {
-            description = `The ${recipientCount} selected recipients do not have a valid phone number.`
+        if (successfulSends > 0) {
+           toast({
+            title: 'SMS Dispatched',
+            description: `Successfully sent ${successfulSends} message(s).`,
+          });
         }
-         toast({
-            variant: 'destructive',
-            title: 'No Recipients',
-            description: description,
-        });
-    }
 
-    if (successfulSends > 0) {
-        setTimeout(() => onOpenChange(false), 800);
+        if (failedSends.length > 0) {
+             toast({
+                variant: 'destructive',
+                title: `${failedSends.length} Messages Failed`,
+                description: `Check your SMS provider settings. Error: ${failedSends[0].error}`,
+            });
+        }
+        
+        if (successfulSends === 0 && failedSends.length === 0) {
+             toast({
+                variant: 'destructive',
+                title: 'No Valid Recipients',
+                description: 'None of the selected items have a valid phone number.',
+            });
+        }
+
+        if (successfulSends > 0) {
+            onOpenChange(false);
+        }
+    } catch (error) {
+        toast({
+            variant: 'destructive',
+            title: 'System Error',
+            description: 'An unexpected error occurred while sending SMS.',
+        });
+    } finally {
+        setIsSending(false);
     }
   }
 
@@ -113,11 +124,13 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <MessageSquare className="h-6 w-6" />
-            Send Bulk SMS
+            <MessageSquare className="h-6 w-6 text-primary" />
+            Send SMS Notification
           </DialogTitle>
           <DialogDescription>
-            Compose a message to send to the {recipientCount} selected items with a valid phone number.
+            {selectedProperties.length === 1 
+              ? `Sending a message to ${getPropertyValue(selectedProperties[0] as any, 'Owner Name') || 'this owner'}.`
+              : `Compose a message to send to ${recipientCount} selected recipients with phone numbers.`}
             You can use placeholders like {'{{Owner Name}}'}.
           </DialogDescription>
         </DialogHeader>
@@ -128,7 +141,7 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
               name="message"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Message</FormLabel>
+                  <FormLabel>Message Content</FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
@@ -152,7 +165,7 @@ export function SmsDialog({ isOpen, onOpenChange, selectedProperties }: SmsDialo
                     Sending...
                   </>
                 ) : (
-                  `Send to ${recipientCount} recipients`
+                  `Send SMS (${recipientCount})`
                 )}
               </Button>
             </DialogFooter>
