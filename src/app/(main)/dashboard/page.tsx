@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -132,7 +131,9 @@ export default function DashboardPage() {
     
     const paymentStatus = paymentStatusData.filter(d => d.value > 0.01);
     
-    const revenueByPropertyType = Object.entries(revenueData).map(([name, revenue]) => ({ name, revenue })).filter(d => d.revenue > 0);
+    const revenueByPropertyType = Object.entries(revenueData)
+      .map(([name, revenue]) => ({ name, revenue }))
+      .filter(d => d.revenue > 0);
 
     const propertyTypeCounts = Object.entries(propertyCounts).map(([name, count]) => ({
         name,
@@ -150,7 +151,7 @@ export default function DashboardPage() {
       propertyTypeCounts,
       billedVsCollected,
     };
-  }, [properties, bills]);
+  }, [properties]);
   
 
   const sortedBills = React.useMemo(() => {

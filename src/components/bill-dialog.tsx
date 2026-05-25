@@ -43,11 +43,11 @@ const formatToTwoDecimals = (val: any): string => {
     return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-const BarcodeComponent = ({ value, isCompact }: { value: string; isCompact: boolean }) => {
+const BarcodeComponent = React.memo(({ value, isCompact }: { value: string; isCompact: boolean }) => {
     const ref = useRef<SVGSVGElement | null>(null);
 
     useEffect(() => {
-        if (ref.current) {
+        if (ref.current && value) {
             try {
                 JsBarcode(ref.current, value, {
                     width: isCompact ? 1.0 : 1.4,
@@ -64,7 +64,8 @@ const BarcodeComponent = ({ value, isCompact }: { value: string; isCompact: bool
     }, [value, isCompact]);
 
     return <svg ref={ref} />;
-};
+});
+BarcodeComponent.displayName = 'BarcodeComponent';
 
 const BillRow = ({ label, value, isBold = false, style = {} }: { label: string; value: string | number; isBold?: boolean; style?: React.CSSProperties }) => (
   <div className={cn("flex justify-between p-1 border-b border-black/30 items-center", isBold ? 'font-bold' : '')} style={style}>
@@ -73,7 +74,7 @@ const BillRow = ({ label, value, isBold = false, style = {} }: { label: string; 
   </div>
 );
 
-export const PrintableContent = React.forwardRef<HTMLDivElement, { 
+export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, { 
     property?: Property;
     data?: Property | Bop | License;
     billType?: 'property' | 'bop' | 'license';
@@ -387,24 +388,22 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
       </div>
     );
   }
-);
+));
 PrintableContent.displayName = 'PrintableContent';
 
 
 export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
   const [settings, setSettings] = useState<{general?: GeneralSettings, appearance?: AppearanceSettings}>({});
   const componentRef = useRef<HTMLDivElement>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isDemandNotice, setIsDemandNotice] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setIsLoading(true);
       setSettings({
           general: store.settings.generalSettings || {},
           appearance: store.settings.appearanceSettings || {},
       });
-      setIsLoading(false);
     }
   }, [isOpen]);
 
@@ -412,7 +411,7 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
     content: () => componentRef.current,
   });
 
-  if (!bill) return null;
+  if (!bill || !isOpen) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
