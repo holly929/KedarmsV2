@@ -18,6 +18,7 @@ import type { Payment, Property, Bop, License } from '@/lib/types';
 import { ReceiptDialog } from './receipt-dialog';
 import { sendManualPaymentSms } from '@/lib/sms-service';
 import { RefreshCcw } from 'lucide-react';
+import { store } from '@/lib/store';
 
 const paymentSchema = z.object({
   amount: z.coerce.number().positive('Amount must be positive'),
@@ -42,9 +43,11 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
   const [lastPayment, setLastPayment] = React.useState<Payment | null>(null);
 
   const generateReceiptNo = () => {
+    const systemName = store.settings.generalSettings?.systemName || 'RE';
+    const prefix = systemName.replace(/\s+/g, '').toUpperCase();
     const year = new Date().getFullYear();
     const random = Math.floor(100000 + Math.random() * 900000);
-    return `KEDA-${year}-${random}`;
+    return `${prefix}-${year}-${random}`;
   };
 
   const form = useForm<z.infer<typeof paymentSchema>>({
@@ -65,7 +68,7 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
         reference: generateReceiptNo(),
       });
     }
-  }, [isOpen, form]);
+  }, [isOpen]);
 
   const onSubmit = (values: z.infer<typeof paymentSchema>) => {
     if (!item || !user) return;
@@ -148,7 +151,7 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
                   <FormLabel>Receipt/Ref Number</FormLabel>
                   <div className="flex gap-2">
                     <FormControl>
-                      <Input placeholder="KEDA-YYYY-XXXXXX" {...field} />
+                      <Input placeholder="PREFIX-YYYY-XXXXXX" {...field} />
                     </FormControl>
                     <Button 
                       type="button" 
@@ -160,7 +163,7 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
                       <RefreshCcw className="h-4 w-4" />
                     </Button>
                   </div>
-                  <FormDescription>Unique ID for this transaction (Auto-generated).</FormDescription>
+                  <FormDescription>Unique ID for this transaction (Auto-generated from System Name).</FormDescription>
                   <FormMessage />
                 </FormItem>
               )} />
