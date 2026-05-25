@@ -139,3 +139,14 @@ export type FlatTransaction = Payment & {
     sourceType: 'property' | 'bop' | 'license';
     identifier: string;
 };
+
+export interface PaymentStatusData {
+  name: string;  // e.g., 'Paid', 'Pending', 'Overdue'
+  value: number; // The count or amount for the chart
+  fill?: string; // Optional color for the chart slice
+}
+
+export interface RevenueByPropertyType {
+  name: string;
+  value: number;
+}
