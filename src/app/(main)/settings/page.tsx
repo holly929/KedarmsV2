@@ -14,7 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
 import { PrintableContent } from '@/components/bill-dialog';
-import { Loader2, Download, UploadCloud, Type, Palette, ShieldCheck, Image as ImageIcon, Trash2, RefreshCcw, RotateCcw, ShieldAlert, History } from 'lucide-react';
+import { Loader2, Download, UploadCloud, Type, Palette, ShieldCheck, Image as ImageIcon, Trash2, RefreshCcw, RotateCcw, ShieldAlert, History, Activity, AlertCircle } from 'lucide-react';
 import { store, saveStore, clearAllTransactionsInStore, factoryResetStore } from '@/lib/store';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -33,6 +33,8 @@ import { useBopData } from '@/context/BopDataContext';
 import { useLicenseData } from '@/context/LicenseDataContext';
 import { useBillData } from '@/context/BillDataContext';
 import { useActivityLogClear, useActivityLogDispatch } from '@/context/ActivityLogContext';
+import { testSmsConnection } from '@/lib/sms-service';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const generalFormSchema = z.object({
   systemName: z.string().min(3, 'System name must be at least 3 characters.'),
@@ -85,6 +87,8 @@ const DUMMY_PROPERTY = {
 export default function SettingsPage() {
   useRequirePermission();
   const [loading, setLoading] = useState(true);
+  const [testingSms, setTestingSms] = useState(false);
+  const [testResult, setTestResult] = useState<{success: boolean, message?: string, error?: string, hint?: string} | null>(null);
   
   const { deleteAllProperties } = usePropertyData();
   const { deleteAllBop } = useBopData();
@@ -137,6 +141,24 @@ export default function SettingsPage() {
     saveStore();
     toast({ title: 'SMS Configuration Saved' });
   };
+
+  const handleTestSms = async () => {
+    setTestingSms(true);
+    setTestResult(null);
+    try {
+        const result = await testSmsConnection();
+        setTestResult(result);
+        if(result.success) {
+            toast({ title: 'Gateway Reachable', description: 'Your server can successfully reach the SMS provider.' });
+        } else {
+            toast({ variant: 'destructive', title: 'Connection Failed', description: 'See the diagnostic log below.' });
+        }
+    } catch (e: any) {
+        setTestResult({ success: false, error: e.message });
+    } finally {
+        setTestingSms(false);
+    }
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: 'assemblyLogo' | 'ghanaLogo' | 'signature') => {
     const file = e.target.files?.[0];
@@ -365,9 +387,24 @@ export default function SettingsPage() {
 
         <TabsContent value="sms">
           <Form {...smsForm}>
-            <form onSubmit={smsForm.handleSubmit(onSmsSave)}>
+            <form onSubmit={smsForm.handleSubmit(onSmsSave)} className="space-y-6">
               <Card>
-                <CardHeader><CardTitle>SMS Gateway API Configuration</CardTitle></CardHeader>
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <CardTitle>SMS Gateway API Configuration</CardTitle>
+                        <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={handleTestSms} 
+                            disabled={testingSms || watchedProvider === 'none'}
+                        >
+                            {testingSms ? <Loader2 className="h-3 w-3 mr-2 animate-spin" /> : <Activity className="h-3 w-3 mr-2" />}
+                            Test Connection
+                        </Button>
+                    </div>
+                    <CardDescription>Configure your provider to enable automated notifications.</CardDescription>
+                </CardHeader>
                 <CardContent className="space-y-6">
                   <FormField control={smsForm.control} name="provider" render={({ field }) => (
                     <FormItem><FormLabel>Service Provider</FormLabel>
@@ -389,9 +426,20 @@ export default function SettingsPage() {
                         <FormItem><FormLabel>Arkesel API Key</FormLabel><FormControl><Input type="password" {...field} /></FormControl></FormItem>
                       )} />
                       <FormField control={smsForm.control} name="senderId" render={({ field }) => (
-                        <FormItem><FormLabel>Sender ID (Custom Name)</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                        <FormItem><FormLabel>Sender ID (Custom Name)</FormLabel><FormControl><Input {...field} /></FormControl><FormDescription>Max 11 characters. Must be approved in Arkesel dashboard.</FormDescription></FormItem>
                       )} />
                     </div>
+                  )}
+
+                  {testResult && (
+                      <Alert variant={testResult.success ? 'default' : 'destructive'} className={testResult.success ? "bg-green-50 border-green-200 text-green-800" : ""}>
+                          {testResult.success ? <ShieldCheck className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                          <AlertTitle>{testResult.success ? 'Gateway Reachable' : 'Diagnostic Error'}</AlertTitle>
+                          <AlertDescription className="text-xs mt-1">
+                              {testResult.message || testResult.error}
+                              {testResult.hint && <p className="mt-2 font-bold opacity-80">{testResult.hint}</p>}
+                          </AlertDescription>
+                      </Alert>
                   )}
 
                   <div className="grid gap-6 border-t pt-6">
@@ -400,6 +448,7 @@ export default function SettingsPage() {
                       <FormItem>
                         <FormLabel>Manual Payment Confirmation Template</FormLabel>
                         <FormControl><Textarea {...field} rows={3} /></FormControl>
+                        <FormDescription>Available placeholders: {'{{Owner Name}}'}, {'{{Amount Paid}}'}, {'{{Amount Owed}}'}, {'{{Receipt No}}'}</FormDescription>
                       </FormItem>
                     )} />
                   </div>

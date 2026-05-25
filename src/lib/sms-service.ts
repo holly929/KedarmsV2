@@ -97,7 +97,7 @@ async function sendSingleSms(phoneNumber: string, message: string): Promise<{ su
 
         const result = await response.json().catch(() => ({ 
             error: 'Server returned a malformed response.',
-            hint: 'The local API route failed to produce valid JSON. This usually indicates a Next.js runtime crash.'
+            hint: 'The local API route failed. This usually indicates a server-side network restriction.'
         }));
 
         if (response.ok && result.success === true) {
@@ -113,8 +113,22 @@ async function sendSingleSms(phoneNumber: string, message: string): Promise<{ su
         return { 
             success: false, 
             error: `Network Connection Error: ${error.message || 'fetch failed'}`,
-            hint: 'The browser could not communicate with the local server API.'
+            hint: 'The browser could not communicate with the application server route.'
         };
+    }
+}
+
+export async function testSmsConnection(): Promise<{ success: boolean; message?: string; error?: string; hint?: string }> {
+    const config = store.settings.smsSettings;
+    try {
+        const response = await fetch('/api/sms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phoneNumber: 'DIAGNOSTIC_TEST', config }),
+        });
+        return await response.json();
+    } catch (e: any) {
+        return { success: false, error: e.message, hint: 'Failed to even contact the local API route.' };
     }
 }
 

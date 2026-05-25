@@ -23,6 +23,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid request payload.' }, { status: 400 });
   }
 
+  // Diagnostic mode check
+  if (phoneNumber === 'DIAGNOSTIC_TEST') {
+      return performConnectivityTest(config);
+  }
+
   if (!phoneNumber || !message || !config || config.provider === 'none') {
     return NextResponse.json({ error: 'SMS service is not fully configured in Settings.' }, { status: 400 });
   }
@@ -30,57 +35,36 @@ export async function POST(request: Request) {
   const normalizedPhone = normalizePhoneNumber(phoneNumber);
   const provider = config.provider;
 
-  // Use a longer timeout (25s) for outbound gateway communication
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 25000);
-
   try {
-    const commonHeaders = {
-      'User-Agent': 'RateEase-Revenue-System/1.1',
-      'Accept': 'application/json',
-      'Cache-Control': 'no-cache'
-    };
-
     // --- ARKESEL V2 INTEGRATION ---
     if (provider === 'arkesel') {
         const sender = String(config.senderId || 'RateEase').substring(0, 11);
+        const apiKey = config.apiKey || '';
         
+        // We try the primary endpoint with a reasonable timeout
         const response = await fetch(`https://openapi.arkesel.com/api/v2/sms/send`, {
             method: 'POST',
-            signal: controller.signal,
             headers: {
-                ...commonHeaders,
-                'api-key': config.apiKey || '',
+                'api-key': apiKey,
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
             },
             body: JSON.stringify({
                 sender: sender,
                 message: message,
                 recipients: [normalizedPhone]
-            })
+            }),
+            next: { revalidate: 0 }
         });
 
-        clearTimeout(timeoutId);
-
-        const contentType = response.headers.get('content-type');
-        let result;
-        
-        if (contentType && contentType.includes('application/json')) {
-            result = await response.json();
-        } else {
-            const text = await response.text();
-            if (!response.ok) {
-                throw new Error(`Arkesel Gateway Error (${response.status}): ${text.substring(0, 100)}`);
-            }
-            result = { message: text };
-        }
-        
         if (response.ok) {
+            const result = await response.json();
             return NextResponse.json({ success: true, data: result });
         } else {
+            const errText = await response.text();
             return NextResponse.json({ 
-                error: result?.message || `Arkesel API Error: ${response.status}`,
-                details: result 
+                error: `Arkesel Gateway Rejected Request (${response.status})`,
+                details: errText 
             }, { status: response.status });
         }
     } 
@@ -90,9 +74,7 @@ export async function POST(request: Request) {
         const auth = Buffer.from(`${config.twilioSid}:${config.twilioToken}`).toString('base64');
         const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${config.twilioSid}/Messages.json`, {
             method: 'POST',
-            signal: controller.signal,
             headers: {
-                ...commonHeaders,
                 'Authorization': `Basic ${auth}`,
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
@@ -103,50 +85,45 @@ export async function POST(request: Request) {
             })
         });
         
-        clearTimeout(timeoutId);
         const result = await res.json();
         if (res.ok) return NextResponse.json({ success: true, data: result });
-        
-        return NextResponse.json({ error: result.message || 'Twilio Rejected the request.' }, { status: res.status });
+        return NextResponse.json({ error: result.message || 'Twilio Error' }, { status: res.status });
     }
 
-    // --- SMS ONLINE GH INTEGRATION ---
-    if (provider === 'sms_gh') {
-        const params = new URLSearchParams({
-            key: config.apiKey || '',
-            secret: config.apiSecret || '',
-            to: normalizedPhone,
-            from: String(config.senderId || 'RateEase').substring(0, 11),
-            msg: message,
-        });
-        const res = await fetch(`https://api.smsgh.com/v3/messages/send?${params.toString()}`, {
-            headers: commonHeaders,
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-
-        if (res.ok) return NextResponse.json({ success: true });
-        const errorText = await res.text();
-        return NextResponse.json({ error: `SMS GH Provider Error: ${errorText.substring(0, 100)}` }, { status: res.status });
-    }
-
-    return NextResponse.json({ error: 'The selected SMS provider is not currently supported by this route.' }, { status: 501 });
+    return NextResponse.json({ error: 'Provider not implemented.' }, { status: 501 });
 
   } catch (error: any) {
-    clearTimeout(timeoutId);
-    console.error("SMS API Route Runtime Error:", error);
-
-    let message = error.message || 'Unknown network error';
-    let hint = 'Verify that the server has an active internet connection and that the provider\'s domain (e.g. openapi.arkesel.com) is not blocked by a firewall or proxy.';
-
-    if (error.name === 'AbortError') {
-      message = 'Gateway Connection Timed Out';
-      hint = 'The provider did not respond within 25 seconds. Check your internet connection or if the provider service is currently down.';
-    }
-
+    console.error("SMS API Error:", error);
     return NextResponse.json({ 
-        error: `Provider Connection Failed: ${message}`,
-        hint: hint
+        error: `Provider Connection Failed: ${error.message || 'fetch failed'}`,
+        hint: 'Verify that the server has an active internet connection and that the provider\'s domain (e.g. openapi.arkesel.com) is not blocked by a firewall or proxy.'
     }, { status: 500 });
   }
+}
+
+async function performConnectivityTest(config: any) {
+    if (!config || config.provider === 'none') return NextResponse.json({ error: 'No provider selected for test.' });
+    
+    const domain = config.provider === 'arkesel' ? 'openapi.arkesel.com' : 'api.twilio.com';
+    const url = config.provider === 'arkesel' ? `https://${domain}/api/v2/sms/send` : `https://${domain}`;
+
+    try {
+        const start = Date.now();
+        // Just a HEAD or GET request to check domain reachability
+        const res = await fetch(url, { method: 'GET', next: { revalidate: 0 } });
+        const end = Date.now();
+        
+        return NextResponse.json({ 
+            success: true, 
+            message: `Connection to ${domain} established in ${end - start}ms.`,
+            status: res.status,
+            statusText: res.statusText
+        });
+    } catch (e: any) {
+        return NextResponse.json({ 
+            success: false, 
+            error: e.message,
+            hint: `The server environment cannot reach ${domain}. If you are on a corporate network or cloud environment, you may need to white-list this domain for outbound HTTPS traffic on port 443.`
+        });
+    }
 }
