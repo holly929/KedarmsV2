@@ -1,9 +1,10 @@
-
 export type Payment = {
   id: string;
   amount: number;
   date: string;
   method: string;
+  reference?: string;
+  recordedBy?: string;
 };
 
 export type Property = {
@@ -42,7 +43,7 @@ export type Bop = {
 
 export type License = {
   id: string;
-  'Record Type'?: string; // Stored as "License", "BOP", or "License, BOP"
+  'Record Type'?: string;
   'S/N'?: string;
   'Name of Hotel/Guest House'?: string;
   'License Fee'?: number; 
@@ -74,7 +75,7 @@ export type Bill = {
   id: string;
   propertyId: string;
   propertySnapshot: Property | Bop | License;
-  generatedAt: string; // ISO Date string
+  generatedAt: string;
   year: number;
   totalAmountDue: number;
   created_at?: string;
@@ -85,17 +86,6 @@ export type PaymentBill = {
   type: 'property' | 'bop' | 'license';
   data: Property | Bop | License;
 }
-
-export type RevenueData = {
-  month: string;
-  revenue: number;
-};
-
-export type PaymentStatusData = {
-  name: 'Paid' | 'Pending' | 'Overdue' | 'Unbilled';
-  value: number;
-  fill: string;
-};
 
 export type User = {
   id: string;
@@ -115,9 +105,20 @@ export type PermissionPage = typeof PERMISSION_PAGES[number];
 export type UserRole = User['role'];
 export type RolePermissions = Record<UserRole, Partial<Record<PermissionPage, boolean>>>;
 
-export type RevenueByPropertyType = {
-  name: string;
-  revenue: number;
+export type SmsProvider = 'arkesel' | 'twilio' | 'sms_gh' | 'none';
+
+export type SmsSettings = {
+  provider: SmsProvider;
+  apiKey?: string;
+  apiSecret?: string;
+  senderId?: string;
+  twilioSid?: string;
+  twilioToken?: string;
+  twilioFrom?: string;
+  enableSmsOnNewProperty: boolean;
+  newPropertyMessageTemplate: string;
+  enableSmsOnBillGenerated: boolean;
+  billGeneratedMessageTemplate: string;
 };
 
 export type ActivityLog = {

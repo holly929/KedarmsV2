@@ -1,14 +1,6 @@
-
-// This file acts as a centralized in-memory database for the application.
-// All data contexts will read from and write to this single source of truth,
-// ensuring that data is shared and consistent across all user sessions
-// within the same server process.
-
-import type { Property, Bop, License, Bill, User, Payment, ActivityLog, RolePermissions } from './types';
+import type { Property, Bop, License, Bill, User, Payment, ActivityLog, RolePermissions, SmsSettings } from './types';
 
 const STORE_KEY = 'rateease.store';
-
-// --- Default Data ---
 
 const defaultAdminUser: User = {
     id: 'user-0',
@@ -36,9 +28,6 @@ const defaultPermissions: RolePermissions = {
     license: false, 'license-billing': false,
   },
 };
-
-
-// --- Central Store ---
 
 interface AppStore {
     properties: Property[];
@@ -79,6 +68,7 @@ function getDefaultStore(): AppStore {
             appearanceSettings: {},
             integrationsSettings: {},
             smsSettings: {
+                provider: 'none',
                 enableSmsOnNewProperty: true,
                 newPropertyMessageTemplate: "Dear {{Owner Name}}, your property/license ({{Property No}}{{Name of Hotel/Guest House}}) has been registered with the District Assembly. Thank you.",
                 enableSmsOnBillGenerated: true,
@@ -106,11 +96,10 @@ function loadStore(): AppStore {
         if (stored) {
             const parsedStore = JSON.parse(stored);
             const defaultStore = getDefaultStore();
-            // Deep merge to ensure all nested default settings are present if missing
             const mergedSettings = {
                 ...defaultStore.settings,
                 ...parsedStore.settings,
-                smsSettings: { // ensure all sms settings are present
+                smsSettings: {
                     ...defaultStore.settings.smsSettings,
                     ...(parsedStore.settings?.smsSettings || {})
                 }
@@ -118,7 +107,6 @@ function loadStore(): AppStore {
             parsedStore.settings = mergedSettings;
             
             store = { ...defaultStore, ...parsedStore };
-
             storeInitialized = true;
             return store;
         }
@@ -133,7 +121,6 @@ function loadStore(): AppStore {
 
 store = loadStore();
 
-
 export function saveStore() {
     if (typeof window !== 'undefined') {
         try {
@@ -144,7 +131,6 @@ export function saveStore() {
     }
 }
 
-// This function is for the restore functionality.
 export function forceSaveStore(data: any) {
     if (typeof window !== 'undefined') {
         try {
@@ -155,5 +141,4 @@ export function forceSaveStore(data: any) {
     }
 }
 
-// Re-export store to be used by contexts
 export { store };
