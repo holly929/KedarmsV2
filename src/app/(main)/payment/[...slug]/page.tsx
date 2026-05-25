@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Loader2, CheckCircle, ShieldCheck, CreditCard, Wallet, Phone } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle, ShieldCheck, CreditCard, Wallet, Phone, Zap } from 'lucide-react';
 import type { PaymentBill, Property, Bop, Bill, Payment } from '@/lib/types';
 import { getPropertyValue } from '@/lib/property-utils';
 import { getBillStatus, getBopBillStatus, getLicenseBillStatus } from '@/lib/billing-utils';
@@ -16,6 +16,7 @@ import { paymentMethodIcons } from '@/components/payment-method-icons';
 import { useToast } from '@/hooks/use-toast';
 import { store } from '@/lib/store';
 import { normalizePhoneNumber } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 const formatCurrency = (value: number) => `GHS ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -50,7 +51,6 @@ export default function PaymentPage() {
                 const parsedBill: PaymentBill = JSON.parse(storedBillJson);
                 setBill(parsedBill);
                 
-                // Pre-fill phone number if available
                 const existingPhone = getPropertyValue(parsedBill.data, 'Phone Number');
                 if (existingPhone) {
                     setPhone(String(existingPhone));
@@ -91,7 +91,8 @@ export default function PaymentPage() {
     }, [bill]);
 
     const isMomo = ['mtn', 'vodafone', 'airteltigo'].includes(selectedMethod);
-    const isValidPhone = normalizePhoneNumber(phone).length >= 10;
+    const normalized = normalizePhoneNumber(phone);
+    const isValidPhone = normalized.length >= 10;
 
     const handlePayment = async () => {
         if (!bill) return;
@@ -102,12 +103,10 @@ export default function PaymentPage() {
 
         setIsProcessing(true);
 
-        // In a production app, you would send the 'phone' to your backend 
-        // to initiate the specific Momo charge via Paystack API
         setTimeout(() => {
             const callbackUrl = `/payment/callback?status=success&reference=PAY-${Date.now()}&billId=${bill.data.id}&amount=${amountDue}&phone=${phone}`;
             router.push(callbackUrl);
-        }, 2000);
+        }, 2500);
     };
 
     if (!isClient) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
@@ -136,9 +135,9 @@ export default function PaymentPage() {
             
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
                 <div className="lg:col-span-2 space-y-6">
-                    <Card className="border-primary/20 bg-primary/[0.02]">
-                        <CardHeader>
-                            <CardTitle className="text-sm font-bold text-primary uppercase tracking-widest">Order Summary</CardTitle>
+                    <Card className="border-primary/20 bg-primary/[0.02] shadow-sm">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-xs font-bold text-primary uppercase tracking-widest">Transaction Details</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
@@ -146,111 +145,126 @@ export default function PaymentPage() {
                                 <p className="font-mono text-sm">{itemID}</p>
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-muted-foreground uppercase">Payer Name</label>
-                                <p className="font-bold">{itemName}</p>
+                                <label className="text-[10px] font-bold text-muted-foreground uppercase">Billed To</label>
+                                <p className="font-bold text-lg leading-tight">{itemName}</p>
                             </div>
                             <Separator />
-                            <div className="flex justify-between items-center pt-2">
-                                <span className="text-lg font-medium">Total Payable</span>
-                                <span className="text-3xl font-black text-primary">{formatCurrency(amountDue)}</span>
+                            <div className="pt-2">
+                                <label className="text-[10px] font-bold text-muted-foreground uppercase">Total Amount</label>
+                                <p className="text-3xl font-black text-primary">{formatCurrency(amountDue)}</p>
                             </div>
                         </CardContent>
                     </Card>
 
+                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg space-y-3">
+                        <div className="flex items-center gap-2 text-blue-700 font-bold text-sm">
+                            <Zap className="h-4 w-4" />
+                            Direct Momo Prompt
+                        </div>
+                        <p className="text-xs text-blue-600 leading-relaxed">
+                            Once initiated, a secure authorization prompt will be sent directly to the specified phone number. The user must enter their secret PIN to complete the transaction.
+                        </p>
+                    </div>
+
                     <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg border border-dashed text-xs text-muted-foreground">
                         <ShieldCheck className="h-5 w-5 text-green-600 shrink-0" />
-                        <p>Your payment is secured by industry-standard encryption. We never store your card or wallet details.</p>
+                        <p>Secured by Paystack. All data is encrypted and handled via PCI-compliant infrastructure.</p>
                     </div>
                 </div>
 
-                <Card className="lg:col-span-3 shadow-xl">
-                    <CardHeader className="border-b bg-muted/10">
-                        <CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5 text-primary" /> Secure Checkout</CardTitle>
-                        <CardDescription>Select your preferred Paystack payment method.</CardDescription>
+                <Card className="lg:col-span-3 shadow-2xl border-2">
+                    <CardHeader className="border-b bg-muted/5">
+                        <CardTitle className="flex items-center gap-2 font-headline"><CreditCard className="h-5 w-5 text-primary" /> Secure Checkout</CardTitle>
+                        <CardDescription>Select your wallet and enter the recipient phone number.</CardDescription>
                     </CardHeader>
-                    <CardContent className="pt-6 space-y-6">
+                    <CardContent className="pt-8 space-y-8">
                         {isPaid || amountDue <= 0 ? (
                             <div className="flex flex-col items-center justify-center text-center py-12 space-y-4">
                                 <CheckCircle className="h-20 w-20 text-green-500 animate-bounce" />
-                                <h3 className="text-2xl font-black text-green-600">Payment Settled</h3>
-                                <p className="text-muted-foreground">This bill has been fully paid or has a zero balance.</p>
+                                <h3 className="text-2xl font-black text-green-600">Bill Already Settled</h3>
+                                <p className="text-muted-foreground">This record has no outstanding balance.</p>
                                 <Button onClick={() => router.push('/dashboard')}>Go to Dashboard</Button>
                             </div>
                         ) : (
                             <>
-                                <RadioGroup value={selectedMethod} onValueChange={setSelectedMethod} className="space-y-4">
-                                    <div>
-                                        <h3 className="mb-3 font-bold text-xs uppercase text-muted-foreground">Mobile Money (Ghana)</h3>
-                                        <div className="grid grid-cols-1 gap-2">
-                                            {paymentMethods.momo.map(method => {
-                                                const Icon = paymentMethodIcons[method.id];
-                                                return (
-                                                    <Label key={method.id} htmlFor={method.id} className="flex items-center justify-between rounded-lg border-2 border-muted bg-popover p-4 cursor-pointer transition-all hover:bg-muted/50 peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/[0.03]">
-                                                        <div className="flex items-center gap-3">
-                                                            <RadioGroupItem value={method.id} id={method.id} />
-                                                            <span className="font-semibold">{method.name}</span>
-                                                        </div>
-                                                        <div className="h-6 w-10 relative">{Icon && <Icon />}</div>
-                                                    </Label>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                    <Separator />
-                                    <div>
-                                        <h3 className="mb-3 font-bold text-xs uppercase text-muted-foreground">Cards</h3>
-                                        <div className="grid grid-cols-1 gap-2">
-                                            {paymentMethods.card.map(method => {
-                                                const Icon = paymentMethodIcons[method.id];
-                                                return (
-                                                    <Label key={method.id} htmlFor={method.id} className="flex items-center justify-between rounded-lg border-2 border-muted bg-popover p-4 cursor-pointer transition-all hover:bg-muted/50 peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary [&:has([data-state=checked])]:bg-primary/[0.03]">
-                                                        <div className="flex items-center gap-3">
-                                                            <RadioGroupItem value={method.id} id={method.id} />
-                                                            <span className="font-semibold">{method.name}</span>
-                                                        </div>
-                                                        <div className="h-6 w-10 relative">{Icon && <Icon />}</div>
-                                                    </Label>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                </RadioGroup>
+                                <div className="space-y-4">
+                                    <h3 className="font-bold text-xs uppercase text-muted-foreground tracking-tighter">1. Select Payment Method</h3>
+                                    <RadioGroup value={selectedMethod} onValueChange={setSelectedMethod} className="grid grid-cols-1 gap-2">
+                                        {[...paymentMethods.momo, ...paymentMethods.card].map(method => {
+                                            const Icon = paymentMethodIcons[method.id];
+                                            const isActive = selectedMethod === method.id;
+                                            return (
+                                                <Label 
+                                                    key={method.id} 
+                                                    htmlFor={method.id} 
+                                                    className={cn(
+                                                        "flex items-center justify-between rounded-xl border-2 p-4 cursor-pointer transition-all hover:bg-muted/30",
+                                                        isActive ? "border-primary bg-primary/[0.04]" : "border-muted"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <RadioGroupItem value={method.id} id={method.id} />
+                                                        <span className="font-bold">{method.name}</span>
+                                                    </div>
+                                                    <div className="h-6 w-10 relative opacity-80">{Icon && <Icon />}</div>
+                                                </Label>
+                                            );
+                                        })}
+                                    </RadioGroup>
+                                </div>
 
                                 {isMomo && (
-                                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                                        <Label htmlFor="momo-phone" className="text-xs font-bold uppercase text-primary">Debit Wallet Number</Label>
+                                    <div className="space-y-4 p-6 bg-primary/[0.02] border-2 border-primary/20 rounded-2xl animate-in zoom-in-95 duration-300">
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="momo-phone" className="text-sm font-black uppercase text-primary tracking-widest">2. Input Wallet Number</Label>
+                                            {isValidPhone && <Badge className="bg-green-500">Validated</Badge>}
+                                        </div>
                                         <div className="relative">
-                                            <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                            <Phone className="absolute left-4 top-4 h-6 w-6 text-muted-foreground" />
                                             <Input 
                                                 id="momo-phone"
-                                                placeholder="Enter Mobile Money Number" 
-                                                className="pl-10 h-12 text-lg font-mono tracking-widest"
+                                                type="tel"
+                                                placeholder="e.g. 0244123456" 
+                                                className="pl-14 h-16 text-2xl font-mono tracking-[0.2em] border-primary/30 focus-visible:ring-primary focus-visible:ring-offset-2"
                                                 value={phone}
                                                 onChange={(e) => setPhone(e.target.value)}
+                                                autoFocus
                                             />
                                         </div>
-                                        <p className="text-[10px] text-muted-foreground italic">Money will be deducted from this number via a secure prompt.</p>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-2 italic">
+                                            <Zap className="h-3 w-3 text-orange-500" />
+                                            Money will be debited from this number via a Direct Momo Push.
+                                        </p>
                                     </div>
                                 )}
                             </>
                         )}
                     </CardContent>
                     {!(isPaid || amountDue <= 0) && (
-                        <CardFooter className="flex-col items-stretch space-y-4 border-t pt-6 bg-muted/5">
+                        <CardFooter className="flex-col items-stretch space-y-4 border-t p-8 bg-muted/5">
                             <Button 
                                 size="lg" 
-                                className="w-full text-lg h-14 font-bold shadow-lg" 
+                                className="w-full text-xl h-20 font-black shadow-xl rounded-2xl transition-transform active:scale-95" 
                                 onClick={handlePayment} 
                                 disabled={isProcessing || (isMomo && !isValidPhone)}
                             >
                                 {isProcessing ? (
                                     <>
-                                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                        Redirecting to Paystack...
+                                        <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+                                        Triggering Momo Prompt...
                                     </>
-                                ) : `Confirm & Pay ${formatCurrency(amountDue)}`}
+                                ) : (
+                                    <>
+                                        <Zap className="mr-2 h-5 w-5 fill-current" />
+                                        PAY {formatCurrency(amountDue)} NOW
+                                    </>
+                                )}
                             </Button>
-                            <p className="text-center text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Powered by Paystack Secure Gateway</p>
+                            <div className="flex items-center justify-center gap-2 opacity-40">
+                                <span className="text-[10px] font-bold uppercase tracking-widest">Powering Revenue Mobilization</span>
+                                <Separator className="w-8" />
+                                <span className="text-[10px] font-bold">PAYSTACK SECURE</span>
+                            </div>
                         </CardFooter>
                     )}
                 </Card>

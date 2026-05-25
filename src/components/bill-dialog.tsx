@@ -193,21 +193,21 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
     const postalAddress = settings.general?.postalAddress || 'P.O. Box 11, ABETIFI';
     const contactPhone = settings.general?.contactPhone || '0242122039/0244971784';
 
-    const rv = getNumericValue('Rateable Value');
-    const ri = getNumericValue('Rate Impost');
-    const sc = getNumericValue('Sanitation Charged');
-    const pb = getNumericValue('Previous Balance');
-    const tp = getNumericValue('Total Payment');
-    const charged = rv * ri;
-    const totalThisYear = charged + sc;
-    const totalBill = totalThisYear + pb;
+    const rvValue = getNumericValue('Rateable Value');
+    const riValue = getNumericValue('Rate Impost');
+    const scValue = getNumericValue('Sanitation Charged');
+    const pbValue = getNumericValue('Previous Balance');
+    const tpValue = getNumericValue('Total Payment');
+    const chargedValue = rvValue * riValue;
+    const totalThisYearValue = chargedValue + scValue;
+    const totalBillValue = totalThisYearValue + pbValue;
 
-    const pf = getNumericValue('Permit Fee');
-    const bopTotalDue = pf + getNumericValue('Arrears');
+    const pfValue = getNumericValue('Permit Fee');
+    const bopTotalDueValue = pfValue + getNumericValue('Arrears');
 
-    const lf = getNumericValue('Property Rate');
-    const licenseBop = getNumericValue('Bop Amount');
-    const licenseTotalDue = (lf + licenseBop + getNumericValue('Arrears'));
+    const lfValue = getNumericValue('Property Rate');
+    const licenseBopValue = getNumericValue('Bop Amount');
+    const licenseTotalDueValue = (lfValue + licenseBopValue + getNumericValue('Arrears'));
 
     return (
       <div ref={ref} className={cn("text-black bg-white w-full h-full box-border", fontClass, isCompact ? 'p-2' : 'p-4')} style={baseStyle}>
@@ -267,15 +267,15 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
                         <div className="w-[67%] border-r-2 border-black">
                             <div className="flex border-b-2 border-black bg-black/[0.01]">
                                 <div className="w-1/3 font-bold flex items-center justify-center p-1 text-center text-[0.8em]">PARTICULARS</div>
-                                <div className="w-1/3 border-x border-black/20 p-1 text-center font-bold text-[0.8em]">RV: {formatToTwoDecimals(rv)}</div>
+                                <div className="w-1/3 border-x border-black/20 p-1 text-center font-bold text-[0.8em]">RV: {formatToTwoDecimals(rvValue)}</div>
                                 <div className="w-1/3 p-1 text-center font-bold text-[0.8em]">IMPOST: {formatValue('Rate Impost')}</div>
                             </div>
-                            <BillRow label="AMOUNT CHARGED" value={formatToTwoDecimals(charged)} />
-                            <BillRow label="SANITATION" value={formatToTwoDecimals(sc)} />
-                            <BillRow label="TOTAL CURRENT YEAR" value={formatToTwoDecimals(totalThisYear)} isBold />
-                            <BillRow label="PREVIOUS BALANCE" value={formatToTwoDecimals(pb)} />
-                            <BillRow label="TOTAL OUTSTANDING" value={formatToTwoDecimals(totalBill)} isBold />
-                            <BillRow label="LESS PAYMENT" value={formatToTwoDecimals(tp)} />
+                            <BillRow label="AMOUNT CHARGED" value={formatToTwoDecimals(chargedValue)} />
+                            <BillRow label="SANITATION" value={formatToTwoDecimals(scValue)} />
+                            <BillRow label="TOTAL CURRENT YEAR" value={formatToTwoDecimals(totalThisYearValue)} isBold />
+                            <BillRow label="PREVIOUS BALANCE" value={formatToTwoDecimals(pbValue)} />
+                            <BillRow label="TOTAL OUTSTANDING" value={formatToTwoDecimals(totalBillValue)} isBold />
+                            <BillRow label="LESS PAYMENT" value={formatToTwoDecimals(tpValue)} />
                             <div className="flex justify-between p-2 border-b border-black items-center font-bold" style={accentStyle}>
                                 <span className="text-[1.1em]">TOTAL PAYABLE</span>
                                 <span className="text-right" style={{ fontSize: `${finalFontSize * 1.3}px` }}>GH&#8373; {totalAmountPayable}</span>
@@ -283,12 +283,12 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
                         </div>
                         <div className="w-[33%] text-right font-bold flex flex-col">
                             <div className="p-1 border-b-2 border-black bg-black/5 text-[0.8em] flex items-center justify-center">FINANCIALS</div>
-                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(charged)}</div>
-                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(sc)}</div>
-                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(totalThisYear)}</div>
-                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(pb)}</div>
-                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(totalBill)}</div>
-                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(tp)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(chargedValue)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(scValue)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(totalThisYearValue)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(pbValue)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(totalBillValue)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(tpValue)}</div>
                             <div className="p-2 border-b border-black flex items-center justify-end" style={accentStyle}>{totalAmountPayable}</div>
                         </div>
                     </div>
@@ -306,9 +306,9 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
                     </div>
                     <div className="flex">
                         <div className="w-[67%] border-r-2 border-black">
-                            <BillRow label="PERMIT FEE" value={formatToTwoDecimals(pf)} />
+                            <BillRow label="PERMIT FEE" value={formatToTwoDecimals(pfValue)} />
                             <BillRow label="ARREARS" value={formatToTwoDecimals(getNumericValue('Arrears'))} />
-                            <BillRow label="TOTAL DUE" value={formatToTwoDecimals(bopTotalDue)} isBold />
+                            <BillRow label="TOTAL DUE" value={formatToTwoDecimals(bopTotalDueValue)} isBold />
                             <BillRow label="LESS PAYMENT" value={formatToTwoDecimals(getNumericValue('Payment'))} />
                             <div className="flex justify-between p-2 border-b border-black items-center font-bold" style={accentStyle}>
                                 <span className="text-[1.1em]">TOTAL PAYABLE</span>
@@ -317,9 +317,9 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
                         </div>
                         <div className="w-[33%] text-right font-bold flex flex-col">
                             <div className="p-1 border-b-2 border-black bg-black/5 text-[0.8em] flex items-center justify-center">FINANCIALS</div>
-                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(pf)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(pfValue)}</div>
                             <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(getNumericValue('Arrears'))}</div>
-                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(bopTotalDue)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(bopTotalDueValue)}</div>
                             <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(getNumericValue('Payment'))}</div>
                             <div className="p-2 border-b border-black flex items-center justify-end" style={accentStyle}>{totalAmountPayable}</div>
                         </div>
@@ -338,10 +338,10 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
                     </div>
                     <div className="flex">
                         <div className="w-[67%] border-r-2 border-black">
-                            <BillRow label="LICENSE FEE" value={formatToTwoDecimals(lf)} />
-                            <BillRow label="BOP FEE" value={formatToTwoDecimals(licenseBop)} />
+                            <BillRow label="LICENSE FEE" value={formatToTwoDecimals(lfValue)} />
+                            <BillRow label="BOP FEE" value={formatToTwoDecimals(licenseBopValue)} />
                             <BillRow label="ARREARS" value={formatToTwoDecimals(getNumericValue('Arrears'))} />
-                            <BillRow label="TOTAL DUE" value={formatToTwoDecimals(licenseTotalDue)} isBold />
+                            <BillRow label="TOTAL DUE" value={formatToTwoDecimals(licenseTotalDueValue)} isBold />
                             <div className="flex justify-between p-2 border-b border-black items-center font-bold" style={accentStyle}>
                                 <span className="text-[1.1em]">TOTAL PAYABLE</span>
                                 <span className="text-right" style={{ fontSize: `${finalFontSize * 1.3}px` }}>GH&#8373; {totalAmountPayable}</span>
@@ -349,10 +349,10 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
                         </div>
                         <div className="w-[33%] text-right font-bold flex flex-col">
                             <div className="p-1 border-b-2 border-black bg-black/5 text-[0.8em] flex items-center justify-center">FINANCIALS</div>
-                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(lf)}</div>
-                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(licenseBop)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(lfValue)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(licenseBopValue)}</div>
                             <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(getNumericValue('Arrears'))}</div>
-                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(licenseTotalDue)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(licenseTotalDueValue)}</div>
                             <div className="p-2 border-b border-black flex items-center justify-end" style={accentStyle}>{totalAmountPayable}</div>
                         </div>
                     </div>
@@ -418,7 +418,7 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
       <DialogContent className="sm:max-w-[950px] p-0 overflow-hidden border-0">
         <div className="flex h-[90vh]">
           <div className="w-[300px] border-r bg-muted/30 p-6 space-y-6">
-            <h3 className="text-lg font-bold flex items-center gap-2">
+            <h3 className="text-lg font-bold flex items-center gap-2 font-headline">
                 <FileWarning className="h-5 w-5 text-primary" />
                 Bill Options
             </h3>
