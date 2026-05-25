@@ -141,9 +141,9 @@ export type FlatTransaction = Payment & {
 };
 
 export interface PaymentStatusData {
-  name: string;  // e.g., 'Paid', 'Pending', 'Overdue'
-  value: number; // The count or amount for the chart
-  fill?: string; // Optional color for the chart slice
+  name: string;
+  value: number;
+  fill?: string;
 }
 
 export interface RevenueByPropertyType {

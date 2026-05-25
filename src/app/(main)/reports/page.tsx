@@ -362,7 +362,7 @@ export default function ReportsPage() {
                               <BarChart accessibilityLayer data={chartData.byType}>
                                   <CartesianGrid vertical={false} />
                                   <XAxis dataKey="name" tickLine={false} tickMargin={10} axisLine={false} />
-                                  <YAxis tickFormatter={(value) => formatCurrency(value as number)} />
+                                  <YAxis tickFormatter={(value) => `GHS ${value.toLocaleString()}`} />
                                   <Tooltip cursor={false} content={<ChartTooltipContent formatter={(value) => formatCurrency(value as number)} />} />
                                   <Bar dataKey="revenue" fill="var(--color-revenue)" radius={8} />
                               </BarChart>
