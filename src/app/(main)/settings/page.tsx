@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -14,9 +14,10 @@ import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
 import { PrintableContent } from '@/components/bill-dialog';
-import { Loader2, Download, Type, Palette, ShieldCheck, Image as ImageIcon, Trash2, RefreshCcw, RotateCcw, ShieldAlert, History, Activity, AlertCircle, Network, Info, MessageSquare } from 'lucide-react';
+import { Loader2, Download, Type, Palette, ShieldCheck, Image as ImageIcon, Trash2, RefreshCcw, RotateCcw, ShieldAlert, History, Activity, AlertCircle, Network, Info, MessageSquare, CreditCard, Lock } from 'lucide-react';
 import { store, saveStore, clearAllTransactionsInStore, factoryResetStore } from '@/lib/store';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -71,6 +72,12 @@ const smsFormSchema = z.object({
   manualPaymentMessageTemplate: z.string().max(320).optional(),
 });
 
+const paymentFormSchema = z.object({
+    publicKey: z.string().optional(),
+    secretKey: z.string().optional(),
+    isLive: z.boolean().default(false),
+});
+
 const DUMMY_PROPERTY = {
   id: 'preview-123',
   'Owner Name': 'HON. KOFI MANSAH',
@@ -113,6 +120,11 @@ export default function SettingsPage() {
     defaultValues: store.settings.smsSettings,
   });
 
+  const paymentForm = useForm<z.infer<typeof paymentFormSchema>>({
+      resolver: zodResolver(paymentFormSchema),
+      defaultValues: store.settings.paystackSettings,
+  });
+
   const watchedProvider = smsForm.watch('provider');
   const appearanceValues = appearanceForm.watch();
   const generalValues = generalForm.watch();
@@ -133,6 +145,12 @@ export default function SettingsPage() {
     store.settings.smsSettings = data;
     saveStore();
     toast({ title: 'SMS Configuration Saved' });
+  };
+
+  const onPaymentSave = (data: z.infer<typeof paymentFormSchema>) => {
+      store.settings.paystackSettings = data;
+      saveStore();
+      toast({ title: 'Payment Gateway Saved', description: 'Paystack configuration updated.' });
   };
 
   const handleTestSms = async () => {
@@ -178,9 +196,10 @@ export default function SettingsPage() {
       <Tabs defaultValue="appearance" className="space-y-6">
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
           <TabsTrigger value="general" className="py-2">General</TabsTrigger>
-          <TabsTrigger value="appearance" className="py-2">Appearance & Branding</TabsTrigger>
+          <TabsTrigger value="appearance" className="py-2">Appearance</TabsTrigger>
+          <TabsTrigger value="payments" className="py-2">Payments</TabsTrigger>
           <TabsTrigger value="sms" className="py-2">SMS Gateway</TabsTrigger>
-          <TabsTrigger value="backup" className="py-2">Maintenance & Data</TabsTrigger>
+          <TabsTrigger value="backup" className="py-2">Maintenance</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
@@ -374,6 +393,58 @@ export default function SettingsPage() {
                </p>
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="payments">
+            <Form {...paymentForm}>
+                <form onSubmit={paymentForm.handleSubmit(onPaymentSave)}>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><CreditCard className="h-5 w-5" /> Paystack Gateway Integration</CardTitle>
+                            <CardDescription>Configure your Paystack credentials to accept real-time Mobile Money and Card payments.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="grid gap-4">
+                                <FormField control={paymentForm.control} name="publicKey" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Public Key</FormLabel>
+                                        <FormControl><Input placeholder="pk_live_..." {...field} /></FormControl>
+                                        <FormDescription>Available in your Paystack Dashboard under Settings > API Keys.</FormDescription>
+                                    </FormItem>
+                                )} />
+                                <FormField control={paymentForm.control} name="secretKey" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Secret Key</FormLabel>
+                                        <FormControl><Input type="password" placeholder="sk_live_..." {...field} /></FormControl>
+                                    </FormItem>
+                                )} />
+                                <FormField control={paymentForm.control} name="isLive" render={({ field }) => (
+                                    <FormItem className="flex items-center justify-between border p-4 rounded-lg bg-muted/20">
+                                        <div className="space-y-0.5">
+                                            <FormLabel className="text-base">Live Production Mode</FormLabel>
+                                            <FormDescription>Toggle off to use Test keys for development.</FormDescription>
+                                        </div>
+                                        <FormControl>
+                                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                        </FormControl>
+                                    </FormItem>
+                                )} />
+                            </div>
+                            
+                            <Alert className="bg-primary/5 border-primary/20">
+                                <Lock className="h-4 w-4" />
+                                <AlertTitle>Security Note</AlertTitle>
+                                <AlertDescription className="text-xs">
+                                    Your Secret Key is used strictly for server-side verification and is never exposed to public users. Ensure you keep it confidential.
+                                </AlertDescription>
+                            </Alert>
+                        </CardContent>
+                        <CardFooter>
+                            <Button type="submit">Update Payment Gateway</Button>
+                        </CardFooter>
+                    </Card>
+                </form>
+            </Form>
         </TabsContent>
 
         <TabsContent value="sms">

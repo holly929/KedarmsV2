@@ -82,6 +82,11 @@ function getDefaultStore(): AppStore {
             },
             appearanceSettings: {},
             integrationsSettings: {},
+            paystackSettings: {
+                publicKey: '',
+                secretKey: '',
+                isLive: false,
+            },
             smsSettings: {
                 provider: 'none',
                 enableSmsOnNewProperty: true,
@@ -119,6 +124,10 @@ function loadStore(): AppStore {
                 smsSettings: {
                     ...defaultStore.settings.smsSettings,
                     ...(parsedStore.settings?.smsSettings || {})
+                },
+                paystackSettings: {
+                    ...defaultStore.settings.paystackSettings,
+                    ...(parsedStore.settings?.paystackSettings || {})
                 }
             };
             parsedStore.settings = mergedSettings;
