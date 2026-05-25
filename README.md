@@ -1,12 +1,15 @@
-<!-- Vercel build test comment -->
+# KedarmsV2
 
-# Firebase Studio
+Revenue Mobilization for District Assemblies.
 
-## Firebase Console
+Built and developed by ANEH TECH CONSORTIUM.
 
-The Firebase Console is the primary interface for managing your Firebase project, including setting up and configuring Firebase App Hosting. You'll use the console to connect your project to your GitHub repository, configure deployment settings, and monitor your deployments.
+## Getting Started
 
+1. Clone the repository.
+2. Install dependencies: `npm install`.
+3. Run the development server: `npm run dev`.
 
-This is a NextJS starter in Firebase Studio.
+## System Overview
 
-To get started, take a look at src/app/page.tsx.
+This system manages Property Rates, Business Operating Permits (BOP), and Hotel Licenses. It includes features for automated SMS notifications (via Arkesel), manual payment recording with receipt printing, and comprehensive revenue reporting.

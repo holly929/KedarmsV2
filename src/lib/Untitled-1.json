@@ -1,0 +1,13 @@
+{
+  "name": "shadowwalker2",
+  "version": "1.0.0",
+  "description": "Project utilizing object-keys and object.assign shims",
+  "main": "index.js",
+  "dependencies": {
+    "object-keys": "^1.1.1",
+    "object.assign": "^4.1.7"
+  },
+  "engines": {
+    "node": ">= 0.4"
+  }
+}
