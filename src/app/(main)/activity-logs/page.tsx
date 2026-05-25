@@ -96,7 +96,9 @@ export default function ActivityLogsPage() {
             <TableCell className="text-muted-foreground text-xs">{log.details}</TableCell>
             <TableCell className="text-right text-muted-foreground text-xs">
                 <Tooltip>
-                    <TooltipTrigger>{formatTimestamp(log.timestamp)}</TooltipTrigger>
+                    <TooltipTrigger asChild>
+                      <span className="cursor-help underline decoration-dotted underline-offset-4">{formatTimestamp(log.timestamp)}</span>
+                    </TooltipTrigger>
                     <TooltipContent>
                         <p>{new Date(log.timestamp).toISOString()}</p>
                     </TooltipContent>

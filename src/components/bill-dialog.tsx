@@ -87,7 +87,16 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     const data = dataProp || propertyProp;
     const billType = billTypeProp || 'property';
     
-    const [displaySettings, setDisplaySettings] = useState<Record<string, boolean>>(displaySettingsProp || {});
+    const [displaySettings, setDisplaySettings] = useState<Record<string, boolean>>(() => {
+        if (displaySettingsProp && Object.keys(displaySettingsProp).length > 0) return displaySettingsProp;
+        if (data) {
+             return Object.keys(data).reduce((acc, key) => {
+                acc[key] = true;
+                return acc;
+            }, {} as Record<string, boolean>);
+        }
+        return {};
+    });
 
     const { fontFamily, fontSize, accentColor } = settings.appearance || {};
 
@@ -114,18 +123,8 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
     useEffect(() => {
         if (displaySettingsProp && Object.keys(displaySettingsProp).length > 0) {
             setDisplaySettings(displaySettingsProp);
-        } else if (data) {
-            const allFields = Object.keys(data).reduce((acc, key) => {
-                acc[key] = true;
-                return acc;
-            }, {} as Record<string, boolean>);
-            
-            // Only update if standard keys count is different to avoid update loop
-            if (Object.keys(allFields).length !== Object.keys(displaySettings).length) {
-              setDisplaySettings(allFields);
-            }
         }
-    }, [data, displaySettingsProp, displaySettings]);
+    }, [displaySettingsProp]);
     
     const getNumericValue = useCallback((key: string): number => {
         if (!data) return 0;
@@ -156,24 +155,6 @@ export const PrintableContent = React.forwardRef<HTMLDivElement, {
         
         return String(val);
     }, [data]);
-    
-    const normalizeKey = (key: string): string => (key || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-
-    const shouldDisplay = (field: string) => {
-        const normField = normalizeKey(field);
-        const identificationFields = [
-            'sn', 'serialnumber', 'serialno', 'no', 'hotel', 'hotelname', 'ownername', 
-            'propertyno', 'businessname', 'nameofhotelguesthouse', 'establishment', 'entity'
-        ];
-        if (identificationFields.includes(normField)) return true;
-        
-        for (const settingKey in displaySettings) {
-             if (normalizeKey(settingKey) === normField) {
-                return displaySettings[settingKey];
-             }
-        }
-        return true;
-    };
     
     const totalAmountPayable = useMemo(() => {
         if (!data) return '0.00';
