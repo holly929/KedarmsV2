@@ -8,6 +8,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Loader2, CheckCircle, ShieldCheck, CreditCard, Wallet, Phone, Zap } from 'lucide-react';
 import type { PaymentBill, Property, Bop, Bill, Payment } from '@/lib/types';
 import { getPropertyValue } from '@/lib/property-utils';
