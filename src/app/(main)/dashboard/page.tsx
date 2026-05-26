@@ -156,7 +156,7 @@ export default function DashboardPage() {
 
   const sortedBills = React.useMemo(() => {
     if (!bills) return [];
-    return [...bills].sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.date || a.generatedAt).getTime());
+    return [...bills].sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime());
   }, [bills]);
   
   const totalFinancialStatus = React.useMemo(() => dashboardData.paymentStatus.reduce((acc, curr) => acc + curr.value, 0), [dashboardData.paymentStatus]);
