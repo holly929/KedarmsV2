@@ -1,13 +1,13 @@
 'use client';
 
 import * as React from 'react';
-import { DollarSign, Home, TrendingUp, AlertCircle, Loader2, BarChart2, Package, Coins, Download, List } from 'lucide-react';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Pie, PieChart, Cell, Legend } from 'recharts';
+import { DollarSign, Home, TrendingUp, AlertCircle, Loader2, BarChart2, Coins, Download, List } from 'lucide-react';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Pie, PieChart, Cell, Legend } from 'recharts';
 import * as XLSX from 'xlsx';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { ChartContainer, ChartTooltipContent, ChartConfig, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
-import type { Property, PaymentStatusData, RevenueByPropertyType, Bill } from '@/lib/types';
+import type { PaymentStatusData, RevenueByPropertyType } from '@/lib/types';
 import { usePropertyData } from '@/context/PropertyDataContext';
 import { useBillData } from '@/context/BillDataContext';
 import { getPropertyValue } from '@/lib/property-utils';

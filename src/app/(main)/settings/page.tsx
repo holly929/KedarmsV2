@@ -409,7 +409,7 @@ export default function SettingsPage() {
                                     <FormItem>
                                         <FormLabel>Public Key</FormLabel>
                                         <FormControl><Input placeholder="pk_live_..." {...field} /></FormControl>
-                                        <FormDescription>Available in your Paystack Dashboard under Settings > API Keys.</FormDescription>
+                                        <FormDescription>Available in your Paystack Dashboard under Settings &gt; API Keys.</FormDescription>
                                     </FormItem>
                                 )} />
                                 <FormField control={paymentForm.control} name="secretKey" render={({ field }) => (
@@ -512,13 +512,15 @@ export default function SettingsPage() {
                                 <div className="space-y-2">
                                     {testResult.details?.map((res, i) => (
                                         <div key={i} className="flex justify-between items-center text-[10px] font-mono border-b pb-1 last:border-0">
-                                            <div className="flex flex-col">
-                                                <span className="font-bold">{res.name}</span>
-                                                <span className="truncate max-w-[150px] opacity-60">{res.url}</span>
+                                            <div className="flex justify-between w-full">
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold">{res.name}</span>
+                                                    <span className="truncate max-w-[150px] opacity-60">{res.url}</span>
+                                                </div>
+                                                <span className={res.success ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
+                                                    {res.success ? `OPEN (${res.status} ${res.time})` : `BLOCKED (${res.error})`}
+                                                </span>
                                             </div>
-                                            <span className={res.success ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
-                                                {res.success ? `OPEN (${res.status} ${res.time})` : `BLOCKED (${res.error})`}
-                                            </span>
                                         </div>
                                     ))}
                                 </div>
