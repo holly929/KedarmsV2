@@ -6,12 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Landmark, Loader2 } from 'lucide-react';
+import { Landmark, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { store } from '@/lib/store';
 import { useAuth } from '@/context/AuthContext';
-
-const USER_STORAGE_KEY = 'rateease.user';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,6 +20,7 @@ export default function LoginPage() {
   const [assemblyLogo, setAssemblyLogo] = React.useState<string | null>(null);
   const [email, setEmail] = React.useState('admin@rateease.gov');
   const [password, setPassword] = React.useState('password');
+  const [showPassword, setShowPassword] = React.useState(false);
   const [isLoggingIn, setIsLoggingIn] = React.useState(false);
 
   React.useEffect(() => {
@@ -37,7 +36,6 @@ export default function LoginPage() {
   }, []);
   
   React.useEffect(() => {
-    // Redirect if user is already logged in
     if (!loading && user) {
         router.replace('/dashboard');
     }
@@ -66,7 +64,6 @@ export default function LoginPage() {
     }
   };
 
-  // Render nothing or a loader while checking auth state to prevent flash of login page
   if(loading || (!loading && user)) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -83,7 +80,7 @@ export default function LoginPage() {
           <CardHeader className="text-center p-6">
             <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center text-primary overflow-hidden">
                {assemblyLogo ? (
-                // eslint-disable-next-line @next/next/no-img-element
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img src={assemblyLogo} alt="Assembly Logo" style={{height: '100%', width: '100%', objectFit: 'contain'}} />
               ) : (
                 <Landmark className="h-12 w-12" />
@@ -108,14 +105,24 @@ export default function LoginPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoggingIn}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLoggingIn}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
             </CardContent>
             <CardFooter className="px-6 pb-6 pt-4">

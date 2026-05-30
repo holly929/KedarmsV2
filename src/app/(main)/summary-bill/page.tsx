@@ -64,6 +64,7 @@ const getEditableSheetUrl = (originalUrl: string): string => {
 function GoogleSheetIntegrationView() {
   const [sheetUrl, setSheetUrl] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const emptyStateText = "No Summary Sheet Connected";
 
   React.useEffect(() => {
     setIsLoading(true);
@@ -103,7 +104,6 @@ function GoogleSheetIntegrationView() {
               <AlertDescription>
                 To interact with the sheet, you must be logged into the correct Google account in this browser. If it doesn&apos;t load, try opening it in a new tab first, then refresh this page.
               </AlertDescription>
-            </Alert>
             <div className="aspect-video w-full rounded-lg border">
               <iframe src={sheetUrl} className="w-full h-full" frameBorder="0" title="Embedded Google Sheet" sandbox="allow-scripts allow-same-origin allow-forms allow-popups">Loading...</iframe>
             </div>
@@ -111,7 +111,7 @@ function GoogleSheetIntegrationView() {
         ) : (
           <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center h-[calc(100vh-30rem)]">
             <BookCopy className="h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">No Summary Sheet Connected</h3>
+            <h3 className="mt-4 text-lg font-semibold">{emptyStateText}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               Please go to the <Button variant="link" asChild className="p-0 h-auto"><Link href="/settings">Settings</Link></Button> page to connect a Google Sheet.
             </p>
@@ -445,7 +445,7 @@ export default function SummaryBillPage() {
             {totalPages > 1 && (
               <CardFooter className="flex justify-between items-center border-t pt-4">
                 <span className="text-sm text-muted-foreground">
-                  Page {currentPage} of {totalPages} ({filteredData.length} total records on this sheet)
+                  Page {currentPage} of {totalPages} ({filteredData.length} total records)
                 </span>
                 <div className="flex items-center gap-2">
                   <Button
