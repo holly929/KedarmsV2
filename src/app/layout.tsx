@@ -13,6 +13,7 @@ import { SummaryBillProvider } from '@/context/SummaryBillContext';
 import { BillProvider } from '@/context/BillDataContext';
 import { SmsLogProvider } from '@/context/SmsLogContext';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import ErrorBoundary from '@/components/error-boundary';
 
 export const metadata: Metadata = {
   title: 'RateEase',
@@ -34,37 +35,39 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Tinos:wght@400;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <UserProvider>
-            <AuthProvider>
-              <PermissionsProvider>
-                <ActivityLogProvider>
-                  <PropertyProvider>
-                    <BopProvider>
-                      <LicenseProvider>
-                        <SummaryBillProvider>
-                          <BillProvider>
-                            <SmsLogProvider>
-                              <TooltipProvider>
-                                {children}
-                                <Toaster />
-                              </TooltipProvider>
-                            </SmsLogProvider>
-                          </BillProvider>
-                        </SummaryBillProvider>
-                      </LicenseProvider>
-                    </BopProvider>
-                  </PropertyProvider>
-                </ActivityLogProvider>
-              </PermissionsProvider>
-            </AuthProvider>
-          </UserProvider>
-        </ThemeProvider>
+        <ErrorBoundary>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <UserProvider>
+              <AuthProvider>
+                <PermissionsProvider>
+                  <ActivityLogProvider>
+                    <PropertyProvider>
+                      <BopProvider>
+                        <LicenseProvider>
+                          <SummaryBillProvider>
+                            <BillProvider>
+                              <SmsLogProvider>
+                                <TooltipProvider>
+                                  {children}
+                                  <Toaster />
+                                </TooltipProvider>
+                              </SmsLogProvider>
+                            </BillProvider>
+                          </SummaryBillProvider>
+                        </LicenseProvider>
+                      </BopProvider>
+                    </PropertyProvider>
+                  </ActivityLogProvider>
+                </PermissionsProvider>
+              </AuthProvider>
+            </UserProvider>
+          </ThemeProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

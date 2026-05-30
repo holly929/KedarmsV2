@@ -161,3 +161,8 @@ export interface RevenueByPropertyType {
   name: string;
   revenue: number;
 }
+
+export type RevenueData = {
+  month: string;
+  revenue: number;
+};
