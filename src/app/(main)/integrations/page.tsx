@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -102,7 +101,7 @@ function SmsFeatureInfo() {
           <Server className="h-4 w-4" />
           <AlertTitle>Configuration Required</AlertTitle>
           <AlertDescription>
-            This feature is powered by Infobip. To enable it, you must configure your Infobip API credentials and message templates on the Settings page.
+            This feature is powered by Arkesel and Twilio. To enable it, you must configure your API credentials and message templates on the Settings page.
           </AlertDescription>
         </Alert>
       </CardContent>
