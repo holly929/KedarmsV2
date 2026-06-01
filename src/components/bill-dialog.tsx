@@ -30,6 +30,7 @@ type AppearanceSettings = {
   ghanaLogo?: string;
   signature?: string;
   billWarningText?: string;
+  demandNoticeCaption?: string;
   fontFamily?: 'sans' | 'serif' | 'mono';
   fontSize?: number;
   accentColor?: string;
@@ -171,13 +172,21 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
 
     const billedToName = useMemo(() => {
         if (!data) return '';
+
+        // For Demand Notices, prioritize the legal owner name as the primary recipient
+        if (isDemandNotice) {
+            const owner = getPropertyValue(data as any, 'Owner Name') || 
+                          getPropertyValue(data as any, 'Entity');
+            if (owner) return String(owner).toUpperCase();
+        }
+
         const nameVal = getPropertyValue(data as any, 'Name of Hotel/Guest House') || 
                         getPropertyValue(data as any, 'Hotel Name') ||
                         getPropertyValue(data as any, 'Business Name') || 
                         getPropertyValue(data as any, 'Owner Name') || 
                         getPropertyValue(data as any, 'Entity') || '...';
         return String(nameVal).toUpperCase();
-    }, [data]);
+    }, [data, isDemandNotice]);
 
     const barcodeValue = useMemo(() => {
         if (!data) return '';
@@ -242,7 +251,9 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
                     <p className="font-semibold text-muted-foreground" style={{ fontSize: `${finalFontSize * 1.1}px` }}>{settingsValues.postalAddress}</p>
                     <p className="font-semibold text-muted-foreground" style={{ fontSize: `${finalFontSize}px` }}>TEL: {settingsValues.contactPhone}</p>
                     <div className={cn("mt-3 inline-block px-4 py-1 border-2 border-black font-black tracking-[0.2em] uppercase", isDemandNotice ? "bg-red-600 text-white border-red-700" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 1.4}px` }}>
-                      {isDemandNotice ? 'DEMAND NOTICE' : 'PROPERTY RATE & B.O.P BILL'}
+                      {isDemandNotice 
+                        ? (settings.appearance?.demandNoticeCaption || 'DEMAND NOTICE') 
+                        : 'PROPERTY RATE & B.O.P BILL'}
                     </div>
                 </div>
                 <div className="w-1/5 flex justify-end items-center">
@@ -342,6 +353,7 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
                         <div className="w-[67%] border-r-2 border-black">
                             <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">SN</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('S/N')}</div></div>
                             <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">HOTEL</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Name of Hotel/Guest House')}</div></div>
+                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">OWNER</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Owner Name')}</div></div>
                         </div>
                         <div className="w-[33%]">
                             <div className="font-bold text-center p-1 bg-black/5 border-b border-black/20 text-[0.8em]">AMOUNT (GH&#8373;)</div>

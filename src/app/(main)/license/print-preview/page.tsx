@@ -30,6 +30,7 @@ type AppearanceSettings = {
   ghanaLogo?: string;
   signature?: string;
   billWarningText?: string;
+  demandNoticeCaption?: string;
   fontFamily?: 'sans' | 'serif' | 'mono';
   fontSize?: number;
   accentColor?: string;
