@@ -76,6 +76,7 @@ export default function BillingPage() {
   const [paymentItem, setPaymentItem] = React.useState<Property | null>(null);
   const [smsItems, setSmsItems] = React.useState<Property[]>([]);
   const [isSmsDialogOpen, setIsSmsDialogOpen] = React.useState(false);
+  const [selectedRows, setSelectedRows] = React.useState<string[]>([]);
 
   const isMobile = useIsMobile();
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -85,9 +86,27 @@ export default function BillingPage() {
   }, [properties]);
 
   const handleViewBill = (property: Property, isDemand: boolean = false) => {
+    const type = getPropertyValue(property, 'Type')?.toLowerCase().includes('bop') ? 'BOP' : 'PROPERTY_RATE';
     localStorage.setItem('selectedPropertiesForPrinting', JSON.stringify([property]));
     localStorage.setItem('printDemandMode', isDemand ? 'true' : 'false');
+    localStorage.setItem('printNoticeType', type);
     router.push('/properties/print-preview');
+  };
+
+  const handlePrintSelected = () => {
+    if (selectedRows.length > 0) {
+      const type = getPropertyValue(selectedProperties[0], 'Type')?.toLowerCase().includes('bop') ? 'BOP' : 'PROPERTY_RATE';
+      localStorage.setItem('selectedPropertiesForPrinting', JSON.stringify(selectedProperties));
+      localStorage.setItem('printDemandMode', 'false');
+      localStorage.setItem('printNoticeType', type);
+      router.push('/properties/print-preview');
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'No Properties Selected',
+        description: 'Please select at least one property to print.',
+      });
+    }
   };
 
   const handlePropertyUpdate = (updatedProperty: Property) => {
@@ -95,6 +114,32 @@ export default function BillingPage() {
     setEditingProperty(null);
     toast({ title: 'Record Updated' });
   };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedRows(filteredData.map(row => row.id));
+    } else {
+      setSelectedRows([]);
+    }
+  };
+  
+  const handleSelectRow = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedRows(prev => [...prev, id]);
+    } else {
+      setSelectedRows(prev => prev.filter(rowId => rowId !== id));
+    }
+  };
+
+  const selectedProperties = React.useMemo(() => {
+    return properties.filter(row => selectedRows.includes(row.id));
+  }, [properties, selectedRows]);
+
+  const handleDeleteSelected = () => {
+    deleteProperties(selectedRows);
+    toast({ title: 'Properties Deleted', description: `${selectedRows.length} records have been removed.` });
+    setSelectedRows([]);
+  }
 
   const propertiesWithStatus = React.useMemo<PropertyWithStatus[]>(() => {
     return properties.map(p => ({ ...p, status: getBillStatus(p) }));
@@ -111,6 +156,13 @@ export default function BillingPage() {
     );
   }, [propertiesWithStatus, filter, activeTab]);
 
+  const totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+    setSelectedRows([]);
+  }, [activeTab, filter]);
+
   const paginatedData = React.useMemo(() => {
     return filteredData.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
   }, [filteredData, currentPage]);
@@ -124,10 +176,26 @@ export default function BillingPage() {
       }
   }
 
+  const handleSendBulkSms = () => {
+    if (selectedRows.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'No Records Selected',
+        description: 'Please select records to send SMS to.',
+      });
+      return;
+    }
+    setSmsItems(selectedProperties);
+    setIsSmsDialogOpen(true);
+  };
+
   const handleSendSingleSms = (property: Property) => {
       setSmsItems([property]);
       setIsSmsDialogOpen(true);
   };
+
+  const isAllFilteredSelected = filteredData.length > 0 && selectedRows.length === filteredData.length;
+  const isSomeRowsSelected = selectedRows.length > 0 && selectedRows.length < filteredData.length;
 
   if (loading) return <div className="flex h-full items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
@@ -144,8 +212,33 @@ export default function BillingPage() {
             <TabsTrigger value="pending">Pending</TabsTrigger>
             <TabsTrigger value="overdue">Overdue</TabsTrigger>
           </TabsList>
-           <div className="flex gap-2 w-full md:max-w-md">
-                <Input placeholder="Search records..." value={filter} onChange={(e) => setFilter(e.target.value)} />
+           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full">
+                <Input 
+                  placeholder="Search records..." 
+                  value={filter} 
+                  onChange={(e) => setFilter(e.target.value)} 
+                  className="w-full md:max-w-xs"
+                />
+                {selectedRows.length > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Button variant="outline" size="sm" onClick={handlePrintSelected}>
+                      <Printer className="h-4 w-4 mr-2"/>
+                      Print ({selectedRows.length})
+                    </Button>
+                    {!isViewer && (
+                      <>
+                        <Button variant="outline" size="sm" onClick={handleSendBulkSms}>
+                          <MessageSquare className="h-4 w-4 mr-2"/>
+                          Send SMS ({selectedRows.length})
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
+                          <Trash2 className="h-4 w-4 mr-2"/>
+                          Delete ({selectedRows.length})
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                )}
             </div>
         </div>
         <TabsContent value={activeTab}>
@@ -158,6 +251,13 @@ export default function BillingPage() {
                     <Table>
                         <TableHeader>
                         <TableRow>
+                            <TableHead className="w-[50px]">
+                                <Checkbox
+                                  checked={isAllFilteredSelected ? true : isSomeRowsSelected ? 'indeterminate' : false}
+                                  onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                                  aria-label="Select all rows"
+                                />
+                            </TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Owner</TableHead>
                             <TableHead>Property No</TableHead>
@@ -167,7 +267,14 @@ export default function BillingPage() {
                         </TableHeader>
                         <TableBody>
                         {paginatedData.map((row) => (
-                            <TableRow key={row.id}>
+                            <TableRow key={row.id} data-state={selectedRows.includes(row.id) ? "selected" : undefined}>
+                                <TableCell>
+                                    <Checkbox
+                                      checked={selectedRows.includes(row.id)}
+                                      onCheckedChange={(checked) => handleSelectRow(row.id, !!checked)}
+                                      aria-label={`Select row ${row.id}`}
+                                    />
+                                </TableCell>
                                 <TableCell><Badge variant={statusVariant(row.status)}>{row.status}</Badge></TableCell>
                                 <TableCell className="font-medium">{getPropertyValue(row, 'Owner Name')}</TableCell>
                                 <TableCell>{getPropertyValue(row, 'Property No')}</TableCell>
@@ -176,8 +283,14 @@ export default function BillingPage() {
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onSelect={() => handleViewBill(row, false)}><View className="mr-2 h-4 w-4" /> View Bill</DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => handleViewBill(row, true)} className="text-red-600 focus:text-red-600 focus:bg-red-50"><FileWarning className="mr-2 h-4 w-4" /> View Demand Notice</DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleViewBill(row, false)}>
+                                      <View className="mr-2 h-4 w-4" /> 
+                                      View {getPropertyValue(row, 'Type')?.toLowerCase().includes('bop') ? 'BOP' : 'Property Rate'} Bill
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleViewBill(row, true)} className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                                      <FileWarning className="mr-2 h-4 w-4" /> 
+                                      View {getPropertyValue(row, 'Type')?.toLowerCase().includes('bop') ? 'BOP' : 'Property Rate'} Demand Notice
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem onSelect={() => handleSendSingleSms(row)}><MessageSquare className="mr-2 h-4 w-4" /> Send SMS</DropdownMenuItem>
                                     {!isViewer && (
                                         <>
@@ -194,6 +307,31 @@ export default function BillingPage() {
                         </TableBody>
                     </Table>
                 </CardContent>
+                {totalPages > 1 && (
+                  <CardFooter className="flex justify-between items-center border-t pt-4">
+                    <span className="text-sm text-muted-foreground">
+                      Page {currentPage} of {totalPages} ({filteredData.length} total records)
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                      >
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </CardFooter>
+                )}
             </Card>
         </TabsContent>
       </Tabs>
