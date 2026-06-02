@@ -80,7 +80,13 @@ function getDefaultStore(): AppStore {
                 contactPhone: '0242122039/0244971784',
                 contactEmail: 'info@kwahueast.gov.gh'
             },
-            appearanceSettings: {},
+            appearanceSettings: {
+                demandNoticeCaption: 'DEMAND NOTICE',
+                billWarningText: 'PAY AT ONCE OR FACE LEGAL ACTION',
+                fontFamily: 'sans',
+                fontSize: 12,
+                accentColor: '#F1F5F9',
+            },
             integrationsSettings: {},
             paystackSettings: {
                 publicKey: '',

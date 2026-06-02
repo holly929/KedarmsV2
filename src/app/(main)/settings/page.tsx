@@ -14,7 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
 import { PrintableContent } from '@/components/bill-dialog';
-import { Loader2, Download, Type, Palette, ShieldCheck, Image as ImageIcon, Trash2, RefreshCcw, RotateCcw, ShieldAlert, History, Activity, AlertCircle, Network, Info, MessageSquare, CreditCard, Lock } from 'lucide-react';
+import { Loader2, Download, Type, Palette, ShieldCheck, Image as ImageIcon, Trash2, RefreshCcw, RotateCcw, ShieldAlert, History, Activity, AlertCircle, Network, Info, MessageSquare, CreditCard, Lock, FileWarning } from 'lucide-react';
 import { store, saveStore, clearAllTransactionsInStore, factoryResetStore } from '@/lib/store';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
@@ -51,6 +51,7 @@ const appearanceFormSchema = z.object({
   ghanaLogo: z.string().optional(),
   signature: z.string().optional(),
   billWarningText: z.string().max(200).optional(),
+  demandNoticeCaption: z.string().max(100).optional(),
   fontFamily: z.enum(['sans', 'serif', 'mono']).default('sans'),
   fontSize: z.coerce.number().min(8).max(14).default(12),
   accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color code").default('#F1F5F9'),
@@ -358,6 +359,15 @@ export default function SettingsPage() {
                       <FormItem>
                         <FormLabel>Bottom Warning Text</FormLabel>
                         <FormControl><Textarea {...field} placeholder="e.g. PAY AT ONCE OR FACE LEGAL ACTION" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+
+                    <FormField control={appearanceForm.control} name="demandNoticeCaption" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 text-red-600 font-bold"><FileWarning className="h-4 w-4" /> Demand Notice Header Caption</FormLabel>
+                        <FormControl><Input {...field} placeholder="e.g. FINAL NOTICE OF NON-PAYMENT" /></FormControl>
+                        <FormDescription>Overwrites the default "DEMAND NOTICE" text on enforcement documents.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )} />
