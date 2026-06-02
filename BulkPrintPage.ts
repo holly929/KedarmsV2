@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 
 /**
  * Consolidated BulkPrintPage React component to resolve Vercel TypeScript build errors.
- * This file formerly contained conflicting snippets and duplicate identifiers.
+ * This file replaces the previous version that contained conflicting snippets and duplicate identifiers.
  */
 
 const DemandNoticeTemplate = ({ data }: { data: any }) => (
@@ -61,7 +61,7 @@ const BulkPrintPage = () => {
     const ids = queryParams.get('ids')?.split(',') || [];
     
     const fetchNotices = async (noticeIds: string[]) => {
-        // Mock fetch for build stability; in production, this would call your API
+        // Local state mockup to prevent deployment failures while providing a template
         return noticeIds.map(id => ({
             id,
             propertyRef: `PROP-${id}`,

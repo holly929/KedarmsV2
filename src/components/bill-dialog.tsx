@@ -37,7 +37,7 @@ type AppearanceSettings = {
 };
 
 const formatToTwoDecimals = (val: any): string => {
-    if (val === undefined || val === null || String(val).trim() === '') return '0.00';
+    if (val === undefined || val === null || String(val).trim() === '' || String(val) === '0' || String(val) === '00') return '0.00';
     const cleaned = String(val).replace(/,/g, '').replace(/[^0-9.-]/g, '');
     const num = Number(cleaned);
     if (isNaN(num)) return '0.00';
@@ -113,7 +113,7 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
     const getNumericValue = useCallback((key: string): number => {
         if (!data) return 0;
         const val = getPropertyValue(data as any, key);
-        if (val === undefined || val === null || String(val).trim() === '') return 0;
+        if (val === undefined || val === null || String(val).trim() === '' || String(val) === '0' || String(val) === '00') return 0;
         const num = Number(String(val).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
         return isNaN(num) ? 0 : num;
     }, [data]);
@@ -122,12 +122,17 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
         if (!data) return '...';
         const val = getPropertyValue(data as any, valueKey);
         
-        if (val === null || val === undefined || String(val).trim() === '') return '...';
+        // Handle "0" or "00" or empty as "..." for text fields
+        const strVal = val !== null && val !== undefined ? String(val).trim() : '';
+        if (strVal === '' || strVal === '0' || strVal === '00') {
+            const isStrictlyNumeric = ['Rateable Value', 'Rate Impost', 'Total Payment', 'Arrears', 'Payment'].includes(valueKey);
+            if (!isStrictlyNumeric) return '...';
+        }
         
         const numericKeys = ['License Fee', 'Bop Amount', 'Arrears', 'Payment', 'Rateable Value', 'Rate Impost', 'Total Payment', 'Permit Fee', 'Sanitation Charged', 'Previous Balance', 'Amount Due', 'Property Rate'];
         
         if (numericKeys.some(k => valueKey.toLowerCase().includes(k.toLowerCase())) || !isNaN(Number(String(val).replace(/,/g, '').replace(/[^0-9.-]/g, '')))) {
-            const skipKeys = ['Property No', 'Account Number', 'Phone', 'S/N', 'SN'];
+            const skipKeys = ['Property No', 'Account Number', 'Phone', 'S/N', 'SN', 'Town', 'Suburb', 'Name', 'Owner'];
             if (skipKeys.some(k => valueKey.includes(k))) return String(val);
 
             const num = Number(String(val).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
@@ -143,7 +148,7 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
     const totalAmountPayable = useMemo(() => {
         if (!data) return '0.00';
         const importedTotal = getPropertyValue(data as any, 'Amount Due');
-        if (importedTotal !== undefined && importedTotal !== null && String(importedTotal).trim() !== '') {
+        if (importedTotal !== undefined && importedTotal !== null && String(importedTotal).trim() !== '' && String(importedTotal) !== '0' && String(importedTotal) !== '00') {
             return formatToTwoDecimals(importedTotal);
         }
 
@@ -176,12 +181,17 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
                         getPropertyValue(data as any, 'Business Name') || 
                         getPropertyValue(data as any, 'Name of Hotel/Guest House') || 
                         getPropertyValue(data as any, 'Entity') || '...';
-        return String(nameVal).toUpperCase();
+        
+        const strVal = String(nameVal).trim();
+        if (strVal === '0' || strVal === '00') return '...';
+        return strVal.toUpperCase();
     }, [data]);
 
     const suburbTop = useMemo(() => {
       if (!data) return '';
-      return String(getPropertyValue(data as any, 'Suburb') || '').toUpperCase();
+      const subVal = String(getPropertyValue(data as any, 'Suburb') || '').trim();
+      if (subVal === '0' || subVal === '00') return '';
+      return subVal.toUpperCase();
     }, [data]);
 
     const barcodeValue = useMemo(() => {
@@ -264,7 +274,7 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
                 <span className="text-[0.7em] font-black block text-muted-foreground tracking-widest uppercase mb-1">BILLED TO:</span>
                 <span className="font-black tracking-tight" style={{ fontSize: `${finalFontSize * 1.5}px` }}>{billedToName}</span>
                 {suburbTop && (
-                  <span className="text-[0.8em] font-bold block mt-1 tracking-wider text-muted-foreground uppercase">SUBURB: {suburbTop}</span>
+                  <span className="text-[0.8em] font-black block mt-1 tracking-wider text-black uppercase">SUBURB: {suburbTop}</span>
                 )}
             </div>
             
