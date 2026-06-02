@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react';
 
 /**
  * BulkPrintPage - Consolidated root level print component.
- * This resolves the "Duplicate identifier 'React'" error caused by redundant imports.
+ * This resolves the "Duplicate identifier 'React'" error caused by redundant imports
+ * and conflicting snippets in the previous version.
  */
 
 const DemandNoticeTemplate = ({ data }: { data: any }) => (
