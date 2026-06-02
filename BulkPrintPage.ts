@@ -3,9 +3,7 @@
 import React, { useEffect, useState } from 'react';
 
 /**
- * BulkPrintPage - Consolidated root level print component.
- * This resolves the "Duplicate identifier 'React'" error caused by redundant imports
- * and conflicting snippets in the previous version.
+ * Consolidated BulkPrintPage to resolve TypeScript build errors.
  */
 
 const DemandNoticeTemplate = ({ data }: { data: any }) => (
@@ -61,7 +59,6 @@ const BulkPrintPage = () => {
     const queryParams = new URLSearchParams(window.location.search);
     const ids = queryParams.get('ids')?.split(',') || [];
     
-    // Simulate fetching notice details
     const fetchNotices = async (noticeIds: string[]) => {
         return noticeIds.map(id => ({
             id,

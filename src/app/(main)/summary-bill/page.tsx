@@ -235,7 +235,6 @@ export default function SummaryBillPage() {
             const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null });
             if (rows.length === 0) return;
 
-            // Robust header detection
             let headerRowIndex = rows.findIndex(row => {
                 const populatedCells = (row || []).filter(cell => cell !== null && String(cell).trim() !== '').length;
                 return populatedCells >= 3;
