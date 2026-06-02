@@ -9,7 +9,7 @@ import React, { useEffect, useState } from 'react';
  */
 
 const DemandNoticeTemplate = ({ data }: { data: any }) => (
-  <div className="p-8 border-2 border-black mb-8 bg-white min-h-[297mm] flex flex-col text-black">
+  <div className="p-8 border-2 border-black mb-8 bg-white min-h-[297mm] flex flex-col text-black font-mono">
     <div className="text-center border-b-2 border-black pb-4 mb-6">
       <h1 className="text-3xl font-black tracking-widest uppercase">Demand Notice</h1>
       <p className="text-sm font-bold text-muted-foreground mt-1">Official Revenue Enforcement Document</p>
@@ -36,7 +36,7 @@ const DemandNoticeTemplate = ({ data }: { data: any }) => (
       </div>
 
       <div className="mt-12 text-center italic border-t pt-8">
-        <p className="text-sm font-bold">"LEGAL ACTION WILL BE TAKEN IF NOT PAID WITHIN 14 DAYS."</p>
+        <p className="text-sm font-bold uppercase">"Legal action will be taken if not paid within 14 days."</p>
       </div>
     </div>
     
