@@ -128,7 +128,7 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
         const idFields = ['Owner', 'Name', 'Town', 'Suburb', 'Property No', 'S/N', 'SN', 'Hotel'];
         const isIdField = idFields.some(f => valueKey.toLowerCase().includes(f.toLowerCase()));
         
-        if (isIdField && (strVal === '' || strVal === '0' || strVal === '00' || strVal === '0.0')) {
+        if (isIdField && (strVal === '' || strVal === '0' || strVal === '0.0' || strVal === '00' || strVal === '0.00')) {
             return '...';
         }
         
