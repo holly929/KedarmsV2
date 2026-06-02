@@ -14,7 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
 import { PrintableContent } from '@/components/bill-dialog';
-import { Loader2, Download, Type, Palette, ShieldCheck, Image as ImageIcon, Trash2, RefreshCcw, RotateCcw, ShieldAlert, History, Activity, AlertCircle, Network, Info, MessageSquare, CreditCard, Lock, FileWarning } from 'lucide-react';
+import { Loader2, Download, Type, Palette, ShieldCheck, Image as ImageIcon, Trash2, RefreshCcw, RotateCcw, History, Activity, AlertCircle, Network, Info, MessageSquare, CreditCard, Lock, FileWarning } from 'lucide-react';
 import { store, saveStore, clearAllTransactionsInStore, factoryResetStore } from '@/lib/store';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
@@ -599,7 +599,7 @@ export default function SettingsPage() {
 
                 <Card className="border-destructive/20 bg-destructive/[0.02]">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-destructive"><ShieldAlert className="h-5 w-5" /> System Maintenance</CardTitle>
+                        <CardTitle className="flex items-center gap-2 text-destructive"><AlertCircle className="h-5 w-5" /> System Maintenance</CardTitle>
                         <CardDescription>Destructive actions to reset or clear system data.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">

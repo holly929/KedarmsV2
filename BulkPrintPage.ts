@@ -82,7 +82,7 @@ const BulkPrintPage = () => {
 
   return (
     <div className="print-container bg-muted/20 min-h-screen p-4">
-      <style jsx global>{`
+      <style>{`
         @media print {
           .no-print { display: none; }
           .printable-notice { break-after: page; page-break-after: always; }

@@ -156,7 +156,6 @@ export default function DashboardPage() {
 
   const sortedBills = React.useMemo(() => {
     if (!bills) return [];
-    // Corrected logic to use 'generatedAt' instead of non-existent 'date'
     return [...bills].sort((a, b) => new Date(b.generatedAt).getTime() - new Date(a.generatedAt).getTime());
   }, [bills]);
   
