@@ -179,6 +179,11 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
         return String(nameVal).toUpperCase();
     }, [data]);
 
+    const suburbTop = useMemo(() => {
+      if (!data) return '';
+      return String(getPropertyValue(data as any, 'Suburb') || '').toUpperCase();
+    }, [data]);
+
     const barcodeValue = useMemo(() => {
         if (!data) return '';
         const idStr = String(getPropertyValue(data as any, 'Property No') || getPropertyValue(data as any, 'S/N') || getPropertyValue(data as any, 'SN') || data.id);
@@ -258,6 +263,9 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
             <div className="text-center py-2 mb-4 border border-black bg-black/[0.03]">
                 <span className="text-[0.7em] font-black block text-muted-foreground tracking-widest uppercase mb-1">BILLED TO:</span>
                 <span className="font-black tracking-tight" style={{ fontSize: `${finalFontSize * 1.5}px` }}>{billedToName}</span>
+                {suburbTop && (
+                  <span className="text-[0.8em] font-bold block mt-1 tracking-wider text-muted-foreground uppercase">SUBURB: {suburbTop}</span>
+                )}
             </div>
             
             <main className="border-2 border-black flex-grow">

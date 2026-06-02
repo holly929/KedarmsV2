@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 
 /**
- * Consolidated BulkPrintPage React component to resolve TypeScript build errors.
+ * Consolidated BulkPrintPage React component to resolve Vercel TypeScript build errors.
+ * This file formerly contained conflicting snippets and duplicate identifiers.
  */
 
 const DemandNoticeTemplate = ({ data }: { data: any }) => (
@@ -17,11 +18,11 @@ const DemandNoticeTemplate = ({ data }: { data: any }) => (
       <div className="grid grid-cols-2 gap-4 border-b border-dashed border-black/30 pb-4">
         <div>
           <label className="text-[10px] font-bold text-muted-foreground uppercase">Property Reference</label>
-          <p className="font-mono text-lg">{data.propertyRef}</p>
+          <p className="font-mono text-lg">{data.propertyRef || 'N/A'}</p>
         </div>
         <div>
           <label className="text-[10px] font-bold text-muted-foreground uppercase">Recipient Name</label>
-          <p className="font-bold text-lg uppercase">{data.ownerName}</p>
+          <p className="font-bold text-lg uppercase">{data.ownerName || 'VALUED RATEPAYER'}</p>
         </div>
       </div>
 
@@ -29,7 +30,7 @@ const DemandNoticeTemplate = ({ data }: { data: any }) => (
         <h3 className="text-sm font-black mb-2 uppercase tracking-tighter text-muted-foreground">Arrears Summary</h3>
         <div className="flex justify-between items-end">
           <span className="text-lg font-bold">Total Outstanding Balance:</span>
-          <span className="text-3xl font-black">GHS {data.totalAmount}</span>
+          <span className="text-3xl font-black">GHS {data.totalAmount || '0.00'}</span>
         </div>
       </div>
 
@@ -60,7 +61,7 @@ const BulkPrintPage = () => {
     const ids = queryParams.get('ids')?.split(',') || [];
     
     const fetchNotices = async (noticeIds: string[]) => {
-        // Mock fetch for build stability
+        // Mock fetch for build stability; in production, this would call your API
         return noticeIds.map(id => ({
             id,
             propertyRef: `PROP-${id}`,
