@@ -100,7 +100,7 @@ export default function SettingsPage() {
   
   const { deleteAllProperties } = usePropertyData();
   const { deleteAllBop } = useBopData();
-  const { deleteAllLicense } = useLicenseData();
+  const { deleteAll_License: deleteAllLicense } = useLicenseData();
   const { deleteAllBills } = useBillData();
   const { clearSmsLogs } = useSmsLogs();
   const clearLogs = useActivityLogClear();
