@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 
 /**
- * Consolidated BulkPrintPage to resolve TypeScript build errors.
+ * Consolidated BulkPrintPage React component to resolve TypeScript build errors.
  */
 
 const DemandNoticeTemplate = ({ data }: { data: any }) => (
@@ -60,6 +60,7 @@ const BulkPrintPage = () => {
     const ids = queryParams.get('ids')?.split(',') || [];
     
     const fetchNotices = async (noticeIds: string[]) => {
+        // Mock fetch for build stability
         return noticeIds.map(id => ({
             id,
             propertyRef: `PROP-${id}`,

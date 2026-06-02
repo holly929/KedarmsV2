@@ -172,20 +172,12 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
 
     const billedToName = useMemo(() => {
         if (!data) return '';
-
-        if (isDemandNotice) {
-            const owner = getPropertyValue(data as any, 'Owner Name') || 
-                          getPropertyValue(data as any, 'Entity');
-            if (owner) return String(owner).toUpperCase();
-        }
-
-        const nameVal = getPropertyValue(data as any, 'Name of Hotel/Guest House') || 
-                        getPropertyValue(data as any, 'Hotel Name') ||
+        const nameVal = getPropertyValue(data as any, 'Owner Name') || 
                         getPropertyValue(data as any, 'Business Name') || 
-                        getPropertyValue(data as any, 'Owner Name') || 
+                        getPropertyValue(data as any, 'Name of Hotel/Guest House') || 
                         getPropertyValue(data as any, 'Entity') || '...';
         return String(nameVal).toUpperCase();
-    }, [data, isDemandNotice]);
+    }, [data]);
 
     const barcodeValue = useMemo(() => {
         if (!data) return '';
@@ -276,10 +268,10 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
                             <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">OWNER NAME</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Owner Name')}</div></div>
                             <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">PHONE</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Phone Number')}</div></div>
                             <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">TOWN</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Town')}</div></div>
+                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">SUBURB</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Suburb')}</div></div>
                             <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">PROPERTY NO</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Property No')}</div></div>
                         </div>
                         <div className="w-[33%]">
-                            <div className="flex border-b border-black/20"><div className="w-1/2 font-bold p-1 bg-black/[0.02]">SUBURB</div><div className="w-1/2 border-l border-black/20 p-1 font-bold">{formatValue('Suburb')}</div></div>
                             <div className="flex border-b border-black/20"><div className="w-1/2 font-bold p-1 bg-black/[0.02]">TYPE</div><div className="w-1/2 border-l border-black/20 p-1">{formatValue('Property Type')}</div></div>
                             <div className="font-bold text-center p-1 bg-black/5 border-b border-black/20 text-[0.8em]">AMOUNT (GH&#8373;)</div>
                         </div>
