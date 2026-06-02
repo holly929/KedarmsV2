@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from 'react';
 
 /**
- * Consolidated BulkPrintPage component to resolve Vercel TypeScript build errors.
- * This file replaces the previous version that contained conflicting snippets and duplicate identifiers.
+ * Validated and consolidated BulkPrintPage component.
+ * This file replaces the previously malformed version to stop build-blocking duplicate identifier errors.
  */
 
 const DemandNoticeTemplate = ({ data }: { data: any }) => (

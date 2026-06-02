@@ -64,7 +64,7 @@ const getEditableSheetUrl = (originalUrl: string): string => {
 function GoogleSheetIntegrationView() {
   const [sheetUrl, setSheetUrl] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
-  const emptyStateText = "No Summary Sheet Connected";
+  const emptyStateText = "No Summary Bill Sheet Connected";
 
   React.useEffect(() => {
     setIsLoading(true);

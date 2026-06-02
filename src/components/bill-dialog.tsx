@@ -255,9 +255,7 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
                 <div className="w-3/5 text-center">
                     <h1 className="font-extrabold tracking-tight uppercase leading-none mb-1" style={{ fontSize: `${finalFontSize * 1.8}px` }}>{settingsValues.assemblyName}</h1>
                     
-                    {isDemandNotice && (
-                      <p className="text-[11px] font-black uppercase mb-1 tracking-tight border-b-2 border-black inline-block px-2">LOCAL GOVERNANCE ACT, 2016 (ACT 936)</p>
-                    )}
+                    <p className="text-[11px] font-black uppercase mb-1 tracking-tight border-b-2 border-black inline-block px-2">LOCAL GOVERNANCE ACT, 2016 (ACT 936)</p>
 
                     <p className="font-semibold text-muted-foreground" style={{ fontSize: `${finalFontSize * 1.1}px` }}>{settingsValues.postalAddress}</p>
                     <p className="font-semibold text-muted-foreground" style={{ fontSize: `${finalFontSize}px` }}>TEL: {settingsValues.contactPhone}</p>
