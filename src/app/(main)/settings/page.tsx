@@ -96,7 +96,7 @@ const DUMMY_PROPERTY = {
 export default function SettingsPage() {
   useRequirePermission();
   const [testingSms, setTestingSms] = useState(false);
-  const [testResult, setTestResult] = setTestingSms ? useState<{success: boolean, message?: string, details?: any[], error?: string, hint?: string} | null>(null) : useState(null);
+  const [testResult, setTestResult] = useState<{success: boolean, message?: string, details?: any[], error?: string, hint?: string} | null>(null);
   
   const { deleteAllProperties } = usePropertyData();
   const { deleteAllBop } = useBopData();
