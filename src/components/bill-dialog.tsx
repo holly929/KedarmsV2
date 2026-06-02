@@ -122,19 +122,18 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
         if (!data) return '...';
         const val = getPropertyValue(data as any, valueKey);
         
-        // Handle "0" or "00" or empty as "..." for text fields
         const strVal = val !== null && val !== undefined ? String(val).trim() : '';
+        // Robust check for zero placeholders in text fields
         if (strVal === '' || strVal === '0' || strVal === '00') {
-            const isStrictlyNumeric = ['Rateable Value', 'Rate Impost', 'Total Payment', 'Arrears', 'Payment'].includes(valueKey);
-            if (!isStrictlyNumeric) return '...';
+            const numericKeys = ['Rateable Value', 'Rate Impost', 'Total Payment', 'Arrears', 'Payment', 'Bop Amount', 'Sanitation Charged', 'Previous Balance', 'Amount Due', 'License Fee', 'Property Rate'];
+            if (!numericKeys.some(k => valueKey.toLowerCase().includes(k.toLowerCase()))) {
+                return '...';
+            }
         }
         
         const numericKeys = ['License Fee', 'Bop Amount', 'Arrears', 'Payment', 'Rateable Value', 'Rate Impost', 'Total Payment', 'Permit Fee', 'Sanitation Charged', 'Previous Balance', 'Amount Due', 'Property Rate'];
         
-        if (numericKeys.some(k => valueKey.toLowerCase().includes(k.toLowerCase())) || !isNaN(Number(String(val).replace(/,/g, '').replace(/[^0-9.-]/g, '')))) {
-            const skipKeys = ['Property No', 'Account Number', 'Phone', 'S/N', 'SN', 'Town', 'Suburb', 'Name', 'Owner'];
-            if (skipKeys.some(k => valueKey.includes(k))) return String(val);
-
+        if (numericKeys.some(k => valueKey.toLowerCase().includes(k.toLowerCase()))) {
             const num = Number(String(val).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
             if (!isNaN(num)) {
                 if (valueKey.toLowerCase().includes('impost')) return String(val);
@@ -142,7 +141,7 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
             }
         }
         
-        return String(val);
+        return strVal || '...';
     }, [data]);
     
     const totalAmountPayable = useMemo(() => {
@@ -176,21 +175,21 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
     }, [data, billType, getNumericValue]);
 
     const billedToName = useMemo(() => {
-        if (!data) return '';
+        if (!data) return '...';
         const nameVal = getPropertyValue(data as any, 'Owner Name') || 
                         getPropertyValue(data as any, 'Business Name') || 
                         getPropertyValue(data as any, 'Name of Hotel/Guest House') || 
                         getPropertyValue(data as any, 'Entity') || '...';
         
         const strVal = String(nameVal).trim();
-        if (strVal === '0' || strVal === '00') return '...';
+        if (strVal === '' || strVal === '0' || strVal === '00') return '...';
         return strVal.toUpperCase();
     }, [data]);
 
     const suburbTop = useMemo(() => {
       if (!data) return '';
       const subVal = String(getPropertyValue(data as any, 'Suburb') || '').trim();
-      if (subVal === '0' || subVal === '00') return '';
+      if (subVal === '' || subVal === '0' || subVal === '00') return '';
       return subVal.toUpperCase();
     }, [data]);
 
@@ -256,7 +255,12 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
                     <h1 className="font-extrabold tracking-tight uppercase leading-none mb-1" style={{ fontSize: `${finalFontSize * 1.8}px` }}>{settingsValues.assemblyName}</h1>
                     <p className="font-semibold text-muted-foreground" style={{ fontSize: `${finalFontSize * 1.1}px` }}>{settingsValues.postalAddress}</p>
                     <p className="font-semibold text-muted-foreground" style={{ fontSize: `${finalFontSize}px` }}>TEL: {settingsValues.contactPhone}</p>
-                    <div className={cn("mt-3 inline-block px-4 py-1 border-2 border-black font-black tracking-[0.2em] uppercase", isDemandNotice ? "bg-red-600 text-white border-red-700" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 1.4}px` }}>
+                    
+                    {isDemandNotice && (
+                      <p className="text-[10px] font-black uppercase mt-1 tracking-tight">IN ACCORDANCE WITH THE LOCAL GOVERNANCE ACT, 2016 (ACT 936)</p>
+                    )}
+
+                    <div className={cn("mt-2 inline-block px-4 py-1 border-2 border-black font-black tracking-[0.2em] uppercase", isDemandNotice ? "bg-red-600 text-white border-red-700" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 1.4}px` }}>
                       {isDemandNotice 
                         ? (settings.appearance?.demandNoticeCaption || 'DEMAND NOTICE') 
                         : 'PROPERTY RATE & B.O.P BILL'}
@@ -274,7 +278,7 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
                 <span className="text-[0.7em] font-black block text-muted-foreground tracking-widest uppercase mb-1">BILLED TO:</span>
                 <span className="font-black tracking-tight" style={{ fontSize: `${finalFontSize * 1.5}px` }}>{billedToName}</span>
                 {suburbTop && (
-                  <span className="text-[0.8em] font-black block mt-1 tracking-wider text-black uppercase">SUBURB: {suburbTop}</span>
+                  <span className="text-[0.9em] font-black block mt-1 tracking-wider text-black uppercase">SUBURB: {suburbTop}</span>
                 )}
             </div>
             
@@ -283,11 +287,11 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
                   <>
                     <div className="flex border-b-2 border-black">
                         <div className="w-[67%] border-r-2 border-black">
-                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">OWNER NAME</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Owner Name')}</div></div>
+                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">OWNER NAME</div><div className="w-2/3 border-l border-black/20 p-1 font-bold">{formatValue('Owner Name')}</div></div>
                             <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">PHONE</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Phone Number')}</div></div>
                             <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">TOWN</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Town')}</div></div>
-                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">SUBURB</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Suburb')}</div></div>
-                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">PROPERTY NO</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Property No')}</div></div>
+                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">SUBURB</div><div className="w-2/3 border-l border-black/20 p-1 font-bold">{formatValue('Suburb')}</div></div>
+                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">PROPERTY NO</div><div className="w-2/3 border-l border-black/20 p-1 font-mono">{formatValue('Property No')}</div></div>
                         </div>
                         <div className="w-[33%]">
                             <div className="flex border-b border-black/20"><div className="w-1/2 font-bold p-1 bg-black/[0.02]">TYPE</div><div className="w-1/2 border-l border-black/20 p-1">{formatValue('Property Type')}</div></div>
@@ -328,7 +332,7 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
                   <>
                     <div className="flex border-b-2 border-black">
                         <div className="w-[67%] border-r-2 border-black">
-                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">BUSINESS</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Business Name')}</div></div>
+                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">BUSINESS</div><div className="w-2/3 border-l border-black/20 p-1 font-bold">{formatValue('Business Name')}</div></div>
                             <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">OWNER</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Owner Name')}</div></div>
                         </div>
                         <div className="w-[33%]">
@@ -360,8 +364,8 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
                   <>
                     <div className="flex border-b-2 border-black">
                         <div className="w-[67%] border-r-2 border-black">
-                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">SN</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('S/N')}</div></div>
-                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">HOTEL</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Name of Hotel/Guest House')}</div></div>
+                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">SN</div><div className="w-2/3 border-l border-black/20 p-1 font-mono">{formatValue('S/N')}</div></div>
+                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">HOTEL</div><div className="w-2/3 border-l border-black/20 p-1 font-bold">{formatValue('Name of Hotel/Guest House')}</div></div>
                             <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">OWNER</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Owner Name')}</div></div>
                         </div>
                         <div className="w-[33%]">

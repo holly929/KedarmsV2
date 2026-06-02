@@ -11,6 +11,7 @@ const DemandNoticeTemplate = ({ data }: { data: any }) => (
   <div className="p-8 border-2 border-black mb-8 bg-white min-h-[297mm] flex flex-col text-black font-mono">
     <div className="text-center border-b-2 border-black pb-4 mb-6">
       <h1 className="text-3xl font-black tracking-widest uppercase">Demand Notice</h1>
+      <p className="text-xs font-bold uppercase mt-1">Local Governance Act, 2016 (Act 936)</p>
       <p className="text-sm font-bold text-muted-foreground mt-1">Official Revenue Enforcement Document</p>
     </div>
     
@@ -61,7 +62,7 @@ const BulkPrintPage = () => {
     const ids = queryParams.get('ids')?.split(',') || [];
     
     const fetchNotices = async (noticeIds: string[]) => {
-        // Local state mockup to prevent deployment failures while providing a template
+        // Local state mockup for batch printing
         return noticeIds.map(id => ({
             id,
             propertyRef: `PROP-${id}`,
