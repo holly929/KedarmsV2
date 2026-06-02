@@ -388,7 +388,7 @@ export default function SettingsPage() {
                     <div className="scale-[0.5] sm:scale-[0.6] origin-top py-8">
                         <div className="w-[210mm] min-h-[297mm] mx-auto bg-white shadow-2xl">
                              <PrintableContent 
-                                property={DUMMY_PROPERTY as any}
+                                data={DUMMY_PROPERTY as any}
                                 settings={{
                                     general: generalValues,
                                     appearance: appearanceValues

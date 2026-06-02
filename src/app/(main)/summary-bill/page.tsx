@@ -480,39 +480,42 @@ export default function SummaryBillPage() {
     </div>
   )
 
-  const renderEmptyState = () => (
-     <div 
-        className="relative"
-        onDragEnter={handleDragEnter}
-        onDragOver={handleDragEvents}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        {(isDragging || importStatus.inProgress) && (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm rounded-lg border-2 border-dashed border-primary">
-            {importStatus.inProgress ? (
-                 <div className="flex flex-col items-center text-center p-4">
-                    <Loader2 className="h-12 w-12 animate-spin text-primary mb-4"/>
-                    <p className="text-lg font-medium text-foreground">Importing data...</p>
-                    <p className="text-sm text-muted-foreground">Please wait while we process your file.</p>
+  const renderEmptyState = () => {
+     const emptyStateText = "No Summary Data Imported";
+     return (
+        <div 
+            className="relative"
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragEvents}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+        >
+            {(isDragging || importStatus.inProgress) && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm rounded-lg border-2 border-dashed border-primary">
+                {importStatus.inProgress ? (
+                    <div className="flex flex-col items-center text-center p-4">
+                        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4"/>
+                        <p className="text-lg font-medium text-foreground">Importing data...</p>
+                        <p className="text-sm text-muted-foreground">Please wait while we process your file.</p>
+                    </div>
+                ) : (
+                    <>
+                    <UploadCloud className="h-12 w-12 text-primary mb-4"/>
+                    <p className="text-lg font-medium text-foreground">Drop your Excel file here</p>
+                    </>
+                )}
                 </div>
-            ) : (
-                <>
-                <UploadCloud className="h-12 w-12 text-primary mb-4"/>
-                <p className="text-lg font-medium text-foreground">Drop your Excel file here</p>
-                </>
             )}
+            <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center h-[calc(100vh-20rem)]">
+                <UploadCloud className="h-12 w-12 text-muted-foreground" />
+                <h3 className="mt-4 text-lg font-semibold">{emptyStateText}</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                Drag and drop an Excel file here or use the import button to get started.
+                </p>
             </div>
-        )}
-        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center h-[calc(100vh-20rem)]">
-            <UploadCloud className="h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">Import Your Summary Data</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Drag and drop an Excel file here or use the import button to get started.
-            </p>
         </div>
-     </div>
-  )
+     );
+  }
 
   return (
     <>
