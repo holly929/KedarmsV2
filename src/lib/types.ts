@@ -162,7 +162,7 @@ export interface RevenueByPropertyType {
   revenue: number;
 }
 
-export type RevenueData = {
+export interface RevenueData {
   month: string;
   revenue: number;
-};
+}
