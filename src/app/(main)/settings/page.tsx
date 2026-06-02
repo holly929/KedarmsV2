@@ -96,7 +96,7 @@ const DUMMY_PROPERTY = {
 export default function SettingsPage() {
   useRequirePermission();
   const [testingSms, setTestingSms] = useState(false);
-  const [testResult, setTestResult] = useState<{success: boolean, message?: string, details?: any[], error?: string, hint?: string} | null>(null);
+  const [testResult, setTestResult] = setTestingSms ? useState<{success: boolean, message?: string, details?: any[], error?: string, hint?: string} | null>(null) : useState(null);
   
   const { deleteAllProperties } = usePropertyData();
   const { deleteAllBop } = useBopData();
@@ -520,7 +520,7 @@ export default function SettingsPage() {
                             </CardHeader>
                             <CardContent className="p-3">
                                 <div className="space-y-2">
-                                    {testResult.details?.map((res, i) => (
+                                    {testResult.details?.map((res: any, i: number) => (
                                         <div key={i} className="flex justify-between items-center text-[10px] font-mono border-b pb-1 last:border-0">
                                             <div className="flex justify-between w-full">
                                                 <div className="flex flex-col">
