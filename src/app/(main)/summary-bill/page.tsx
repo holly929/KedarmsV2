@@ -104,8 +104,17 @@ function GoogleSheetIntegrationView() {
               <AlertDescription>
                 To interact with the sheet, you must be logged into the correct Google account in this browser. If it doesn&apos;t load, try opening it in a new tab first, then refresh this page.
               </AlertDescription>
-            <div className="aspect-video w-full rounded-lg border">
-              <iframe src={sheetUrl} className="w-full h-full" frameBorder="0" title="Embedded Google Sheet" sandbox="allow-scripts allow-same-origin allow-forms allow-popups">Loading...</iframe>
+            </Alert>
+            <div className="aspect-video w-full rounded-lg border overflow-hidden">
+              <iframe 
+                src={sheetUrl} 
+                className="w-full h-full" 
+                frameBorder="0" 
+                title="Embedded Google Sheet" 
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+              >
+                Loading...
+              </iframe>
             </div>
           </div>
         ) : (
