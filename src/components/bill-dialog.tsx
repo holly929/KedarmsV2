@@ -278,7 +278,7 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
                 <span className="text-[0.7em] font-black block text-muted-foreground tracking-widest uppercase mb-1">BILLED TO:</span>
                 <span className="font-black tracking-tight" style={{ fontSize: `${finalFontSize * 1.5}px` }}>{billedToName}</span>
                 {suburbDisplay && (
-                  <span className="text-[1.1em] font-black block mt-1 tracking-wider text-black uppercase">SUBURB: {suburbDisplay}</span>
+                  <span className="text-[1.2em] font-black block mt-1 tracking-wider text-black uppercase">SUBURB: {suburbDisplay}</span>
                 )}
             </div>
             
