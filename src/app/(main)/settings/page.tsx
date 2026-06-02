@@ -419,7 +419,7 @@ export default function SettingsPage() {
                                     <FormItem>
                                         <FormLabel>Public Key</FormLabel>
                                         <FormControl><Input placeholder="pk_live_..." {...field} /></FormControl>
-                                        <FormDescription>Available in your Paystack Dashboard under Settings &gt; API Keys.</FormDescription>
+                                        <FormDescription>Available in your Paystack Dashboard under Settings &amp; API Keys.</FormDescription>
                                     </FormItem>
                                 )} />
                                 <FormField control={paymentForm.control} name="secretKey" render={({ field }) => (

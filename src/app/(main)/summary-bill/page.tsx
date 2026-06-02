@@ -90,10 +90,10 @@ function GoogleSheetIntegrationView() {
               <Printer className="h-4 w-4" />
               <AlertTitle>How to Print</AlertTitle>
               <AlertDescription>
-                To print your data with the app&apos;s formatting, please follow these steps:
+                To print your data with the app's formatting, please follow these steps:
                 <ol className="list-decimal list-inside mt-2 space-y-1">
                   <li>In the Google Sheet below, go to <strong>File &gt; Download &gt; Microsoft Excel (.xlsx)</strong>.</li>
-                  <li>Switch to the &quot;Upload Excel&quot; tab on this page.</li>
+                  <li>Switch to the "Upload Excel" tab on this page.</li>
                   <li>Upload the downloaded file. You will then be able to print it.</li>
                 </ol>
               </AlertDescription>
@@ -102,7 +102,7 @@ function GoogleSheetIntegrationView() {
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Having trouble viewing or editing?</AlertTitle>
               <AlertDescription>
-                To interact with the sheet, you must be logged into the correct Google account in this browser. If it doesn&apos;t load, try opening it in a new tab first, then refresh this page.
+                To interact with the sheet, you must be logged into the correct Google account in this browser. If it doesn't load, try opening it in a new tab first, then refresh this page.
               </AlertDescription>
             </Alert>
             <div className="aspect-video w-full rounded-lg border overflow-hidden">

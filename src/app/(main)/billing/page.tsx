@@ -322,7 +322,7 @@ export default function BillingPage() {
           </Card>
         </div>
 
-        <TabsContent value={activeTab}>
+        <TabsContent value="all">
             <Card>
                 <CardHeader>
                 <CardTitle>Properties</CardTitle>
