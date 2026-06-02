@@ -90,7 +90,7 @@ function GoogleSheetIntegrationView() {
               <Printer className="h-4 w-4" />
               <AlertTitle>How to Print</AlertTitle>
               <AlertDescription>
-                To print your data with the app's formatting, please follow these steps:
+                To print your data with the app&apos;s formatting, please follow these steps:
                 <ol className="list-decimal list-inside mt-2 space-y-1">
                   <li>In the Google Sheet below, go to <strong>File &gt; Download &gt; Microsoft Excel (.xlsx)</strong>.</li>
                   <li>Switch to the &quot;Upload Excel&quot; tab on this page.</li>

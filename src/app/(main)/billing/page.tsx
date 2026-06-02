@@ -13,6 +13,7 @@ import {
   Banknote,
   FileWarning,
   MapPin,
+  Search,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -250,12 +251,15 @@ export default function BillingPage() {
             </TabsList>
             
             <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
-                <Input 
-                    placeholder="Search records..." 
-                    value={filter} 
-                    onChange={(e) => setFilter(e.target.value)} 
-                    className="w-full md:max-w-xs"
-                />
+                <div className="relative">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Search town, suburb or owner..." 
+                        value={filter} 
+                        onChange={(e) => setFilter(e.target.value)} 
+                        className="pl-8 w-full md:max-w-xs"
+                    />
+                </div>
                 {selectedRows.length > 0 && (
                     <div className="flex items-center gap-2 flex-wrap">
                     <Button variant="outline" size="sm" onClick={handlePrintSelected}>

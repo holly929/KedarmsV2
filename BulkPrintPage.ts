@@ -1,14 +1,10 @@
 'use client';
 
 /**
- * Validated and consolidated root-level stub.
- * This file replaces any malformed or duplicate versions to resolve build-blocking TypeScript errors.
+ * Validated root-level stub to resolve build-blocking TypeScript errors.
+ * Replaces any malformed versions that were causing 'Duplicate identifier' issues.
  */
 
-import React from 'react';
-
-const RootBulkPrintStub = () => {
+export default function RootBulkPrintStub() {
     return null;
-};
-
-export default RootBulkPrintStub;
+}
