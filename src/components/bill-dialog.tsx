@@ -222,7 +222,7 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
         const totalBillValue = totalThisYearValue + pbValue;
 
         const pfValue = getNumericValue('Permit Fee');
-        const bopTotalDueValue = pfValue + getNumericValue('Arrears');
+        const bopTotalDueValue = (pfValue + getNumericValue('Arrears'));
 
         const lfValue = getNumericValue('Property Rate');
         const licenseBopValue = getNumericValue('Bop Amount');
@@ -245,14 +245,14 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
               )}
           </div>
           <div className="relative z-10 flex flex-col flex-grow">
-            <header className="flex justify-between items-start mb-4 border-b-2 border-black pb-2">
+            <header className="flex justify-between items-start mb-4 border-b-2 border-black pb-2 text-center">
                 <div className="w-1/5 flex justify-start items-center">
                     {settings.appearance?.ghanaLogo && (
                         /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={settings.appearance.ghanaLogo} alt="Ghana Coat of Arms" style={{ objectFit: 'contain', width: isCompact ? '65px' : '85px', height: 'auto' }} />
                     )}
                 </div>
-                <div className="w-3/5 text-center">
+                <div className="w-3/5">
                     <h1 className="font-extrabold tracking-tight uppercase leading-none mb-1" style={{ fontSize: `${finalFontSize * 1.8}px` }}>{settingsValues.assemblyName}</h1>
                     
                     <p className="text-[11px] font-black uppercase mb-1 tracking-tight border-b-2 border-black inline-block px-2">LOCAL GOVERNANCE ACT, 2016 (ACT 936)</p>

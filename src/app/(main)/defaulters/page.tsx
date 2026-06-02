@@ -1,8 +1,8 @@
-
 'use client';
 
 import * as React from 'react';
-import { Download, Loader2, MessageSquare, Trash2, Home, Store, AlertTriangle, Users, Hotel } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Download, Loader2, MessageSquare, Trash2, Home, Store, AlertTriangle, Users, Printer, FileWarning, MapPin } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePropertyData } from '@/context/PropertyDataContext';
 import { useBopData } from '@/context/BopDataContext';
 import { useLicenseData } from '@/context/LicenseDataContext';
@@ -144,8 +145,8 @@ function DefaulterList<T extends Property | Bop | License>({ data, headers, isMo
                 const b = item as Bop;
                 const permitFee = Number(getPropertyValue(b, 'Permit Fee')) || 0;
                 const payment = Number(getPropertyValue(b, 'Payment')) || 0;
-                const outstanding = permitFee > payment ? permitFee - payment : 0;
-                return acc + outstanding;
+                const outstanding = (permitFee + (Number(getPropertyValue(b, 'Arrears')) || 0)) - payment;
+                return acc + (outstanding > 0 ? outstanding : 0);
             } else {
                 const l = item as License;
                 const rate = Number(getPropertyValue(l, 'Property Rate')) || 0;
@@ -362,14 +363,17 @@ function DefaulterList<T extends Property | Bop | License>({ data, headers, isMo
 }
 
 export default function DefaultersPage() {
+  const router = useRouter();
   const { properties, headers: propertyHeaders, deleteProperties } = usePropertyData();
   const { bopData, headers: bopHeaders, deleteBops } = useBopData();
   const { licenseData, headers: licenseHeaders, deleteLicenses } = useLicenseData();
   const { user: authUser } = useAuth();
   const isViewer = authUser?.role === 'Viewer';
   const isMobile = useIsMobile();
-  const [loading, setLoading] = React.useState(false);
+  const { toast } = useToast();
 
+  const [selectedTown, setSelectedTown] = React.useState('all');
+  const [selectedSuburb, setSelectedSuburb] = React.useState('all');
 
   const propertyDefaulters = React.useMemo<PropertyWithStatus[]>(() => {
     return properties
@@ -389,19 +393,96 @@ export default function DefaultersPage() {
       .filter(l => l.status === 'Overdue' || l.status === 'Pending');
   }, [licenseData]);
 
-  if (loading) {
-    return (
-        <div className="flex h-full items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-    );
-  }
+  const towns = React.useMemo(() => {
+    const set = new Set<string>();
+    properties.forEach(p => {
+        const t = getPropertyValue(p, 'Town');
+        if (t) set.add(String(t).trim().toUpperCase());
+    });
+    return Array.from(set).sort();
+  }, [properties]);
+
+  const suburbs = React.useMemo(() => {
+    const set = new Set<string>();
+    properties.forEach(p => {
+        const t = getPropertyValue(p, 'Town');
+        const s = getPropertyValue(p, 'Suburb');
+        if (s && (selectedTown === 'all' || String(t).trim().toUpperCase() === selectedTown)) {
+            set.add(String(s).trim().toUpperCase());
+        }
+    });
+    return Array.from(set).sort();
+  }, [properties, selectedTown]);
+
+  const filteredForBulk = React.useMemo(() => {
+      return propertyDefaulters.filter(p => {
+          const townMatch = selectedTown === 'all' || String(getPropertyValue(p, 'Town')).trim().toUpperCase() === selectedTown;
+          const suburbMatch = selectedSuburb === 'all' || String(getPropertyValue(p, 'Suburb')).trim().toUpperCase() === selectedSuburb;
+          return townMatch && suburbMatch;
+      });
+  }, [propertyDefaulters, selectedTown, selectedSuburb]);
+
+  const handleBulkPrintDemand = () => {
+    if (filteredForBulk.length === 0) {
+        toast({ variant: 'destructive', title: 'No Records', description: 'No defaulters found for the selected location.' });
+        return;
+    }
+    localStorage.setItem('selectedPropertiesForPrinting', JSON.stringify(filteredForBulk));
+    localStorage.setItem('printDemandMode', 'true');
+    localStorage.setItem('printNoticeType', 'PROPERTY_RATE');
+    router.push('/properties/print-preview');
+  };
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight font-headline">Defaulters</h1>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <h1 className="text-3xl font-bold tracking-tight font-headline">Defaulters & Enforcement</h1>
       </div>
+
+      <Card className="border-red-200 bg-red-50/10">
+        <CardHeader className="pb-3">
+            <div className="flex items-center gap-2 text-red-600">
+                <FileWarning className="h-5 w-5" />
+                <CardTitle className="text-lg">Batch Demand Notices</CardTitle>
+            </div>
+            <CardDescription>Filter by location to print demand notices for all matching defaulters.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col md:flex-row items-end gap-4">
+            <div className="grid gap-2 flex-1">
+                <label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
+                    <MapPin className="h-3 w-3" /> Town
+                </label>
+                <Select value={selectedTown} onValueChange={(v) => { setSelectedTown(v); setSelectedSuburb('all'); }}>
+                    <SelectTrigger className="bg-background">
+                        <SelectValue placeholder="All Towns" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Towns</SelectItem>
+                        {towns.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="grid gap-2 flex-1">
+                <label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
+                    <MapPin className="h-3 w-3" /> Suburb
+                </label>
+                <Select value={selectedSuburb} onValueChange={setSelectedSuburb}>
+                    <SelectTrigger className="bg-background">
+                        <SelectValue placeholder="All Suburbs" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Suburbs</SelectItem>
+                        {suburbs.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </div>
+            <Button className="bg-red-600 hover:bg-red-700 h-10 px-8" onClick={handleBulkPrintDemand}>
+                <Printer className="mr-2 h-4 w-4" />
+                Print {filteredForBulk.length} Demand Notices
+            </Button>
+        </CardContent>
+      </Card>
+
       <Tabs defaultValue="properties" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="properties">
