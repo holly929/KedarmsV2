@@ -123,20 +123,21 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
         const val = getPropertyValue(data as any, valueKey);
         
         const strVal = val !== null && val !== undefined ? String(val).trim() : '';
-        // Robust check for zero placeholders in text fields
-        if (strVal === '' || strVal === '0' || strVal === '00') {
-            const numericKeys = ['Rateable Value', 'Rate Impost', 'Total Payment', 'Arrears', 'Payment', 'Bop Amount', 'Sanitation Charged', 'Previous Balance', 'Amount Due', 'License Fee', 'Property Rate'];
-            if (!numericKeys.some(k => valueKey.toLowerCase().includes(k.toLowerCase()))) {
-                return '...';
-            }
+        
+        // Handle placeholders like "0", "00", or empty strings for identity fields
+        const idFields = ['Owner', 'Name', 'Town', 'Suburb', 'Property No', 'S/N', 'SN', 'Hotel'];
+        const isIdField = idFields.some(f => valueKey.toLowerCase().includes(f.toLowerCase()));
+        
+        if (isIdField && (strVal === '' || strVal === '0' || strVal === '00' || strVal === '0.0')) {
+            return '...';
         }
         
         const numericKeys = ['License Fee', 'Bop Amount', 'Arrears', 'Payment', 'Rateable Value', 'Rate Impost', 'Total Payment', 'Permit Fee', 'Sanitation Charged', 'Previous Balance', 'Amount Due', 'Property Rate'];
         
         if (numericKeys.some(k => valueKey.toLowerCase().includes(k.toLowerCase()))) {
-            const num = Number(String(val).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
+            const num = Number(strVal.replace(/,/g, '').replace(/[^0-9.-]/g, ''));
             if (!isNaN(num)) {
-                if (valueKey.toLowerCase().includes('impost')) return String(val);
+                if (valueKey.toLowerCase().includes('impost')) return strVal;
                 return formatToTwoDecimals(num);
             }
         }
@@ -182,14 +183,14 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
                         getPropertyValue(data as any, 'Entity') || '...';
         
         const strVal = String(nameVal).trim();
-        if (strVal === '' || strVal === '0' || strVal === '00') return '...';
+        if (strVal === '' || strVal === '0' || strVal === '00' || strVal === '0.0') return '...';
         return strVal.toUpperCase();
     }, [data]);
 
     const suburbTop = useMemo(() => {
       if (!data) return '';
       const subVal = String(getPropertyValue(data as any, 'Suburb') || '').trim();
-      if (subVal === '' || subVal === '0' || subVal === '00') return '';
+      if (subVal === '' || subVal === '0' || subVal === '00' || subVal === '0.0') return '';
       return subVal.toUpperCase();
     }, [data]);
 
@@ -253,13 +254,14 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
                 </div>
                 <div className="w-3/5 text-center">
                     <h1 className="font-extrabold tracking-tight uppercase leading-none mb-1" style={{ fontSize: `${finalFontSize * 1.8}px` }}>{settingsValues.assemblyName}</h1>
+                    
+                    {isDemandNotice && (
+                      <p className="text-[11px] font-black uppercase mb-1 tracking-tight border-b-2 border-black inline-block px-2">LOCAL GOVERNANCE ACT, 2016 (ACT 936)</p>
+                    )}
+
                     <p className="font-semibold text-muted-foreground" style={{ fontSize: `${finalFontSize * 1.1}px` }}>{settingsValues.postalAddress}</p>
                     <p className="font-semibold text-muted-foreground" style={{ fontSize: `${finalFontSize}px` }}>TEL: {settingsValues.contactPhone}</p>
                     
-                    {isDemandNotice && (
-                      <p className="text-[10px] font-black uppercase mt-1 tracking-tight">IN ACCORDANCE WITH THE LOCAL GOVERNANCE ACT, 2016 (ACT 936)</p>
-                    )}
-
                     <div className={cn("mt-2 inline-block px-4 py-1 border-2 border-black font-black tracking-[0.2em] uppercase", isDemandNotice ? "bg-red-600 text-white border-red-700" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 1.4}px` }}>
                       {isDemandNotice 
                         ? (settings.appearance?.demandNoticeCaption || 'DEMAND NOTICE') 
@@ -278,7 +280,7 @@ export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, {
                 <span className="text-[0.7em] font-black block text-muted-foreground tracking-widest uppercase mb-1">BILLED TO:</span>
                 <span className="font-black tracking-tight" style={{ fontSize: `${finalFontSize * 1.5}px` }}>{billedToName}</span>
                 {suburbTop && (
-                  <span className="text-[0.9em] font-black block mt-1 tracking-wider text-black uppercase">SUBURB: {suburbTop}</span>
+                  <span className="text-[1.1em] font-black block mt-1 tracking-wider text-black uppercase">SUBURB: {suburbTop}</span>
                 )}
             </div>
             

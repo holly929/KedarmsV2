@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 
 /**
- * Consolidated BulkPrintPage React component to resolve Vercel TypeScript build errors.
+ * Consolidated BulkPrintPage component to resolve Vercel TypeScript build errors.
  * This file replaces the previous version that contained conflicting snippets and duplicate identifiers.
  */
 
@@ -11,7 +11,7 @@ const DemandNoticeTemplate = ({ data }: { data: any }) => (
   <div className="p-8 border-2 border-black mb-8 bg-white min-h-[297mm] flex flex-col text-black font-mono">
     <div className="text-center border-b-2 border-black pb-4 mb-6">
       <h1 className="text-3xl font-black tracking-widest uppercase">Demand Notice</h1>
-      <p className="text-xs font-bold uppercase mt-1">Local Governance Act, 2016 (Act 936)</p>
+      <p className="text-sm font-black uppercase mt-1">LOCAL GOVERNANCE ACT, 2016 (ACT 936)</p>
       <p className="text-sm font-bold text-muted-foreground mt-1">Official Revenue Enforcement Document</p>
     </div>
     
@@ -19,11 +19,11 @@ const DemandNoticeTemplate = ({ data }: { data: any }) => (
       <div className="grid grid-cols-2 gap-4 border-b border-dashed border-black/30 pb-4">
         <div>
           <label className="text-[10px] font-bold text-muted-foreground uppercase">Property Reference</label>
-          <p className="font-mono text-lg">{data.propertyRef || 'N/A'}</p>
+          <p className="font-mono text-lg">{data.propertyRef || '...'}</p>
         </div>
         <div>
           <label className="text-[10px] font-bold text-muted-foreground uppercase">Recipient Name</label>
-          <p className="font-bold text-lg uppercase">{data.ownerName || 'VALUED RATEPAYER'}</p>
+          <p className="font-bold text-lg uppercase">{data.ownerName || '...'}</p>
         </div>
       </div>
 
@@ -62,7 +62,7 @@ const BulkPrintPage = () => {
     const ids = queryParams.get('ids')?.split(',') || [];
     
     const fetchNotices = async (noticeIds: string[]) => {
-        // Local state mockup for batch printing
+        // Mock data logic for batch print testing
         return noticeIds.map(id => ({
             id,
             propertyRef: `PROP-${id}`,
