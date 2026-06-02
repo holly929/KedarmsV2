@@ -1,6 +1,6 @@
 'use client';
 
-import * as React from 'react';
+import { useRef, useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   FileUp,
@@ -62,11 +62,11 @@ const getEditableSheetUrl = (originalUrl: string): string => {
 
 
 function GoogleSheetIntegrationView() {
-  const [sheetUrl, setSheetUrl] = React.useState<string | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [sheetUrl, setSheetUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const emptyStateText = "No Summary Bill Sheet Connected";
 
-  React.useEffect(() => {
+  useEffect(() => {
     setIsLoading(true);
     const integrationsSettings = store.settings.integrationsSettings;
     if (integrationsSettings && integrationsSettings.summaryBillGoogleSheetUrl) {
@@ -136,33 +136,33 @@ export default function SummaryBillPage() {
   useRequirePermission();
   const { toast } = useToast();
   const router = useRouter();
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { user: authUser } = useAuth();
   const isViewer = authUser?.role === 'Viewer';
 
   const { workbook, setWorkbook, deleteAllSummaryBills } = useSummaryBillData();
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = useState(true);
   
-  const [selectedSheet, setSelectedSheet] = React.useState<string>('');
-  const [filter, setFilter] = React.useState('');
-  const [currentPage, setCurrentPage] = React.useState(1);
+  const [selectedSheet, setSelectedSheet] = useState<string>('');
+  const [filter, setFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const isMobile = useIsMobile();
 
-  const [importStatus, setImportStatus] = React.useState<{
+  const [importStatus, setImportStatus] = useState<{
     inProgress: boolean;
   }>({ inProgress: false });
 
-  const [isDragging, setIsDragging] = React.useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const sheetNames = React.useMemo(() => Object.keys(workbook), [workbook]);
-  const currentSheetData = React.useMemo(() => workbook[selectedSheet]?.data || [], [workbook, selectedSheet]);
-  const currentHeaders = React.useMemo(() => workbook[selectedSheet]?.headers || [], [workbook, selectedSheet]);
+  const sheetNames = useMemo(() => Object.keys(workbook), [workbook]);
+  const currentSheetData = useMemo(() => workbook[selectedSheet]?.data || [], [workbook, selectedSheet]);
+  const currentHeaders = useMemo(() => workbook[selectedSheet]?.headers || [], [workbook, selectedSheet]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setLoading(false);
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (sheetNames.length > 0 && !selectedSheet) {
       setSelectedSheet(sheetNames[0]);
     } else if (sheetNames.length === 0 && selectedSheet) {
@@ -171,7 +171,7 @@ export default function SummaryBillPage() {
   }, [sheetNames, selectedSheet]);
 
 
-  const filteredData = React.useMemo(() => {
+  const filteredData = useMemo(() => {
     if (!filter) return currentSheetData;
     return currentSheetData.filter((row) =>
       Object.values(row).some((value) =>
@@ -182,14 +182,14 @@ export default function SummaryBillPage() {
   
   const totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE);
 
-  const paginatedData = React.useMemo(() => {
+  const paginatedData = useMemo(() => {
     return filteredData.slice(
       (currentPage - 1) * ROWS_PER_PAGE,
       currentPage * ROWS_PER_PAGE
     );
   }, [filteredData, currentPage]);
   
-  React.useEffect(() => {
+  useEffect(() => {
     setCurrentPage(1);
   }, [filter, selectedSheet]);
 

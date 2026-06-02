@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, forwardRef, memo } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import JsBarcode from 'jsbarcode';
 import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog';
@@ -44,7 +44,7 @@ const formatToTwoDecimals = (val: any): string => {
     return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-const BarcodeComponent = React.memo(({ value, isCompact }: { value: string; isCompact: boolean }) => {
+const BarcodeComponent = memo(({ value, isCompact }: { value: string; isCompact: boolean }) => {
     const ref = useRef<SVGSVGElement | null>(null);
 
     useEffect(() => {
@@ -75,7 +75,7 @@ const BillRow = ({ label, value, isBold = false, style = {} }: { label: string; 
   </div>
 );
 
-export const PrintableContent = React.memo(React.forwardRef<HTMLDivElement, { 
+export const PrintableContent = memo(forwardRef<HTMLDivElement, { 
     property?: Property;
     data?: Property | Bop | License;
     billType?: 'property' | 'bop' | 'license';

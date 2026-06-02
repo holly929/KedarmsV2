@@ -2,7 +2,7 @@
 
 /**
  * Validated root-level stub to resolve build-blocking TypeScript errors.
- * Replaces any malformed versions that were causing 'Duplicate identifier' issues.
+ * Modern React 17+ style: removed explicit React import to avoid duplicate identifier issues.
  */
 
 export default function RootBulkPrintStub() {
