@@ -10,9 +10,9 @@ import {
   FilePenLine,
   Loader2,
   MessageSquare,
-  CreditCard,
   Banknote,
   FileWarning,
+  MapPin,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +37,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Property } from '@/lib/types';
 import type { PropertyWithStatus, BillStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -72,6 +73,8 @@ export default function BillingPage() {
   const [loading, setLoading] = React.useState(true);
   const [filter, setFilter] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('all');
+  const [selectedTown, setSelectedTown] = React.useState('all');
+  const [selectedSuburb, setSelectedSuburb] = React.useState('all');
   const [editingProperty, setEditingProperty] = React.useState<Property | null>(null);
   const [paymentItem, setPaymentItem] = React.useState<Property | null>(null);
   const [smsItems, setSmsItems] = React.useState<Property[]>([]);
@@ -135,6 +138,27 @@ export default function BillingPage() {
     return properties.filter(row => selectedRows.includes(row.id));
   }, [properties, selectedRows]);
 
+  const towns = React.useMemo(() => {
+    const set = new Set<string>();
+    properties.forEach(p => {
+        const t = getPropertyValue(p, 'Town');
+        if (t) set.add(String(t).trim().toUpperCase());
+    });
+    return Array.from(set).sort();
+  }, [properties]);
+
+  const suburbs = React.useMemo(() => {
+    const set = new Set<string>();
+    properties.forEach(p => {
+        const t = getPropertyValue(p, 'Town');
+        const s = getPropertyValue(p, 'Suburb');
+        if (s && (selectedTown === 'all' || String(t).trim().toUpperCase() === selectedTown)) {
+            set.add(String(s).trim().toUpperCase());
+        }
+    });
+    return Array.from(set).sort();
+  }, [properties, selectedTown]);
+
   const handleDeleteSelected = () => {
     deleteProperties(selectedRows);
     toast({ title: 'Properties Deleted', description: `${selectedRows.length} records have been removed.` });
@@ -148,20 +172,31 @@ export default function BillingPage() {
   const filteredData = React.useMemo(() => {
     let intermediateData = propertiesWithStatus;
     if (activeTab !== 'all') intermediateData = intermediateData.filter(p => p.status.toLowerCase() === activeTab);
+    
+    // Filter by Town
+    if (selectedTown !== 'all') {
+        intermediateData = intermediateData.filter(p => String(getPropertyValue(p, 'Town')).trim().toUpperCase() === selectedTown);
+    }
+    
+    // Filter by Suburb
+    if (selectedSuburb !== 'all') {
+        intermediateData = intermediateData.filter(p => String(getPropertyValue(p, 'Suburb')).trim().toUpperCase() === selectedSuburb);
+    }
+
     if (!filter) return intermediateData;
     return intermediateData.filter((row) =>
       Object.entries(row).some(([key, value]) =>
         key !== 'id' && String(value).toLowerCase().includes(filter.toLowerCase())
       )
     );
-  }, [propertiesWithStatus, filter, activeTab]);
+  }, [propertiesWithStatus, filter, activeTab, selectedTown, selectedSuburb]);
 
   const totalPages = Math.ceil(filteredData.length / ROWS_PER_PAGE);
 
   React.useEffect(() => {
     setCurrentPage(1);
     setSelectedRows([]);
-  }, [activeTab, filter]);
+  }, [activeTab, filter, selectedTown, selectedSuburb]);
 
   const paginatedData = React.useMemo(() => {
     return filteredData.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
@@ -205,47 +240,89 @@ export default function BillingPage() {
         <h1 className="text-3xl font-bold tracking-tight font-headline">Billing & Payments</h1>
       </div>
       <Tabs defaultValue="all" onValueChange={setActiveTab}>
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="paid">Paid</TabsTrigger>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="overdue">Overdue</TabsTrigger>
-          </TabsList>
-           <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <TabsList>
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="paid">Paid</TabsTrigger>
+                <TabsTrigger value="pending">Pending</TabsTrigger>
+                <TabsTrigger value="overdue">Overdue</TabsTrigger>
+            </TabsList>
+            
+            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
                 <Input 
-                  placeholder="Search records..." 
-                  value={filter} 
-                  onChange={(e) => setFilter(e.target.value)} 
-                  className="w-full md:max-w-xs"
+                    placeholder="Search records..." 
+                    value={filter} 
+                    onChange={(e) => setFilter(e.target.value)} 
+                    className="w-full md:max-w-xs"
                 />
                 {selectedRows.length > 0 && (
-                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
                     <Button variant="outline" size="sm" onClick={handlePrintSelected}>
-                      <Printer className="h-4 w-4 mr-2"/>
-                      Print ({selectedRows.length})
+                        <Printer className="h-4 w-4 mr-2"/>
+                        Print ({selectedRows.length})
                     </Button>
                     {!isViewer && (
-                      <>
+                        <>
                         <Button variant="outline" size="sm" onClick={handleSendBulkSms}>
-                          <MessageSquare className="h-4 w-4 mr-2"/>
-                          Send SMS ({selectedRows.length})
+                            <MessageSquare className="h-4 w-4 mr-2"/>
+                            Send SMS ({selectedRows.length})
                         </Button>
                         <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
-                          <Trash2 className="h-4 w-4 mr-2"/>
-                          Delete ({selectedRows.length})
+                            <Trash2 className="h-4 w-4 mr-2"/>
+                            Delete ({selectedRows.length})
                         </Button>
-                      </>
+                        </>
                     )}
-                  </div>
+                    </div>
                 )}
             </div>
+          </div>
+
+          <Card className="bg-muted/20 border-dashed">
+            <CardContent className="p-4 flex flex-col md:flex-row items-end gap-4">
+                <div className="grid gap-1.5 flex-1">
+                    <label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
+                        <MapPin className="h-3 w-3" /> Filter by Town
+                    </label>
+                    <Select value={selectedTown} onValueChange={(v) => { setSelectedTown(v); setSelectedSuburb('all'); }}>
+                        <SelectTrigger className="bg-background h-9">
+                            <SelectValue placeholder="All Towns" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Towns</SelectItem>
+                            {towns.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="grid gap-1.5 flex-1">
+                    <label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1">
+                        <MapPin className="h-3 w-3" /> Filter by Suburb
+                    </label>
+                    <Select value={selectedSuburb} onValueChange={setSelectedSuburb}>
+                        <SelectTrigger className="bg-background h-9">
+                            <SelectValue placeholder="All Suburbs" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Suburbs</SelectItem>
+                            {suburbs.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+                {(selectedTown !== 'all' || selectedSuburb !== 'all') && (
+                    <Button variant="ghost" size="sm" onClick={() => { setSelectedTown('all'); setSelectedSuburb('all'); }} className="h-9">
+                        Clear Filters
+                    </Button>
+                )}
+            </CardContent>
+          </Card>
         </div>
+
         <TabsContent value={activeTab}>
             <Card>
                 <CardHeader>
                 <CardTitle>Properties</CardTitle>
-                <CardDescription>View status and manage payments for all properties.</CardDescription>
+                <CardDescription>View status and manage payments for filtered records.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
@@ -260,6 +337,7 @@ export default function BillingPage() {
                             </TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Owner</TableHead>
+                            <TableHead>Location</TableHead>
                             <TableHead>Property No</TableHead>
                             <TableHead className="text-right">Amt Paid</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
@@ -277,6 +355,10 @@ export default function BillingPage() {
                                 </TableCell>
                                 <TableCell><Badge variant={statusVariant(row.status)}>{row.status}</Badge></TableCell>
                                 <TableCell className="font-medium">{getPropertyValue(row, 'Owner Name')}</TableCell>
+                                <TableCell className="text-xs">
+                                    <div className="font-semibold">{getPropertyValue(row, 'Town')}</div>
+                                    <div className="text-muted-foreground">{getPropertyValue(row, 'Suburb')}</div>
+                                </TableCell>
                                 <TableCell>{getPropertyValue(row, 'Property No')}</TableCell>
                                 <TableCell className="text-right">{formatValue(getPropertyValue(row, 'Total Payment'), 'Total Payment')}</TableCell>
                                 <TableCell className="text-right">
