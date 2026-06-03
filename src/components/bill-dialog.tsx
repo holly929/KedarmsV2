@@ -133,9 +133,11 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
         const val = getPropertyValue(data as any, valueKey);
         const strVal = val !== null && val !== undefined ? String(val).trim() : '';
         
-        // Professionalize identity fields: "0", "00", "0.0" -> "..."
+        // Identity fields: Owner, Town, Suburb, Property No, etc.
         const identityKeys = ['owner', 'name', 'town', 'suburb', 'property no', 's/n', 'sn', 'hotel', 'guest house', 'entity', 'business'];
         const isIdentityField = identityKeys.some(k => valueKey.toLowerCase().includes(k));
+        
+        // Check for "0", "0.0", "00"
         const isZeroish = /^[0. \-]+$/.test(strVal);
 
         if (isIdentityField && (strVal === '' || isZeroish)) return '...';
@@ -224,7 +226,6 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
         <div className="border-[3px] border-double border-black p-1.5 relative h-full flex flex-col shadow-sm">
           <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.05] pointer-events-none">
               {settings.appearance?.ghanaLogo && (
-                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img src={settings.appearance.ghanaLogo} alt="Watermark" width={220} height={220} style={{objectFit: 'contain'}} />
               )}
           </div>
@@ -233,7 +234,6 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
             <header className="flex justify-between items-center mb-1.5 border-b-2 border-black pb-1">
                 <div className="w-[60px] flex justify-start">
                     {settings.appearance?.ghanaLogo && (
-                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={settings.appearance.ghanaLogo} alt="Ghana" className="object-contain h-auto" style={{ width: '50px' }} />
                     )}
                 </div>
@@ -251,7 +251,6 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                 </div>
                 <div className="w-[60px] flex justify-end">
                     {settings.appearance?.assemblyLogo && (
-                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={settings.appearance.assemblyLogo} alt="Logo" className="object-contain h-auto" style={{ width: '50px' }} />
                     )}
                 </div>
@@ -343,7 +342,7 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                     </div>
                     <div className="flex justify-between p-1.5 border-t-2 border-black items-center font-black" style={accentStyle}>
                         <span className="text-[1.0em] uppercase tracking-widest">TOTAL AMOUNT PAYABLE</span>
-                        <span className="text-right" style={{ fontSize: `${finalFontSize * 1.3px` }}>GH&#8373; {totalAmountPayable}</span>
+                        <span className="text-right" style={{ fontSize: `${finalFontSize * 1.3}px` }}>GH&#8373; {totalAmountPayable}</span>
                     </div>
                   </div>
                 )}
@@ -359,7 +358,6 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                     <div className="w-[160px] text-center">
                         <div className="mx-auto flex items-center justify-center h-8">
                             {settings.appearance?.signature && (
-                                /* eslint-disable-next-line @next/next/no-img-element */
                                 <img src={settings.appearance.signature} alt="Signature" className="max-h-full max-w-full object-contain" />
                             )}
                         </div>

@@ -146,7 +146,6 @@ function SystemHistorySyncView() {
     );
 }
 
-
 function GoogleSheetIntegrationView() {
   const [sheetUrl, setSheetUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -217,7 +216,6 @@ function GoogleSheetIntegrationView() {
   );
 }
 
-
 export default function SummaryBillPage() {
   useRequirePermission();
   const { toast } = useToast();
@@ -255,7 +253,6 @@ export default function SummaryBillPage() {
       setSelectedSheet('');
     }
   }, [sheetNames, selectedSheet]);
-
 
   const filteredData = useMemo(() => {
     if (!filter) return currentSheetData;
