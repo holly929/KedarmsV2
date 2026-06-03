@@ -124,7 +124,7 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
         
         const strVal = val !== null && val !== undefined ? String(val).trim() : '';
         
-        // Handle identity fields specifically to prevent displaying "0", "0.0", or "00"
+        // Robust identity field check: filter out 0, 0.0, 00, etc.
         const identityKeys = ['owner', 'name', 'town', 'suburb', 'property no', 's/n', 'sn', 'hotel', 'guest house', 'entity', 'business'];
         const isIdentityField = identityKeys.some(k => valueKey.toLowerCase().includes(k));
         
@@ -183,11 +183,11 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
                         getPropertyValue(data as any, 'Entity') || '...';
         
         const strVal = String(nameVal).trim();
-        if (strVal === '' || strVal === '0' || strVal === '00' || strVal === '0.0' || strVal === '0.00') return '...';
+        if (strVal === '' || strVal === '0' || strVal === '00' || strVal === '0.1' || strVal === '0.0' || strVal === '0.00') return '...';
         return strVal.toUpperCase();
     }, [data]);
 
-    const suburbDisplay = useMemo(() => {
+    const suburbHeaderDisplay = useMemo(() => {
       if (!data) return '';
       const subVal = String(getPropertyValue(data as any, 'Suburb') || '').trim();
       if (subVal === '' || subVal === '0' || subVal === '00' || subVal === '0.0' || subVal === '0.00') return '';
@@ -277,8 +277,8 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
             <div className="text-center py-2 mb-4 border border-black bg-black/[0.03]">
                 <span className="text-[0.7em] font-black block text-muted-foreground tracking-widest uppercase mb-1">BILLED TO:</span>
                 <span className="font-black tracking-tight" style={{ fontSize: `${finalFontSize * 1.5}px` }}>{billedToName}</span>
-                {suburbDisplay && (
-                  <span className="text-[1.2em] font-black block mt-1 tracking-wider text-black uppercase">SUBURB: {suburbDisplay}</span>
+                {suburbHeaderDisplay && (
+                  <span className="text-[1.2em] font-black block mt-1 tracking-wider text-black border-t border-black/10 pt-1 uppercase">SUBURB: {suburbHeaderDisplay}</span>
                 )}
             </div>
             

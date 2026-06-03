@@ -1,12 +1,2 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-
-/**
- * Validated root-level stub to resolve build-blocking TypeScript errors.
- * Follows troubleshooting step: Modern React 17+ style, removed explicit React import.
- */
-
-export default function RootBulkPrintStub() {
-    return null;
-}
+// This file has been moved/consolidated to src/app/(main)/properties/print-preview/page.tsx.
+// It is left blank here to prevent global TypeScript scope conflicts (Duplicate identifier 'React').
