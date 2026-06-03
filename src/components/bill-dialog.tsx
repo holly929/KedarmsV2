@@ -121,10 +121,9 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
     const formatValue = useCallback((valueKey: string) => {
         if (!data) return '...';
         const val = getPropertyValue(data as any, valueKey);
-        
         const strVal = val !== null && val !== undefined ? String(val).trim() : '';
         
-        // Data Integrity fix: handle "0", "0.0", "00" as "..." for identity fields
+        // Data Integrity Fix: Map "0", "0.0", or "00" identity values to "..."
         const identityKeys = ['owner', 'name', 'town', 'suburb', 'property no', 's/n', 'sn', 'hotel', 'guest house', 'entity', 'business'];
         const isIdentityField = identityKeys.some(k => valueKey.toLowerCase().includes(k));
         
@@ -133,7 +132,6 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
         }
         
         const numericKeys = ['license fee', 'bop amount', 'arrears', 'payment', 'rateable value', 'rate impost', 'total payment', 'permit fee', 'sanitation charged', 'previous balance', 'amount due', 'property rate'];
-        
         if (numericKeys.some(k => valueKey.toLowerCase().includes(k))) {
             const num = Number(strVal.replace(/,/g, '').replace(/[^0-9.-]/g, ''));
             if (!isNaN(num)) {
@@ -323,7 +321,7 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
                     <div className="flex border-b-2 border-black">
                         <div className="w-[67%] border-r-2 border-black">
                             <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">BUSINESS</div><div className="w-2/3 border-l border-black/20 p-1 font-bold">{formatValue('Business Name')}</div></div>
-                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">OWNER</div><div className="w-2/3 border-l border-black/20 p-1">{formatValue('Owner Name')}</div></div>
+                            <div className="flex border-b border-black/20"><div className="w-1/3 font-bold p-1 bg-black/[0.02]">OWNER</div><div className="w-2/3 border-l border-black/20 p-1 font-bold">{formatValue('Owner Name')}</div></div>
                         </div>
                         <div className="w-[33%]">
                             <div className="font-bold text-center p-1 bg-black/5 border-b border-black/20 text-[0.8em]">AMOUNT (GH&#8373;)</div>

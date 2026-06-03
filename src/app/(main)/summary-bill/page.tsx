@@ -104,7 +104,6 @@ function GoogleSheetIntegrationView() {
               <AlertDescription>
                 To interact with the sheet, you must be logged into the correct Google account in this browser. If it doesn't load, try opening it in a new tab first, then refresh this page.
               </AlertDescription>
-            </Alert>
             <div className="aspect-video w-full rounded-lg border overflow-hidden">
               <iframe 
                 src={sheetUrl} 
@@ -116,6 +115,7 @@ function GoogleSheetIntegrationView() {
                 Loading...
               </iframe>
             </div>
+            </Alert>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center h-[calc(100vh-30rem)]">
