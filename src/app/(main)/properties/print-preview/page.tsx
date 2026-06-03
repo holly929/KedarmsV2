@@ -45,17 +45,14 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
         }
 
         return (
-            <div ref={ref}>
+            <div ref={ref} className="bg-white">
                 {propertyChunks.map((chunk, index) => (
-                    <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white grid grid-cols-2 grid-rows-2 box-border">
+                    <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white grid grid-cols-2 grid-rows-2 box-border overflow-hidden">
                         {chunk.map((property) => (
-                            <div key={property.id} className="w-full h-full box-border overflow-hidden flex items-center justify-center border-dashed border-gray-400 [&:nth-child(1)]:border-r [&:nth-child(1)]:border-b [&:nth-child(2)]:border-b [&:nth-child(3)]:border-r">
-                               <div className="w-full h-full scale-[0.95] flex items-center justify-center">
-                                    <PrintableContent property={property} settings={settings} isCompact={true} isDemandNotice={isDemandNotice} />
-                               </div>
+                            <div key={property.id} className="w-full h-full box-border overflow-hidden border-dashed border-gray-300 [&:nth-child(1)]:border-r [&:nth-child(1)]:border-b [&:nth-child(2)]:border-b [&:nth-child(3)]:border-r p-[5mm]">
+                                <PrintableContent property={property} settings={settings} isCompact={true} isDemandNotice={isDemandNotice} />
                             </div>
                         ))}
-                        {Array.from({ length: 4 - chunk.length }).map((_, i) => <div key={`empty-${i}`}></div>)}
                     </div>
                 ))}
             </div>
@@ -69,22 +66,17 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
         }
 
         return (
-            <div ref={ref}>
+            <div ref={ref} className="bg-white">
                 {propertyChunks.map((chunk, index) => (
-                    <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex flex-col justify-center items-center box-border">
+                    <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex flex-col box-border overflow-hidden">
                         {chunk.map((property, chunkIndex) => (
-                            <React.Fragment key={property.id}>
-                               <div className="h-[148.5mm] w-full box-border overflow-hidden flex items-center justify-center">
-                                   <div className="w-full h-full scale-[0.95] flex items-center justify-center">
-                                        <PrintableContent property={property} settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
-                                   </div>
-                               </div>
-                               {chunk.length === 2 && chunkIndex === 0 && (
-                                   <div className="w-[95%] h-[1px] border-t border-dashed border-gray-400 self-center"></div>
-                               )}
-                            </React.Fragment>
+                            <div key={property.id} className="h-[148.5mm] w-full box-border overflow-hidden p-[8mm] relative">
+                                <PrintableContent property={property} settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
+                                {chunk.length === 2 && chunkIndex === 0 && (
+                                   <div className="absolute bottom-0 left-[5%] right-[5%] h-[1px] border-t border-dashed border-gray-400"></div>
+                                )}
+                            </div>
                         ))}
-                         {chunk.length < 2 && <div className="h-[148.5mm] w-full"></div>}
                     </div>
                 ))}
             </div>
@@ -92,25 +84,12 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
     }
     
     return (
-        <div ref={ref}>
-            <div className="print:space-y-0">
-                {properties.length > 0 ? (
-                    properties.map((property) => (
-                        <div key={property.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex items-center justify-center">
-                            <div className="w-full h-full scale-[0.95] flex items-center justify-center">
-                                <PrintableContent property={property} settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] text-center">
-                        <h2 className="text-2xl font-semibold">No Properties to Print</h2>
-                        <p className="text-muted-foreground mt-2">
-                            It seems no properties were selected. Please go back to the Billing page and select some properties to print.
-                        </p>
-                    </div>
-                )}
-            </div>
+        <div ref={ref} className="bg-white">
+            {properties.map((property) => (
+                <div key={property.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white overflow-hidden p-[10mm]">
+                    <PrintableContent property={property} settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
+                </div>
+            ))}
         </div>
     );
 });
@@ -146,8 +125,6 @@ export default function BulkPrintPage() {
             }
             
             setIsDemandNotice(initialDemand);
-            
-            // Load settings from the central store
             setSettings({
                 general: store.settings.generalSettings || {},
                 appearance: store.settings.appearanceSettings || {},
@@ -164,7 +141,6 @@ export default function BulkPrintPage() {
     if (renderedProperties.length === 0) return;
 
     const newBills: Omit<Bill, 'id'>[] = renderedProperties.map(p => {
-        // Prioritize imported "Amount Due"
         const importedAmountDue = Number(String(getPropertyValue(p, 'Amount Due') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
         
         let totalAmountDue = 0;
@@ -196,7 +172,7 @@ export default function BulkPrintPage() {
     if (success) {
       toast({
           title: 'Bills Recorded',
-          description: `${newBills.length} bills have been recorded in the bill history.`,
+          description: `${newBills.length} bills have been recorded in the history.`,
       });
     }
   };
@@ -208,11 +184,7 @@ export default function BulkPrintPage() {
 
   const handleGenerateAndPrint = () => {
     if (renderedProperties.length === 0) {
-        toast({
-            variant: 'destructive',
-            title: 'No Bills Ready',
-            description: 'There are no bills prepared for printing.',
-        });
+        toast({ variant: 'destructive', title: 'No Bills Ready', description: 'There are no bills prepared for printing.' });
         return;
     };
     handlePrint();
@@ -226,7 +198,7 @@ export default function BulkPrintPage() {
         
         const propertiesToRender = [...allProperties];
         let currentIndex = 0;
-        const chunkSize = 20;
+        const chunkSize = 40; // Increased batch size for performance
 
         const renderChunk = () => {
             if (currentIndex >= propertiesToRender.length) {
@@ -240,37 +212,32 @@ export default function BulkPrintPage() {
             setProgress(nextIndex);
             currentIndex = nextIndex;
 
-            setTimeout(renderChunk, 10);
+            // Short delay to allow browser to yield but keep it fast
+            setTimeout(renderChunk, 5);
         };
         
         renderChunk();
     }
   }, [allProperties, isClient]);
 
-  if (!isClient) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+  if (!isClient) return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
 
   if (isPreparing) {
     return (
       <div className="flex flex-col min-h-screen bg-background">
         <header className="no-print bg-card border-b p-4 flex items-center justify-between sticky top-0 z-10">
-          <h1 className="text-xl font-semibold">Preparing Bills...</h1>
+          <h1 className="text-xl font-semibold">Accelerated Preparation...</h1>
         </header>
         <main className="flex-grow flex flex-col items-center justify-center text-center p-4">
           <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-          <h2 className="text-2xl font-semibold">Please Wait</h2>
+          <h2 className="text-2xl font-semibold">Optimizing Batch</h2>
           <p className="text-muted-foreground mt-2 max-w-md">
-            We are preparing {allProperties.length} bills for printing. This may take a moment.
+            Processing {allProperties.length} records. Performance optimizations enabled for large volumes.
           </p>
           <div className="w-full max-w-md mt-6">
             <Progress value={allProperties.length > 0 ? (progress / allProperties.length) * 100 : 0} />
             <p className="text-sm text-muted-foreground mt-2">
-              {progress} / {allProperties.length} bills ready
+              {progress} / {allProperties.length} ready
             </p>
           </div>
         </main>
@@ -289,7 +256,7 @@ export default function BulkPrintPage() {
                 </Link>
             </Button>
             <h1 className="text-lg sm:text-xl font-semibold">
-                Print Preview ({allProperties.length} {allProperties.length === 1 ? 'Bill' : 'Bills'})
+                Batch Print ({allProperties.length})
             </h1>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
@@ -318,22 +285,21 @@ export default function BulkPrintPage() {
             </div>
             <Button onClick={handleGenerateAndPrint} disabled={renderedProperties.length === 0} className={cn("w-full sm:w-auto", isDemandNotice ? "bg-red-600 hover:bg-red-700" : "")}>
               <Printer className="mr-2 h-4 w-4" />
-              Print & Record
+              Print Batch
             </Button>
         </div>
       </header>
 
       <main className="flex-grow flex items-center justify-center p-4 print:hidden">
          <div className="text-center">
-            <h2 className="text-2xl font-semibold">Ready to Print</h2>
+            <h2 className="text-2xl font-semibold">Batch Ready</h2>
             <p className="text-muted-foreground mt-2">
-                Clicking the print button will open the print dialog and record the bills in your history.
+                The batch of {allProperties.length} notices is loaded and optimized for memory efficiency.
             </p>
-            <p className="text-muted-foreground mt-1">Click the "Print & Record" button above to continue.</p>
+            <p className="text-muted-foreground mt-1">Click "Print Batch" to open the system dialog.</p>
          </div>
       </main>
       
-      {/* Hidden print container - positioned off-screen to keep it rendered in DOM */}
       <div className="absolute -left-[9999px] top-0 pointer-events-none">
         <BillSheet ref={componentRef} properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
       </div>

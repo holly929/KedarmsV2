@@ -36,14 +36,16 @@ type AppearanceSettings = {
   accentColor?: string;
 };
 
+const parseNumeric = (val: any): number => {
+    if (val === undefined || val === null) return 0;
+    if (typeof val === 'number') return val;
+    const cleaned = String(val).replace(/,/g, '').replace(/[^0-9.-]/g, '');
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? 0 : num;
+};
+
 const formatToTwoDecimals = (val: any): string => {
-    if (val === undefined || val === null) return '0.00';
-    const str = String(val).trim();
-    if (str === '' || str === '0' || str === '0.0' || str === '00' || str === '0.00') return '0.00';
-    
-    const cleaned = str.replace(/,/g, '').replace(/[^0-9.-]/g, '');
-    const num = Number(cleaned);
-    if (isNaN(num)) return '0.00';
+    const num = parseNumeric(val);
     return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
@@ -54,6 +56,7 @@ const BarcodeComponent = memo(({ value, isCompact }: { value: string; isCompact:
         if (ref.current && value) {
             try {
                 JsBarcode(ref.current, value, {
+                    format: "CODE128",
                     width: isCompact ? 1.0 : 1.4,
                     height: isCompact ? 25 : 35,
                     fontSize: isCompact ? 8 : 10,
@@ -62,12 +65,12 @@ const BarcodeComponent = memo(({ value, isCompact }: { value: string; isCompact:
                     background: 'transparent'
                 });
             } catch (e) {
-                console.error('Barcode generation error:', e);
+                // Ignore silent errors for massive batches
             }
         }
     }, [value, isCompact]);
 
-    return <svg ref={ref} />;
+    return <svg ref={ref} className="max-w-full h-auto" />;
 });
 BarcodeComponent.displayName = 'BarcodeComponent';
 
@@ -112,6 +115,9 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
     const baseStyle = useMemo(() => ({
         fontSize: `${finalFontSize}px`,
         lineHeight: `${finalFontSize * 1.35}px`,
+        // Critical optimization for large batches
+        contain: 'layout style paint',
+        transform: 'translateZ(0)',
     }), [finalFontSize]);
 
     const accentStyle = useMemo(() => ({
@@ -120,12 +126,7 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
     
     const getNumericValue = useCallback((key: string): number => {
         if (!data) return 0;
-        const val = getPropertyValue(data as any, key);
-        if (val === undefined || val === null) return 0;
-        const str = String(val).trim();
-        if (str === '' || str === '0' || str === '0.0' || str === '00' || str === '0.00') return 0;
-        const num = Number(str.replace(/,/g, '').replace(/[^0-9.-]/g, ''));
-        return isNaN(num) ? 0 : num;
+        return parseNumeric(getPropertyValue(data as any, key));
     }, [data]);
 
     const formatValue = useCallback((valueKey: string) => {
@@ -135,10 +136,9 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
         
         const identityKeys = ['owner', 'name', 'town', 'suburb', 'property no', 's/n', 'sn', 'hotel', 'guest house', 'entity', 'business'];
         const isIdentityField = identityKeys.some(k => valueKey.toLowerCase().includes(k));
-        
-        if (isIdentityField && (strVal === '' || strVal === '0' || strVal === '0.0' || strVal === '00' || strVal === '0.00')) {
-            return '...';
-        }
+        const isZeroPlaceholder = /^[0.]+$/.test(strVal);
+
+        if (isIdentityField && (strVal === '' || isZeroPlaceholder)) return '...';
         
         const numericKeys = ['license fee', 'bop amount', 'arrears', 'payment', 'rateable value', 'rate impost', 'total payment', 'permit fee', 'sanitation charged', 'previous balance', 'amount due', 'property rate'];
         if (numericKeys.some(k => valueKey.toLowerCase().includes(k))) {
@@ -149,15 +149,10 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
         return strVal || '...';
     }, [data]);
     
-    const totalAmountPayable = useMemo(() => {
-        if (!data) return '0.00';
-        
-        const importedTotal = getPropertyValue(data as any, 'Amount Due');
-        const numImported = typeof importedTotal === 'number' ? importedTotal : Number(String(importedTotal || '').replace(/,/g, '').replace(/[^0-9.-]/g, ''));
-        
-        if (!isNaN(numImported) && numImported !== 0) {
-            return formatToTwoDecimals(numImported);
-        }
+    const totalAmountPayableNum = useMemo(() => {
+        if (!data) return 0;
+        const importedTotal = getNumericValue('Amount Due');
+        if (importedTotal !== 0) return importedTotal;
 
         let calculated = 0;
         if (billType === 'property') {
@@ -168,37 +163,27 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
             const tp = getNumericValue('Total Payment');
             calculated = (rv * ri) + sc + pb - tp;
         } else if (billType === 'bop') {
-            const pf = getNumericValue('Permit Fee');
-            const arr = getNumericValue('Arrears');
-            const pay = getNumericValue('Payment');
-            calculated = (pf + arr) - pay;
+            calculated = (getNumericValue('Permit Fee') + getNumericValue('Arrears')) - getNumericValue('Payment');
         } else {
             const lf = getNumericValue('Property Rate') || getNumericValue('License Fee');
-            const bop = getNumericValue('Bop Amount');
-            const arr = getNumericValue('Arrears');
-            const pay = getNumericValue('Payment');
-            calculated = (lf + bop + arr) - pay;
+            calculated = (lf + getNumericValue('Bop Amount') + getNumericValue('Arrears')) - getNumericValue('Payment');
         }
-        return formatToTwoDecimals(calculated);
+        return calculated;
     }, [data, billType, getNumericValue]);
+
+    const totalAmountPayable = useMemo(() => formatToTwoDecimals(totalAmountPayableNum), [totalAmountPayableNum]);
 
     const billedToName = useMemo(() => {
         if (!data) return '...';
-        const nameVal = getPropertyValue(data as any, 'Owner Name') || 
-                        getPropertyValue(data as any, 'Business Name') || 
-                        getPropertyValue(data as any, 'Name of Hotel/Guest House') || 
-                        getPropertyValue(data as any, 'Entity') || '...';
-        
+        const nameVal = getPropertyValue(data as any, 'Owner Name') || getPropertyValue(data as any, 'Business Name') || getPropertyValue(data as any, 'Name of Hotel/Guest House') || '...';
         const strVal = String(nameVal).trim();
-        if (strVal === '' || strVal === '0' || strVal === '00' || strVal === '0.0' || strVal === '0.00') return '...';
-        return strVal.toUpperCase();
+        return (/^[0.]+$/.test(strVal) || strVal === '') ? '...' : strVal.toUpperCase();
     }, [data]);
 
     const suburbHeaderDisplay = useMemo(() => {
       if (!data) return '';
       const subVal = String(getPropertyValue(data as any, 'Suburb') || '').trim();
-      if (subVal === '' || subVal === '0' || subVal === '00' || subVal === '0.0' || subVal === '0.00') return '';
-      return subVal.toUpperCase();
+      return (/^[0.]+$/.test(subVal) || subVal === '') ? '' : subVal.toUpperCase();
     }, [data]);
 
     const barcodeValue = useMemo(() => {
@@ -235,25 +220,25 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
     return (
       <div ref={ref} className={cn("text-black bg-white w-full h-full box-border", fontClass, isCompact ? 'p-2' : 'p-4')} style={baseStyle}>
         <div className="border-[4px] border-double border-black p-2 relative h-full flex flex-col shadow-inner">
-          <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.08] pointer-events-none">
+          <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.06] pointer-events-none">
               {settings.appearance?.ghanaLogo && (
                   /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={settings.appearance.ghanaLogo} alt="Watermark" width={450} height={450} style={{objectFit: 'contain'}} />
+                  <img src={settings.appearance.ghanaLogo} alt="Watermark" width={380} height={380} style={{objectFit: 'contain'}} />
               )}
           </div>
           <div className="relative z-10 flex flex-col flex-grow">
             <header className="flex justify-between items-start mb-4 border-b-2 border-black pb-2 text-center">
-                <div className="w-1/5 flex justify-start items-center">
+                <div className="w-[85px] flex justify-start items-center">
                     {settings.appearance?.ghanaLogo && (
                         /* eslint-disable-next-line @next/next/no-img-element */
-                        <img src={settings.appearance.ghanaLogo} alt="Ghana Coat of Arms" style={{ objectFit: 'contain', width: isCompact ? '65px' : '85px', height: 'auto' }} />
+                        <img src={settings.appearance.ghanaLogo} alt="Ghana" className="object-contain h-auto" style={{ width: isCompact ? '60px' : '85px' }} />
                     )}
                 </div>
-                <div className="w-3/5">
-                    <h1 className="font-extrabold tracking-tight uppercase leading-none mb-1" style={{ fontSize: `${finalFontSize * 1.8}px` }}>{settings.general?.assemblyName || 'KWAHU EAST DISTRICT ASSEMBLY'}</h1>
-                    <p className="text-[11px] font-black uppercase mb-1 tracking-tight border-b-2 border-black inline-block px-2">LOCAL GOVERNANCE ACT, 2016 (ACT 936)</p>
-                    <p className="font-semibold text-muted-foreground" style={{ fontSize: `${finalFontSize * 1.1}px` }}>{settings.general?.postalAddress || 'P.O. Box 11, ABETIFI'}</p>
-                    <p className="font-semibold text-muted-foreground" style={{ fontSize: `${finalFontSize}px` }}>TEL: {settings.general?.contactPhone || '0242122039/0244971784'}</p>
+                <div className="flex-1 px-2">
+                    <h1 className="font-extrabold tracking-tight uppercase leading-none mb-1" style={{ fontSize: `${finalFontSize * 1.8}px` }}>{settings.general?.assemblyName || 'THE DISTRICT ASSEMBLY'}</h1>
+                    <p className="text-[10px] font-black uppercase mb-1 tracking-tight border-b-2 border-black inline-block px-2">LOCAL GOVERNANCE ACT, 2016 (ACT 936)</p>
+                    <p className="font-semibold text-muted-foreground leading-tight" style={{ fontSize: `${finalFontSize * 1.1}px` }}>{settings.general?.postalAddress || 'P.O. Box'}</p>
+                    <p className="font-semibold text-muted-foreground" style={{ fontSize: `${finalFontSize}px` }}>TEL: {settings.general?.contactPhone}</p>
                     
                     <div className={cn("mt-2 inline-block px-4 py-1 border-2 border-black font-black tracking-[0.2em] uppercase", isDemandNotice ? "bg-red-600 text-white border-red-700" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 1.4}px` }}>
                       {isDemandNotice 
@@ -261,17 +246,17 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                         : 'PROPERTY RATE & B.O.P BILL'}
                     </div>
                 </div>
-                <div className="w-1/5 flex justify-end items-center">
+                <div className="w-[85px] flex justify-end items-center">
                     {settings.appearance?.assemblyLogo && (
                         /* eslint-disable-next-line @next/next/no-img-element */
-                        <img src={settings.appearance.assemblyLogo} alt="Assembly Logo" style={{ objectFit: 'contain', width: isCompact ? '65px' : '85px', height: 'auto' }} />
+                        <img src={settings.appearance.assemblyLogo} alt="Logo" className="object-contain h-auto" style={{ width: isCompact ? '60px' : '85px' }} />
                     )}
                 </div>
             </header>
 
-            <div className="text-center py-2 mb-4 border border-black bg-black/[0.03]">
-                <span className="text-[0.7em] font-black block text-muted-foreground tracking-widest uppercase mb-1">BILLED TO:</span>
-                <span className="font-black tracking-tight" style={{ fontSize: `${finalFontSize * 1.5}px` }}>{billedToName}</span>
+            <div className="text-center py-2 mb-4 border border-black bg-black/[0.02]">
+                <span className="text-[0.65em] font-black block text-muted-foreground tracking-widest uppercase mb-1">BILLED TO:</span>
+                <span className="font-black tracking-tight leading-none" style={{ fontSize: `${finalFontSize * 1.6}px` }}>{billedToName}</span>
                 {suburbHeaderDisplay && (
                   <span className="text-[1.2em] font-black block mt-1 tracking-wider text-black border-t border-black/10 pt-1 uppercase">SUBURB: {suburbHeaderDisplay}</span>
                 )}
@@ -400,13 +385,13 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                         {barcodeValue && <BarcodeComponent value={barcodeValue} isCompact={isCompact} />}
                     </div>
                     <div className="w-1/3 text-center">
-                        <div className="mx-auto flex items-center justify-center" style={{ minHeight: isCompact ? '40px' : '55px' }}>
+                        <div className="mx-auto flex items-center justify-center" style={{ minHeight: isCompact ? '35px' : '50px' }}>
                             {settings.appearance?.signature && (
                                 /* eslint-disable-next-line @next/next/no-img-element */
-                                <img src={settings.appearance.signature} alt="Signature" className="max-h-[75px] max-w-full object-contain" />
+                                <img src={settings.appearance.signature} alt="Signature" className="max-h-[65px] max-w-full object-contain" />
                             )}
                         </div>
-                        <p className="border-t-2 border-black font-black uppercase text-[0.8em] pt-1">COORDINATING DIRECTOR</p>
+                        <p className="border-t-2 border-black font-black uppercase text-[0.75em] pt-1 leading-none">COORDINATING DIRECTOR</p>
                     </div>
                 </div>
                 <div className={cn("font-black text-center p-2 border-2 border-black tracking-[0.1em] text-[1.1em]", isDemandNotice ? "bg-red-600 text-white border-red-700" : "bg-black text-white")}>
