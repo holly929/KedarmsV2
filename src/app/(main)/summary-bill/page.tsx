@@ -79,10 +79,9 @@ function SystemHistorySyncView() {
 
         setIsSyncing(true);
         
-        // Use a small timeout to let the UI update
         setTimeout(() => {
             try {
-                const sheetName = `SystemHistory_${new Date().toLocaleDateString().replace(/\//g, '-')}`;
+                const sheetName = `SystemSync_${new Date().toLocaleDateString().replace(/\//g, '-')}`;
                 
                 const mappedData: SummaryBillData[] = bills.map(bill => {
                     const snapshot = bill.propertySnapshot;
@@ -130,7 +129,7 @@ function SystemHistorySyncView() {
                     </div>
                     <Button onClick={handleSync} disabled={isSyncing || bills.length === 0}>
                         {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
-                        Generate Summary Sheet
+                        Sync to Summary
                     </Button>
                 </div>
                 {bills.length === 0 && (
@@ -613,18 +612,18 @@ export default function SummaryBillPage() {
       <Tabs defaultValue="upload" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="upload">Upload Excel</TabsTrigger>
-            <TabsTrigger value="system-history">System History sync</TabsTrigger>
+            <TabsTrigger value="system-history">System Sync</TabsTrigger>
             <TabsTrigger value="google-sheet">Google Sheet Connect</TabsTrigger>
         </TabsList>
         
         <TabsContent value="system-history" className="space-y-4">
             <SystemHistorySyncView />
-            {sheetNames.some(s => s.startsWith('SystemHistory')) && (
+            {sheetNames.some(s => s.startsWith('SystemSync')) && (
                  <Alert className="bg-green-50 border-green-200">
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <AlertTitle>History data is ready</AlertTitle>
+                    <AlertTitle>Sync Data Ready</AlertTitle>
                     <AlertDescription>
-                        System bills have been synced. You can now view and print them from the "Upload Excel" tab by selecting the generated history sheet.
+                        Historical system data has been mapped. Select the "SystemSync" sheet in the "Upload Excel" tab to view or print it.
                     </AlertDescription>
                 </Alert>
             )}
