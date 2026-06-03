@@ -124,7 +124,6 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
         
         const strVal = val !== null && val !== undefined ? String(val).trim() : '';
         
-        // Robust identity field check: filter out 0, 0.0, 00, etc.
         const identityKeys = ['owner', 'name', 'town', 'suburb', 'property no', 's/n', 'sn', 'hotel', 'guest house', 'entity', 'business'];
         const isIdentityField = identityKeys.some(k => valueKey.toLowerCase().includes(k));
         
