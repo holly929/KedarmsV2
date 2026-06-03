@@ -124,7 +124,7 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
         
         const strVal = val !== null && val !== undefined ? String(val).trim() : '';
         
-        // Identity fields that should display as "..." if zero or empty placeholders
+        // Identity fields mapping: filter "0", "0.0", or "00" placeholders
         const identityKeys = ['owner', 'name', 'town', 'suburb', 'property no', 's/n', 'sn', 'hotel', 'guest house', 'entity', 'business'];
         const isIdentityField = identityKeys.some(k => valueKey.toLowerCase().includes(k));
         
@@ -255,7 +255,7 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
                 <div className="w-3/5">
                     <h1 className="font-extrabold tracking-tight uppercase leading-none mb-1" style={{ fontSize: `${finalFontSize * 1.8}px` }}>{settingsValues.assemblyName}</h1>
                     
-                    {/* LEGAL BACKING REFERENCE */}
+                    {/* LEGAL BACKING REFERENCE - BOLDED FOR AUTHORITY */}
                     <p className="text-[11px] font-black uppercase mb-1 tracking-tight border-b-2 border-black inline-block px-2">LOCAL GOVERNANCE ACT, 2016 (ACT 936)</p>
 
                     <p className="font-semibold text-muted-foreground" style={{ fontSize: `${finalFontSize * 1.1}px` }}>{settingsValues.postalAddress}</p>
@@ -279,7 +279,7 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
                 <span className="text-[0.7em] font-black block text-muted-foreground tracking-widest uppercase mb-1">BILLED TO:</span>
                 <span className="font-black tracking-tight" style={{ fontSize: `${finalFontSize * 1.5}px` }}>{billedToName}</span>
                 
-                {/* PROMINENT BOLD SUBURB DISPLAY */}
+                {/* PROMINENT BOLD SUBURB DISPLAY - MAPS FROM EXCEL */}
                 {suburbHeaderDisplay && (
                   <span className="text-[1.2em] font-black block mt-1 tracking-wider text-black border-t border-black/10 pt-1 uppercase">SUBURB: {suburbHeaderDisplay}</span>
                 )}
