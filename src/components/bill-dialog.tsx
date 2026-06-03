@@ -124,7 +124,7 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
         
         const strVal = val !== null && val !== undefined ? String(val).trim() : '';
         
-        // List of identity fields that should display as "..." if zero or empty
+        // Identity fields that should display as "..." if zero or empty
         const identityKeys = ['owner', 'name', 'town', 'suburb', 'property no', 's/n', 'sn', 'hotel', 'guest house', 'entity', 'business'];
         const isIdentityField = identityKeys.some(k => valueKey.toLowerCase().includes(k));
         

@@ -286,6 +286,7 @@ function DefaulterList<T extends Property | Bop | License>({ data, headers, isMo
                         <div className="text-2xl font-bold">{formatCurrency(totalAmountOwed)}</div>
                         <p className="text-xs text-muted-foreground">Total outstanding balance from defaulters</p>
                     </CardContent>
+                </Card>
                  <Card className="lg:col-span-2">
                     <CardHeader>
                         <CardTitle className="text-sm font-medium">Defaulters by {title === 'property' ? 'Type' : 'Area'}</CardTitle>
