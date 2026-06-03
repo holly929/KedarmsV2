@@ -143,7 +143,7 @@ export default function BillingPage() {
     const set = new Set<string>();
     properties.forEach(p => {
         const t = getPropertyValue(p, 'Town');
-        if (t) set.add(String(t).trim().toUpperCase());
+        if (t && String(t).trim() !== '' && String(t) !== '0') set.add(String(t).trim().toUpperCase());
     });
     return Array.from(set).sort();
   }, [properties]);
@@ -153,7 +153,7 @@ export default function BillingPage() {
     properties.forEach(p => {
         const t = getPropertyValue(p, 'Town');
         const s = getPropertyValue(p, 'Suburb');
-        if (s && (selectedTown === 'all' || String(t).trim().toUpperCase() === selectedTown)) {
+        if (s && String(s).trim() !== '' && String(s) !== '0' && (selectedTown === 'all' || String(t).trim().toUpperCase() === selectedTown)) {
             set.add(String(s).trim().toUpperCase());
         }
     });
@@ -254,7 +254,7 @@ export default function BillingPage() {
                 <div className="relative">
                     <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input 
-                        placeholder="Search town, suburb or owner..." 
+                        placeholder="Search records..." 
                         value={filter} 
                         onChange={(e) => setFilter(e.target.value)} 
                         className="pl-8 w-full md:max-w-xs"
@@ -283,6 +283,7 @@ export default function BillingPage() {
             </div>
           </div>
 
+          {/* DYNAMIC LOCATION FILTERS */}
           <Card className="bg-muted/20 border-dashed">
             <CardContent className="p-4 flex flex-col md:flex-row items-end gap-4">
                 <div className="grid gap-1.5 flex-1">
@@ -371,11 +372,11 @@ export default function BillingPage() {
                                     <DropdownMenuContent align="end">
                                     <DropdownMenuItem onSelect={() => handleViewBill(row, false)}>
                                       <View className="mr-2 h-4 w-4" /> 
-                                      View {getPropertyValue(row, 'Type')?.toLowerCase().includes('bop') ? 'BOP' : 'Property Rate'} Bill
+                                      View Bill
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onSelect={() => handleViewBill(row, true)} className="text-red-600 focus:text-red-600 focus:bg-red-50">
                                       <FileWarning className="mr-2 h-4 w-4" /> 
-                                      View {getPropertyValue(row, 'Type')?.toLowerCase().includes('bop') ? 'BOP' : 'Property Rate'} Demand Notice
+                                      View Demand Notice
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onSelect={() => handleSendSingleSms(row)}><MessageSquare className="mr-2 h-4 w-4" /> Send SMS</DropdownMenuItem>
                                     {!isViewer && (
