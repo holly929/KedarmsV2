@@ -70,7 +70,7 @@ export default function BillingPage() {
   const { user: authUser } = useAuth();
   const isViewer = authUser?.role === 'Viewer';
   
-  const { properties, headers, updateProperty, deleteProperty, deleteProperties } = usePropertyData();
+  const { properties, updateProperty, deleteProperties } = usePropertyData();
   const [loading, setLoading] = React.useState(true);
   const [filter, setFilter] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('all');
