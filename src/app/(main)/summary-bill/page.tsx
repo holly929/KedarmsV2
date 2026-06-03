@@ -10,6 +10,9 @@ import {
   Printer,
   BookCopy,
   AlertCircle,
+  History,
+  RefreshCcw,
+  CheckCircle2,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import Link from 'next/link';
@@ -42,10 +45,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useSummaryBillData } from '@/context/SummaryBillContext';
+import { useBillData } from '@/context/BillDataContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRequirePermission } from '@/hooks/useRequirePermission';
-import type { Bop as SummaryBillData } from '@/lib/types';
+import type { Bop as SummaryBillData, Bill } from '@/lib/types';
 import { store } from '@/lib/store';
+import { getPropertyValue } from '@/lib/property-utils';
 
 const ROWS_PER_PAGE = 15;
 
@@ -59,6 +64,88 @@ const getEditableSheetUrl = (originalUrl: string): string => {
   }
   return originalUrl;
 };
+
+function SystemHistorySyncView() {
+    const { bills } = useBillData();
+    const { workbook, setWorkbook } = useSummaryBillData();
+    const { toast } = useToast();
+    const [isSyncing, setIsSyncing] = useState(false);
+
+    const handleSync = () => {
+        if (bills.length === 0) {
+            toast({ variant: 'destructive', title: 'No Bills Found', description: 'There are no generated bills in history to sync.' });
+            return;
+        }
+
+        setIsSyncing(true);
+        
+        // Use a small timeout to let the UI update
+        setTimeout(() => {
+            try {
+                const sheetName = `SystemHistory_${new Date().toLocaleDateString().replace(/\//g, '-')}`;
+                
+                const mappedData: SummaryBillData[] = bills.map(bill => {
+                    const snapshot = bill.propertySnapshot;
+                    return {
+                        id: `sync-${bill.id}`,
+                        'Owner/Business': getPropertyValue(snapshot as any, 'Owner Name') || getPropertyValue(snapshot as any, 'Business Name') || getPropertyValue(snapshot as any, 'Name of Hotel/Guest House') || 'N/A',
+                        'Identifier': getPropertyValue(snapshot as any, 'Property No') || getPropertyValue(snapshot as any, 'S/N') || getPropertyValue(snapshot as any, 'SN') || 'N/A',
+                        'Town': getPropertyValue(snapshot as any, 'Town') || 'N/A',
+                        'Type': bill.billType.toUpperCase(),
+                        'Year': bill.year,
+                        'Total Amount Due': bill.totalAmountDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    };
+                });
+
+                const headers = ['Owner/Business', 'Identifier', 'Town', 'Type', 'Year', 'Total Amount Due'];
+                
+                const newWorkbook = { ...workbook, [sheetName]: { data: mappedData, headers } };
+                setWorkbook(newWorkbook);
+                
+                toast({ title: 'Sync Successful', description: `${mappedData.length} bills imported into Summary workbook.` });
+            } catch (e) {
+                toast({ variant: 'destructive', title: 'Sync Failed', description: 'Failed to map history data.' });
+            } finally {
+                setIsSyncing(false);
+            }
+        }, 500);
+    };
+
+    return (
+        <Card className="border-primary/20 bg-primary/[0.02]">
+            <CardHeader>
+                <div className="flex items-center gap-2 text-primary">
+                    <History className="h-5 w-5" />
+                    <CardTitle>System Bill History Sync</CardTitle>
+                </div>
+                <CardDescription>
+                    Instantly create a summary report using all bills currently recorded in the system.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-background">
+                    <div>
+                        <p className="font-bold text-lg">{bills.length}</p>
+                        <p className="text-xs text-muted-foreground uppercase font-bold tracking-tighter">Bills in History</p>
+                    </div>
+                    <Button onClick={handleSync} disabled={isSyncing || bills.length === 0}>
+                        {isSyncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
+                        Generate Summary Sheet
+                    </Button>
+                </div>
+                {bills.length === 0 && (
+                    <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>No data available</AlertTitle>
+                        <AlertDescription>
+                            Generate some bills from the <Link href="/billing" className="font-bold underline">Billing</Link> page first.
+                        </AlertDescription>
+                    </Alert>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
 
 
 function GoogleSheetIntegrationView() {
@@ -104,6 +191,7 @@ function GoogleSheetIntegrationView() {
               <AlertDescription>
                 To interact with the sheet, you must be logged into the correct Google account in this browser. If it doesn't load, try opening it in a new tab first, then refresh this page.
               </AlertDescription>
+            </Alert>
             <div className="aspect-video w-full rounded-lg border overflow-hidden">
               <iframe 
                 src={sheetUrl} 
@@ -115,7 +203,6 @@ function GoogleSheetIntegrationView() {
                 Loading...
               </iframe>
             </div>
-            </Alert>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center h-[calc(100vh-30rem)]">
@@ -202,7 +289,7 @@ export default function SummaryBillPage() {
       toast({
         variant: 'destructive',
         title: 'No Data to Print',
-        description: 'Please upload an Excel file and select a sheet with data to print.',
+        description: 'Please upload an Excel file or sync system history to print.',
       });
     }
   };
@@ -276,7 +363,8 @@ export default function SummaryBillPage() {
           throw new Error("No readable sheets with valid data found in the file.");
         }
 
-        setWorkbook(newWorkbook);
+        const mergedWorkbook = { ...workbook, ...newWorkbook };
+        setWorkbook(mergedWorkbook);
         setSelectedSheet(Object.keys(newWorkbook)[0]);
         setCurrentPage(1);
         toast({ title: 'Import Successful', description: `${Object.keys(newWorkbook).length} sheet(s) loaded.` });
@@ -480,7 +568,7 @@ export default function SummaryBillPage() {
   )
 
   const renderEmptyState = () => {
-     const emptyStateText = "No Summary Data Imported";
+     const emptyStateText = "No Summary Data Available";
      return (
         <div 
             className="relative"
@@ -509,7 +597,7 @@ export default function SummaryBillPage() {
                 <UploadCloud className="h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">{emptyStateText}</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
-                Drag and drop an Excel file here or use the import button to get started.
+                Drag and drop an Excel file, connect to Google Sheets, or sync from system history to get started.
                 </p>
             </div>
         </div>
@@ -523,10 +611,25 @@ export default function SummaryBillPage() {
       </div>
       
       <Tabs defaultValue="upload" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="upload">Upload Excel</TabsTrigger>
+            <TabsTrigger value="system-history">System History sync</TabsTrigger>
             <TabsTrigger value="google-sheet">Google Sheet Connect</TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="system-history" className="space-y-4">
+            <SystemHistorySyncView />
+            {sheetNames.some(s => s.startsWith('SystemHistory')) && (
+                 <Alert className="bg-green-50 border-green-200">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <AlertTitle>History data is ready</AlertTitle>
+                    <AlertDescription>
+                        System bills have been synced. You can now view and print them from the "Upload Excel" tab by selecting the generated history sheet.
+                    </AlertDescription>
+                </Alert>
+            )}
+        </TabsContent>
+
         <TabsContent value="upload" className="space-y-4">
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div/>
