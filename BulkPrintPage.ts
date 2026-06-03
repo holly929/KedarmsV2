@@ -1,3 +1,3 @@
 // This file is cleared to prevent global scope conflicts and duplicate identifier errors during Vercel builds.
-// The main printing logic is handled within the app directory.
+// The main printing logic is handled within the app directory components.
 export {};

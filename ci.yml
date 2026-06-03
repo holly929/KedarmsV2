@@ -23,30 +23,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-// BulkPrintPage.ts
-import React, { useEffect, useState } from 'react'; // This line causes the error
-import { DemandNoticeTemplate } from './templates/DemandNoticeTemplate';
-
-const BulkPrintPage = () => {
-  // ... component logic
-  return (
-    // ... JSX
-  );
-};
-
-export default BulkPrintPage;
-// BulkPrintPage.ts
-import { useEffect, useState } from 'react'; // Remove 'React' from the import
-import { DemandNoticeTemplate } from './templates/DemandNoticeTemplate';
-
-const BulkPrintPage = () => {
-  // ... component logic
-  return (
-    // ... JSX
-  );
-};
-
-export default BulkPrintPage;
       - name: Get changed JavaScript/TypeScript files
         id: changed-js-ts-files
         uses: tj-actions/changed-files@v40
