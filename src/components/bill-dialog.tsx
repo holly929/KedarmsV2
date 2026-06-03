@@ -37,8 +37,11 @@ type AppearanceSettings = {
 };
 
 const formatToTwoDecimals = (val: any): string => {
-    if (val === undefined || val === null || String(val).trim() === '' || String(val) === '0' || String(val) === '0.0' || String(val) === '00' || String(val) === '0.00') return '0.00';
-    const cleaned = String(val).replace(/,/g, '').replace(/[^0-9.-]/g, '');
+    if (val === undefined || val === null) return '0.00';
+    const str = String(val).trim();
+    if (str === '' || str === '0' || str === '0.0' || str === '00' || str === '0.00') return '0.00';
+    
+    const cleaned = str.replace(/,/g, '').replace(/[^0-9.-]/g, '');
     const num = Number(cleaned);
     if (isNaN(num)) return '0.00';
     return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -75,14 +78,16 @@ const BillRow = ({ label, value, isBold = false, style = {} }: { label: string; 
   </div>
 );
 
-export const PrintableContent = memo(forwardRef<HTMLDivElement, { 
-    property?: Property;
-    data?: Property | Bop | License;
-    billType?: 'property' | 'bop' | 'license';
-    settings: { general?: GeneralSettings, appearance?: AppearanceSettings }; 
-    isCompact?: boolean; 
-    isDemandNotice?: boolean;
-}>(
+interface PrintableContentProps {
+  property?: Property;
+  data?: Property | Bop | License;
+  billType?: 'property' | 'bop' | 'license';
+  settings: { general?: GeneralSettings, appearance?: AppearanceSettings }; 
+  isCompact?: boolean; 
+  isDemandNotice?: boolean;
+}
+
+const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
   ({ property: propertyProp, data: dataProp, billType: billTypeProp, settings, isCompact = false, isDemandNotice = false }, ref) => {
     
     const data = dataProp || propertyProp;
@@ -90,11 +95,14 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
     
     const { fontFamily, fontSize, accentColor } = settings.appearance || {};
 
-    const fontClass = useMemo(() => ({
+    const fontClass = useMemo(() => {
+      const config: Record<string, string> = {
         sans: 'font-sans',
         serif: 'font-serif',
         mono: 'font-mono'
-    }[fontFamily || 'sans']), [fontFamily]);
+      };
+      return config[fontFamily || 'sans'] || config.sans;
+    }, [fontFamily]);
 
     const finalFontSize = useMemo(() => {
         const baseSize = fontSize || 12;
@@ -113,8 +121,10 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
     const getNumericValue = useCallback((key: string): number => {
         if (!data) return 0;
         const val = getPropertyValue(data as any, key);
-        if (val === undefined || val === null || String(val).trim() === '' || String(val) === '0' || String(val) === '0.0' || String(val) === '00' || String(val) === '0.00') return 0;
-        const num = Number(String(val).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
+        if (val === undefined || val === null) return 0;
+        const str = String(val).trim();
+        if (str === '' || str === '0' || str === '0.0' || str === '00' || str === '0.00') return 0;
+        const num = Number(str.replace(/,/g, '').replace(/[^0-9.-]/g, ''));
         return isNaN(num) ? 0 : num;
     }, [data]);
 
@@ -132,11 +142,8 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
         
         const numericKeys = ['license fee', 'bop amount', 'arrears', 'payment', 'rateable value', 'rate impost', 'total payment', 'permit fee', 'sanitation charged', 'previous balance', 'amount due', 'property rate'];
         if (numericKeys.some(k => valueKey.toLowerCase().includes(k))) {
-            const num = Number(strVal.replace(/,/g, '').replace(/[^0-9.-]/g, ''));
-            if (!isNaN(num)) {
-                if (valueKey.toLowerCase().includes('impost')) return strVal;
-                return formatToTwoDecimals(num);
-            }
+            if (valueKey.toLowerCase().includes('impost')) return strVal || '0.00';
+            return formatToTwoDecimals(val);
         }
         
         return strVal || '...';
@@ -144,9 +151,12 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
     
     const totalAmountPayable = useMemo(() => {
         if (!data) return '0.00';
+        
         const importedTotal = getPropertyValue(data as any, 'Amount Due');
-        if (importedTotal !== undefined && importedTotal !== null && String(importedTotal).trim() !== '' && String(importedTotal) !== '0' && String(importedTotal) !== '00' && String(importedTotal) !== '0.00') {
-            return formatToTwoDecimals(importedTotal);
+        const numImported = typeof importedTotal === 'number' ? importedTotal : Number(String(importedTotal || '').replace(/,/g, '').replace(/[^0-9.-]/g, ''));
+        
+        if (!isNaN(numImported) && numImported !== 0) {
+            return formatToTwoDecimals(numImported);
         }
 
         let calculated = 0;
@@ -163,7 +173,7 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
             const pay = getNumericValue('Payment');
             calculated = (pf + arr) - pay;
         } else {
-            const lf = getNumericValue('Property Rate');
+            const lf = getNumericValue('Property Rate') || getNumericValue('License Fee');
             const bop = getNumericValue('Bop Amount');
             const arr = getNumericValue('Arrears');
             const pay = getNumericValue('Payment');
@@ -198,14 +208,12 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
         return `${idStr}|${amtStr}|${new Date().getFullYear()}`;
     }, [data, totalAmountPayable]);
 
-    if (!data) return <div ref={ref} className="p-8 text-center text-muted-foreground">Loading Bill Data...</div>;
-
     const financialCalcs = useMemo(() => {
         const rvValue = getNumericValue('Rateable Value');
         const riValue = getNumericValue('Rate Impost');
         const scValue = getNumericValue('Sanitation Charged');
         const pbValue = getNumericValue('Previous Balance');
-        const tpValue = getNumericValue('Total Payment');
+        const tpValue = getNumericValue('Total Payment') || getNumericValue('Payment');
         const chargedValue = rvValue * riValue;
         const totalThisYearValue = chargedValue + scValue;
         const totalBillValue = totalThisYearValue + pbValue;
@@ -213,7 +221,7 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
         const pfValue = getNumericValue('Permit Fee');
         const bopTotalDueValue = (pfValue + getNumericValue('Arrears'));
 
-        const lfValue = getNumericValue('Property Rate');
+        const lfValue = getNumericValue('Property Rate') || getNumericValue('License Fee');
         const licenseBopValue = getNumericValue('Bop Amount');
         const licenseTotalDueValue = (lfValue + licenseBopValue + getNumericValue('Arrears'));
 
@@ -365,6 +373,7 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
                             <BillRow label="BOP FEE" value={formatToTwoDecimals(financialCalcs.licenseBopValue)} />
                             <BillRow label="ARREARS" value={formatToTwoDecimals(getNumericValue('Arrears'))} />
                             <BillRow label="TOTAL DUE" value={formatToTwoDecimals(financialCalcs.licenseTotalDueValue)} isBold />
+                            <BillRow label="LESS PAYMENT" value={formatToTwoDecimals(getNumericValue('Payment'))} />
                             <div className="flex justify-between p-2 border-b border-black items-center font-bold" style={accentStyle}>
                                 <span className="text-[1.1em]">TOTAL PAYABLE</span>
                                 <span className="text-right" style={{ fontSize: `${finalFontSize * 1.3}px` }}>GH&#8373; {totalAmountPayable}</span>
@@ -376,6 +385,7 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
                             <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(financialCalcs.licenseBopValue)}</div>
                             <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(getNumericValue('Arrears'))}</div>
                             <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(financialCalcs.licenseTotalDueValue)}</div>
+                            <div className="p-1 border-b border-black/20 flex-1 flex items-center justify-end">{formatToTwoDecimals(getNumericValue('Payment'))}</div>
                             <div className="p-2 border-b border-black flex items-center justify-end" style={accentStyle}>{totalAmountPayable}</div>
                         </div>
                     </div>
@@ -411,9 +421,10 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
       </div>
     );
   }
-));
-PrintableContent.displayName = 'PrintableContent';
+);
+PrintableContentBase.displayName = 'PrintableContentBase';
 
+export const PrintableContent = memo(PrintableContentBase);
 
 export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
   const [settings, setSettings] = useState<{general?: GeneralSettings, appearance?: AppearanceSettings}>({});
