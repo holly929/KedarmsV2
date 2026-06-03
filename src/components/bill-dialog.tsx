@@ -123,7 +123,6 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
         const val = getPropertyValue(data as any, valueKey);
         const strVal = val !== null && val !== undefined ? String(val).trim() : '';
         
-        // Data Integrity Fix: Map placeholder "0", "0.0", or "00" values to "..."
         const identityKeys = ['owner', 'name', 'town', 'suburb', 'property no', 's/n', 'sn', 'hotel', 'guest house', 'entity', 'business'];
         const isIdentityField = identityKeys.some(k => valueKey.toLowerCase().includes(k));
         
