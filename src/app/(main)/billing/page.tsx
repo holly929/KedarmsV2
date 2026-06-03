@@ -143,7 +143,7 @@ export default function BillingPage() {
     const set = new Set<string>();
     properties.forEach(p => {
         const t = getPropertyValue(p, 'Town');
-        if (t && String(t).trim() !== '' && String(t) !== '0') set.add(String(t).trim().toUpperCase());
+        if (t && String(t).trim() !== '' && String(t) !== '0' && String(t) !== '00') set.add(String(t).trim().toUpperCase());
     });
     return Array.from(set).sort();
   }, [properties]);
@@ -153,7 +153,7 @@ export default function BillingPage() {
     properties.forEach(p => {
         const t = getPropertyValue(p, 'Town');
         const s = getPropertyValue(p, 'Suburb');
-        if (s && String(s).trim() !== '' && String(s) !== '0' && (selectedTown === 'all' || String(t).trim().toUpperCase() === selectedTown)) {
+        if (s && String(s).trim() !== '' && String(s) !== '0' && String(s) !== '00' && (selectedTown === 'all' || String(t).trim().toUpperCase() === selectedTown)) {
             set.add(String(s).trim().toUpperCase());
         }
     });

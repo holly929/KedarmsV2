@@ -37,7 +37,7 @@ type AppearanceSettings = {
 };
 
 const formatToTwoDecimals = (val: any): string => {
-    if (val === undefined || val === null || String(val).trim() === '' || String(val) === '0' || String(val) === '0.0' || String(val) === '00' || String(val) === '0.00') return '0.00';
+    if (val === undefined || val === null || String(val).trim() === '' || String(val) === '0' || String(val) === '0.0' || String(val) === '00' || String(val) === '0.1' || String(val) === '0.00') return '0.00';
     const cleaned = String(val).replace(/,/g, '').replace(/[^0-9.-]/g, '');
     const num = Number(cleaned);
     if (isNaN(num)) return '0.00';
@@ -113,7 +113,7 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
     const getNumericValue = useCallback((key: string): number => {
         if (!data) return 0;
         const val = getPropertyValue(data as any, key);
-        if (val === undefined || val === null || String(val).trim() === '' || String(val) === '0' || String(val) === '0.0' || String(val) === '00' || String(val) === '0.00') return 0;
+        if (val === undefined || val === null || String(val).trim() === '' || String(val) === '0' || String(val) === '0.0' || String(val) === '00' || String(val) === '0.00' || String(val) === '0.1') return 0;
         const num = Number(String(val).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
         return isNaN(num) ? 0 : num;
     }, [data]);
@@ -124,11 +124,11 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
         
         const strVal = val !== null && val !== undefined ? String(val).trim() : '';
         
-        // Identity fields that should display as "..." if zero or empty
+        // Identity fields that should display as "..." if zero or empty placeholders
         const identityKeys = ['owner', 'name', 'town', 'suburb', 'property no', 's/n', 'sn', 'hotel', 'guest house', 'entity', 'business'];
         const isIdentityField = identityKeys.some(k => valueKey.toLowerCase().includes(k));
         
-        if (isIdentityField && (strVal === '' || strVal === '0' || strVal === '0.0' || strVal === '00' || strVal === '0.00')) {
+        if (isIdentityField && (strVal === '' || strVal === '0' || strVal === '0.0' || strVal === '00' || strVal === '0.1' || strVal === '0.00')) {
             return '...';
         }
         
