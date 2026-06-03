@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+// BulkPrintPage.ts
+import React, { useEffect, useState } from 'react'; // This line causes the error
+import { DemandNoticeTemplate } from './templates/DemandNoticeTemplate';
+
+const BulkPrintPage = () => {
+  // ... component logic
+  return (
+    // ... JSX
+  );
+};
+
+export default BulkPrintPage;
+// BulkPrintPage.ts
+import { useEffect, useState } from 'react'; // Remove 'React' from the import
+import { DemandNoticeTemplate } from './templates/DemandNoticeTemplate';
+
+const BulkPrintPage = () => {
+  // ... component logic
+  return (
+    // ... JSX
+  );
+};
+
+export default BulkPrintPage;
+      - name: Get changed JavaScript/TypeScript files
+        id: changed-js-ts-files
+        uses: tj-actions/changed-files@v40
+        with:
+          files: |
+            **/*.js
+            **/*.jsx
+            **/*.ts
+            **/*.tsx
+
+      - name: Run ESLint on changed files
+        if: steps.changed-js-ts-files.outputs.any_changed == 'true'
+        run: |
+          CHANGED_FILES="${{ steps.changed-js-ts-files.outputs.all_changed_files }}"
+          echo "Linting changed files: $CHANGED_FILES"
+          # Run ESLint directly, using the config file and the list of changed files
+          ./node_modules/.bin/eslint --config eslint.config.mjs $CHANGED_FILES
+
+      - name: Run TypeScript check
+        run: npm run type-check

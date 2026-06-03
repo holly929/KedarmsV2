@@ -174,12 +174,10 @@ export default function BillingPage() {
     let intermediateData = propertiesWithStatus;
     if (activeTab !== 'all') intermediateData = intermediateData.filter(p => p.status.toLowerCase() === activeTab);
     
-    // Filter by Town
     if (selectedTown !== 'all') {
         intermediateData = intermediateData.filter(p => String(getPropertyValue(p, 'Town')).trim().toUpperCase() === selectedTown);
     }
     
-    // Filter by Suburb
     if (selectedSuburb !== 'all') {
         intermediateData = intermediateData.filter(p => String(getPropertyValue(p, 'Suburb')).trim().toUpperCase() === selectedSuburb);
     }
@@ -283,7 +281,6 @@ export default function BillingPage() {
             </div>
           </div>
 
-          {/* DYNAMIC LOCATION FILTERS */}
           <Card className="bg-muted/20 border-dashed">
             <CardContent className="p-4 flex flex-col md:flex-row items-end gap-4">
                 <div className="grid gap-1.5 flex-1">
