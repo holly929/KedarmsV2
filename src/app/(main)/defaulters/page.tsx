@@ -133,13 +133,13 @@ function DefaulterList<T extends Property | Bop | License>({ data, headers, isMo
         return filteredData.reduce((acc, item) => {
             if (title === 'property') {
                 const p = item as Property;
-                const rateableValue = Number(getPropertyValue(p, 'Rateable Value')) || 0;
-                const rateImpost = Number(getPropertyValue(p, 'Rate Impost')) || 0;
-                const sanitation = Number(getPropertyValue(p, 'Sanitation Charged')) || 0;
-                const previousBalance = Number(getPropertyValue(p, 'Previous Balance')) || 0;
-                const payment = Number(getPropertyValue(p, 'Total Payment')) || 0;
-                const due = (rateableValue * rateImpost) + sanitation + previousBalance;
-                const outstanding = due > payment ? due - payment : 0;
+                const rv = Number(getPropertyValue(p, 'Rateable Value')) || 0;
+                const ri = Number(getPropertyValue(p, 'Rate Impost')) || 0;
+                const sc = Number(getPropertyValue(p, 'Sanitation Charged')) || 0;
+                const pb = Number(getPropertyValue(p, 'Previous Balance')) || 0;
+                const tp = Number(getPropertyValue(p, 'Total Payment')) || 0;
+                const due = (rv * ri) + sc + pb;
+                const outstanding = due > tp ? due - tp : 0;
                 return acc + outstanding;
             } else if (title === 'bop') {
                 const b = item as Bop;
