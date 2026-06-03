@@ -124,6 +124,7 @@ export const PrintableContent = memo(forwardRef<HTMLDivElement, {
         
         const strVal = val !== null && val !== undefined ? String(val).trim() : '';
         
+        // Data Integrity fix: handle "0", "0.0", "00" as "..." for identity fields
         const identityKeys = ['owner', 'name', 'town', 'suburb', 'property no', 's/n', 'sn', 'hotel', 'guest house', 'entity', 'business'];
         const isIdentityField = identityKeys.some(k => valueKey.toLowerCase().includes(k));
         
