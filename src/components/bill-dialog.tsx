@@ -115,6 +115,8 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
     const baseStyle = useMemo(() => ({
         fontSize: `${finalFontSize}px`,
         lineHeight: `${finalFontSize * 1.2}px`,
+        color: 'black',
+        backgroundColor: 'white'
     }), [finalFontSize]);
 
     const accentStyle = useMemo(() => ({
@@ -194,18 +196,20 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
     }, [data, totalAmountPayable]);
 
     return (
-      <div ref={ref} className={cn("text-black bg-white w-full h-full box-border break-inside-avoid page-break-inside-avoid", fontClass, isCompact ? 'p-1' : 'p-2')} style={baseStyle}>
-        <div className="border-[3px] border-double border-black p-1.5 relative h-full flex flex-col shadow-sm overflow-hidden">
+      <div ref={ref} className={cn("text-black bg-white w-full h-full box-border break-inside-avoid page-break-inside-avoid print-only", fontClass, isCompact ? 'p-1' : 'p-2')} style={baseStyle}>
+        <div className="border-[3px] border-double border-black p-1.5 relative h-full flex flex-col shadow-sm overflow-hidden bg-white">
           <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
               {settings.appearance?.ghanaLogo && (
+                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img src={settings.appearance.ghanaLogo} alt="Watermark" width={180} height={180} style={{objectFit: 'contain'}} />
               )}
           </div>
           
-          <div className="relative z-10 flex flex-col h-full">
+          <div className="relative z-10 flex flex-col h-full bg-transparent">
             <header className="flex justify-between items-center mb-1 border-b-2 border-black pb-0.5 shrink-0">
                 <div className="w-[50px] flex justify-start">
                     {settings.appearance?.ghanaLogo && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={settings.appearance.ghanaLogo} alt="Ghana" className="object-contain h-auto" style={{ width: '40px' }} />
                     )}
                 </div>
@@ -223,6 +227,7 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                 </div>
                 <div className="w-[50px] flex justify-end">
                     {settings.appearance?.assemblyLogo && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={settings.appearance.assemblyLogo} alt="Logo" className="object-contain h-auto" style={{ width: '40px' }} />
                     )}
                 </div>
@@ -330,6 +335,7 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                     <div className="w-[140px] text-center">
                         <div className="mx-auto flex items-center justify-center h-7">
                             {settings.appearance?.signature && (
+                                /* eslint-disable-next-line @next/next/no-img-element */
                                 <img src={settings.appearance.signature} alt="Signature" className="max-h-full max-w-full object-contain" />
                             )}
                         </div>

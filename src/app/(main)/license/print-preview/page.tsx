@@ -238,8 +238,11 @@ export default function BulkLicensePrintPage() {
          {isPreparing ? <div className="w-full max-w-md"><Progress value={(progress / allLicenses.length) * 100} /><p className="mt-2 text-center">Preparing {progress} / {allLicenses.length}</p></div> : <p>Ready to Print</p>}
       </main>
       
-      <div className="fixed opacity-0 pointer-events-none top-0 left-0" style={{ zIndex: -1 }}>
-        <BillSheet ref={componentRef} licenses={renderedLicenses} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
+      {/* Hidden print container - off screen but not opacity:0 to allow effect rendering */}
+      <div className="fixed top-0 left-0 -z-50 pointer-events-none" style={{ width: '210mm', height: '0', overflow: 'hidden' }}>
+        <div ref={componentRef}>
+            <BillSheet licenses={renderedLicenses} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
+        </div>
       </div>
     </div>
   );
