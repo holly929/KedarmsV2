@@ -119,10 +119,10 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
         backgroundColor: 'white',
         WebkitPrintColorAdjust: 'exact',
         printColorAdjust: 'exact',
-        width: '210mm',
-        height: '297mm',
+        width: isCompact ? '100%' : '210mm',
+        height: isCompact ? '100%' : '297mm',
         boxSizing: 'border-box'
-    } as React.CSSProperties), [finalFontSize]);
+    } as React.CSSProperties), [finalFontSize, isCompact]);
 
     const accentStyle = useMemo(() => ({
         backgroundColor: isDemandNotice ? '#FEE2E2' : (accentColor || '#F1F5F9'),
@@ -206,7 +206,7 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
       <div 
         ref={ref} 
         className={cn(
-          "printable-content text-black bg-white w-[210mm] h-[297mm] box-border relative overflow-hidden", 
+          "printable-content text-black bg-white box-border relative overflow-hidden", 
           fontClass, 
           isCompact ? 'p-1' : 'p-3'
         )} 

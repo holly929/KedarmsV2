@@ -172,8 +172,8 @@ export default function BulkPrintPage() {
          {isPreparing ? <div className="w-full max-w-md"><Progress value={(progress / allProperties.length) * 100} /><p className="mt-2 text-center">Preparing {progress} / {allProperties.length}</p></div> : <div className="text-center space-y-2"><CheckCircle className="h-12 w-12 text-green-500 mx-auto" /><p className="text-muted-foreground font-medium">Ready to Print. Check the "Demand Notice" toggle above if needed.</p></div>}
       </main>
       
-      {/* High-fidelity render container (Positioned off-canvas to ensure it's painted by the browser engine) */}
-      <div className="absolute left-[-9999px] top-0 pointer-events-none" style={{ WebkitPrintColorAdjust: 'exact' }}>
+      {/* Off-canvas high-fidelity render container */}
+      <div className="fixed top-0 left-0 -z-50 w-full h-full overflow-auto bg-white opacity-0 pointer-events-none" style={{ WebkitPrintColorAdjust: 'exact' }}>
         <div ref={componentRef} className="bg-white">
             <BillSheet properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
         </div>
