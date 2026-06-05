@@ -19,11 +19,6 @@
       }
     ],
     "paths": {
-// Change this:
-import { Tabs, TabsContent, ... } from "@/tabs"
-
-// To this:
-import { Tabs, TabsContent, ... } from "@/components/ui/tabs"
       "@/*": ["./src/*"],
       "@/tabs": ["./src/components/ui/tabs"]
     }
