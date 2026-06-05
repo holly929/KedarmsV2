@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -114,7 +113,6 @@ export default function BillsPage() {
       return;
     }
     const selectedBills = bills.filter(bill => selectedRows.includes(bill.id));
-    const snapshotsToPrint = selectedBills.map(bill => bill.propertySnapshot);
     const billType = selectedBills[0]?.billType;
 
     if (selectedBills.some(b => b.billType !== billType)) {
@@ -122,14 +120,14 @@ export default function BillsPage() {
         return;
     }
 
+    // Use sessionStorage for print IDs to prevent QuotaExceededError on localStorage
+    sessionStorage.setItem('selectedBillIdsForPrinting', JSON.stringify(selectedRows));
+
     if (billType === 'property') {
-      localStorage.setItem('selectedPropertiesForPrinting', JSON.stringify(snapshotsToPrint));
       router.push('/properties/print-preview');
     } else if (billType === 'bop') {
-      localStorage.setItem('selectedBopsForPrinting', JSON.stringify(snapshotsToPrint));
       router.push('/bop/print-preview');
     } else if (billType === 'license') {
-      localStorage.setItem('selectedLicensesForPrinting', JSON.stringify(snapshotsToPrint));
       router.push('/license/print-preview');
     }
   };

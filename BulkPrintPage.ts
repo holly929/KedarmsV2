@@ -1,3 +1,3 @@
-// This file is cleared to prevent global scope conflicts and duplicate identifier errors during builds.
-// The main printing logic is handled within the app directory components.
+// This file is stubbed to prevent global build conflicts in Next.js.
+// The actual printing logic is now managed within the App Router directory.
 export {};

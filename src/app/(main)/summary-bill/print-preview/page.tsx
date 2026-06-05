@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
@@ -137,8 +136,8 @@ export default function SummaryBillPrintPage() {
     setIsClient(true);
     const loadData = () => {
         try {
-            const storedWorkbook = localStorage.getItem('summaryBillWorkbookForPrinting');
-            const storedActiveSheet = localStorage.getItem('activeSheetForPrinting');
+            const storedWorkbook = sessionStorage.getItem('summaryBillWorkbookForPrinting');
+            const storedActiveSheet = sessionStorage.getItem('activeSheetForPrinting');
 
             if (storedWorkbook) setWorkbook(JSON.parse(storedWorkbook));
             if (storedActiveSheet) setActiveSheet(storedActiveSheet);

@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useBillData } from '@/context/BillDataContext';
+import { useBopData } from '@/context/BopDataContext';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { store } from '@/lib/store';
@@ -120,7 +121,8 @@ BillSheet.displayName = 'BillSheet';
 export default function BulkBopPrintPage() {
   const router = useRouter();
   const componentRef = useRef<HTMLDivElement>(null);
-  const { addBills } = useBillData();
+  const { addBills, bills } = useBillData();
+  const { bopData } = useBopData();
   const { toast } = useToast();
   
   const [allBops, setAllBops] = useState<Bop[]>([]);
@@ -136,13 +138,30 @@ export default function BulkBopPrintPage() {
 
   useEffect(() => {
     setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+
     const loadData = () => {
         try {
-            const storedBops = localStorage.getItem('selectedBopsForPrinting');
-            const initialDemand = localStorage.getItem('printDemandMode') === 'true';
+            const storedIdsJson = sessionStorage.getItem('selectedBopIdsForPrinting');
+            const storedBillIdsJson = sessionStorage.getItem('selectedBillIdsForPrinting');
+            const initialDemand = sessionStorage.getItem('printDemandMode') === 'true';
             
-            if (storedBops) {
-                setAllBops(JSON.parse(storedBops));
+            let sourceBops: Bop[] = [];
+
+            if (storedIdsJson) {
+                const ids = JSON.parse(storedIdsJson);
+                sourceBops = bopData.filter(b => ids.includes(b.id));
+            } else if (storedBillIdsJson) {
+                const ids = JSON.parse(storedBillIdsJson);
+                const selectedBills = bills.filter(b => ids.includes(b.id));
+                sourceBops = selectedBills.map(b => b.propertySnapshot as Bop);
+            }
+            
+            if (sourceBops.length > 0) {
+                setAllBops(sourceBops);
             }
             
             setIsDemandNotice(initialDemand);
@@ -157,7 +176,7 @@ export default function BulkBopPrintPage() {
         }
     }
     loadData();
-  }, [toast]);
+  }, [isClient, bopData, bills, toast]);
 
   const recordBills = async () => {
     if (renderedBops.length === 0) return;

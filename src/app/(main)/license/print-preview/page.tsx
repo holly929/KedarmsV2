@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useBillData } from '@/context/BillDataContext';
+import { useLicenseData } from '@/context/LicenseDataContext';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { store } from '@/lib/store';
@@ -120,7 +121,8 @@ BillSheet.displayName = 'BillSheet';
 export default function BulkLicensePrintPage() {
   const router = useRouter();
   const componentRef = useRef<HTMLDivElement>(null);
-  const { addBills } = useBillData();
+  const { addBills, bills } = useBillData();
+  const { licenseData } = useLicenseData();
   const { toast } = useToast();
   
   const [allLicenses, setAllLicenses] = useState<License[]>([]);
@@ -136,13 +138,30 @@ export default function BulkLicensePrintPage() {
 
   useEffect(() => {
     setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+
     const loadData = () => {
         try {
-            const storedLicenses = localStorage.getItem('selectedLicensesForPrinting');
-            const initialDemand = localStorage.getItem('printDemandMode') === 'true';
+            const storedIdsJson = sessionStorage.getItem('selectedLicenseIdsForPrinting');
+            const storedBillIdsJson = sessionStorage.getItem('selectedBillIdsForPrinting');
+            const initialDemand = sessionStorage.getItem('printDemandMode') === 'true';
             
-            if (storedLicenses) {
-                setAllLicenses(JSON.parse(storedLicenses));
+            let sourceLicenses: License[] = [];
+
+            if (storedIdsJson) {
+                const ids = JSON.parse(storedIdsJson);
+                sourceLicenses = licenseData.filter(l => ids.includes(l.id));
+            } else if (storedBillIdsJson) {
+                const ids = JSON.parse(storedBillIdsJson);
+                const selectedBills = bills.filter(b => ids.includes(b.id));
+                sourceLicenses = selectedBills.map(b => b.propertySnapshot as License);
+            }
+            
+            if (sourceLicenses.length > 0) {
+                setAllLicenses(sourceLicenses);
             }
             
             setIsDemandNotice(initialDemand);
@@ -157,7 +176,7 @@ export default function BulkLicensePrintPage() {
         }
     }
     loadData();
-  }, [toast]);
+  }, [isClient, licenseData, bills, toast]);
 
   const recordBills = async () => {
     if (renderedLicenses.length === 0) return;

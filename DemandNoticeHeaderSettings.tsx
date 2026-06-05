@@ -1,3 +1,3 @@
-// This root-level settings file has been cleared to prevent build conflicts.
-// Demand Notice settings are now managed within the application Settings module.
+// This file is stubbed to prevent global build conflicts in Next.js.
+// Settings are now managed via the system settings store.
 export {};

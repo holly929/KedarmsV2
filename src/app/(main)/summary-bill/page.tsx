@@ -183,13 +183,6 @@ function GoogleSheetIntegrationView() {
                 </ol>
               </AlertDescription>
             </Alert>
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Having trouble viewing or editing?</AlertTitle>
-              <AlertDescription>
-                To interact with the sheet, you must be logged into the correct Google account in this browser. If it doesn't load, try opening it in a new tab first, then refresh this page.
-              </AlertDescription>
-            </Alert>
             <div className="aspect-video w-full rounded-lg border overflow-hidden">
               <iframe 
                 src={sheetUrl} 
@@ -278,8 +271,8 @@ export default function SummaryBillPage() {
 
   const handlePrint = () => {
     if (Object.keys(workbook).length > 0 && currentSheetData.length > 0) {
-      localStorage.setItem('summaryBillWorkbookForPrinting', JSON.stringify(workbook));
-      localStorage.setItem('activeSheetForPrinting', selectedSheet);
+      sessionStorage.setItem('summaryBillWorkbookForPrinting', JSON.stringify(workbook));
+      sessionStorage.setItem('activeSheetForPrinting', selectedSheet);
       router.push('/summary-bill/print-preview');
     } else {
       toast({

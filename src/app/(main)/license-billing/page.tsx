@@ -94,15 +94,17 @@ export default function LicenseBillingPage() {
   }, [licenseData]);
 
   const handleViewBill = (license: License, isDemand: boolean = false) => {
-    localStorage.setItem('selectedLicensesForPrinting', JSON.stringify([license]));
-    localStorage.setItem('printDemandMode', isDemand ? 'true' : 'false');
+    // Use sessionStorage for print selections to avoid QuotaExceededError on localStorage
+    sessionStorage.setItem('selectedLicenseIdsForPrinting', JSON.stringify([license.id]));
+    sessionStorage.setItem('printDemandMode', isDemand ? 'true' : 'false');
     router.push('/license/print-preview');
   };
   
   const handlePrintSelected = () => {
     if (selectedRows.length > 0) {
-      localStorage.setItem('selectedLicensesForPrinting', JSON.stringify(selectedLicenses));
-      localStorage.setItem('printDemandMode', 'false');
+      // Use sessionStorage for print selections to avoid QuotaExceededError on localStorage
+      sessionStorage.setItem('selectedLicenseIdsForPrinting', JSON.stringify(selectedRows));
+      sessionStorage.setItem('printDemandMode', 'false');
       router.push('/license/print-preview');
     } else {
       toast({
@@ -114,6 +116,7 @@ export default function LicenseBillingPage() {
   };
 
   const handlePayOnline = (license: License) => {
+    // Temporary payment initiation uses localStorage but minimal data
     localStorage.setItem('paymentBill', JSON.stringify({ type: 'license', data: license }));
     router.push(`/payment/license/${license.id}`);
   };
@@ -132,8 +135,8 @@ export default function LicenseBillingPage() {
   };
 
   const handleSendSingleSms = (license: License) => {
-    setSmsItems([license]);
-    setIsSmsDialogOpen(true);
+      setSmsItems([license]);
+      setIsSmsDialogOpen(true);
   };
   
   const handleDeleteRow = (id: string) => {
@@ -453,7 +456,7 @@ export default function LicenseBillingPage() {
                 )}
             </div>
         </div>
-        <TabsContent value={activeTab}>
+        <TabsContent value="all">
             <Card>
                 <CardHeader>
                 <CardTitle>License Records</CardTitle>

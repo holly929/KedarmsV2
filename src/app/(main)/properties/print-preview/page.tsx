@@ -13,44 +13,27 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useBillData } from '@/context/BillDataContext';
+import { usePropertyData } from '@/context/PropertyDataContext';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { getPropertyValue } from '@/lib/property-utils';
 import { store } from '@/lib/store';
 import { cn } from '@/lib/utils';
 
-type GeneralSettings = {
-  assemblyName?: string;
-  postalAddress?: string;
-  contactPhone?: string;
-};
-
-type AppearanceSettings = {
-  assemblyLogo?: string;
-  ghanaLogo?: string;
-  signature?: string;
-  billWarningText?: string;
-  demandNoticeCaption?: string;
-  fontFamily?: 'sans' | 'serif' | 'mono';
-  fontSize?: number;
-  accentColor?: string;
-};
+type GeneralSettings = { assemblyName?: string; postalAddress?: string; contactPhone?: string; };
+type AppearanceSettings = { assemblyLogo?: string; ghanaLogo?: string; signature?: string; billWarningText?: string; demandNoticeCaption?: string; fontFamily?: 'sans' | 'serif' | 'mono'; fontSize?: number; accentColor?: string; };
 
 const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], settings: { general: GeneralSettings, appearance: AppearanceSettings }, billsPerPage: number, isCompact: boolean, isDemandNotice: boolean }>(({ properties, settings, billsPerPage, isCompact, isDemandNotice }, ref) => {
-    
     if (billsPerPage === 4) {
-        const propertyChunks: Property[][] = [];
-        for (let i = 0; i < properties.length; i += 4) {
-            propertyChunks.push(properties.slice(i, i + 4));
-        }
-
+        const chunks: Property[][] = [];
+        for (let i = 0; i < properties.length; i += 4) chunks.push(properties.slice(i, i + 4));
         return (
             <div ref={ref} className="bg-white">
-                {propertyChunks.map((chunk, index) => (
+                {chunks.map((chunk, index) => (
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white grid grid-cols-2 grid-rows-2 box-border overflow-hidden">
-                        {chunk.map((property) => (
-                            <div key={property.id} className="w-full h-full box-border overflow-hidden border-dashed border-gray-300 [&:nth-child(1)]:border-r [&:nth-child(1)]:border-b [&:nth-child(2)]:border-b [&:nth-child(3)]:border-r p-[5mm]">
-                                <PrintableContent property={property} settings={settings} isCompact={true} isDemandNotice={isDemandNotice} />
+                        {chunk.map(p => (
+                            <div key={p.id} className="w-full h-full box-border overflow-hidden border-dashed border-gray-300 [&:nth-child(1)]:border-r [&:nth-child(1)]:border-b [&:nth-child(2)]:border-b [&:nth-child(3)]:border-r p-[5mm]">
+                                <PrintableContent property={p} settings={settings} isCompact={true} isDemandNotice={isDemandNotice} />
                             </div>
                         ))}
                     </div>
@@ -58,23 +41,17 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
             </div>
         );
     }
-    
     if (billsPerPage === 2) {
-        const propertyChunks: Property[][] = [];
-        for (let i = 0; i < properties.length; i += 2) {
-            propertyChunks.push(properties.slice(i, i + 2));
-        }
-
+        const chunks: Property[][] = [];
+        for (let i = 0; i < properties.length; i += 2) chunks.push(properties.slice(i, i + 2));
         return (
             <div ref={ref} className="bg-white">
-                {propertyChunks.map((chunk, index) => (
+                {chunks.map((chunk, index) => (
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex flex-col box-border overflow-hidden">
-                        {chunk.map((property, chunkIndex) => (
-                            <div key={property.id} className="h-[148.5mm] w-full box-border overflow-hidden p-[8mm] relative">
-                                <PrintableContent property={property} settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
-                                {chunk.length === 2 && chunkIndex === 0 && (
-                                   <div className="absolute bottom-0 left-[5%] right-[5%] h-[1px] border-t border-dashed border-gray-400"></div>
-                                )}
+                        {chunk.map((p, ci) => (
+                            <div key={p.id} className="h-[148.5mm] w-full box-border overflow-hidden p-[8mm] relative">
+                                <PrintableContent property={p} settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
+                                {chunk.length === 2 && ci === 0 && <div className="absolute bottom-0 left-[5%] right-[5%] h-[1px] border-t border-dashed border-gray-400"></div>}
                             </div>
                         ))}
                     </div>
@@ -82,12 +59,11 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
             </div>
         );
     }
-    
     return (
         <div ref={ref} className="bg-white">
-            {properties.map((property) => (
-                <div key={property.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white overflow-hidden p-[10mm]">
-                    <PrintableContent property={property} settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
+            {properties.map(p => (
+                <div key={p.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white overflow-hidden p-[10mm]">
+                    <PrintableContent property={p} settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
                 </div>
             ))}
         </div>
@@ -95,211 +71,93 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
 });
 BillSheet.displayName = 'BillSheet';
 
-
 export default function BulkPrintPage() {
   const router = useRouter();
   const componentRef = useRef<HTMLDivElement>(null);
-  const { addBills } = useBillData();
+  const { addBills, bills } = useBillData();
+  const { properties } = usePropertyData();
   const { toast } = useToast();
   
   const [allProperties, setAllProperties] = useState<Property[]>([]);
   const [renderedProperties, setRenderedProperties] = useState<Property[]>([]);
   const [settings, setSettings] = useState<{general: GeneralSettings, appearance: AppearanceSettings}>({ general: {}, appearance: {} });
   const [isClient, setIsClient] = useState(false);
-
   const [isPreparing, setIsPreparing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [billsPerPage, setBillsPerPage] = useState(2);
   const [isCompact, setIsCompact] = useState(false);
   const [isDemandNotice, setIsDemandNotice] = useState(false);
 
+  useEffect(() => { setIsClient(true); }, []);
+
   useEffect(() => {
-    setIsClient(true);
-    const loadData = () => {
-        try {
-            const storedProperties = localStorage.getItem('selectedPropertiesForPrinting');
-            const initialDemand = localStorage.getItem('printDemandMode') === 'true';
-            
-            if (storedProperties) {
-                setAllProperties(JSON.parse(storedProperties));
-            }
-            
-            setIsDemandNotice(initialDemand);
-            setSettings({
-                general: store.settings.generalSettings || {},
-                appearance: store.settings.appearanceSettings || {},
-            });
-        } catch (error) {
-            console.error("Could not load data", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not load data for printing.' });
-        }
-    }
-    loadData();
-  }, [toast]);
-
-  const recordBills = async () => {
-    if (renderedProperties.length === 0) return;
-
-    const newBills: Omit<Bill, 'id'>[] = renderedProperties.map(p => {
-        const importedAmountDue = Number(String(getPropertyValue(p, 'Amount Due') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
-        
-        let totalAmountDue = 0;
-        if (!isNaN(importedAmountDue) && importedAmountDue !== 0) {
-            totalAmountDue = importedAmountDue;
-        } else {
-            const rateableValue = Number(String(getPropertyValue(p, 'Rateable Value') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
-            const rateImpost = Number(String(getPropertyValue(p, 'Rate Impost') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
-            const sanitationCharged = Number(String(getPropertyValue(p, 'Sanitation Charged') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
-            const previousBalance = Number(String(getPropertyValue(p, 'Previous Balance') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
-            const totalPayment = Number(String(getPropertyValue(p, 'Total Payment') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
-
-            const amountCharged = rateableValue * rateImpost;
-            const totalThisYear = amountCharged + sanitationCharged;
-            totalAmountDue = totalThisYear + previousBalance - totalPayment;
-        }
-
-        return {
-            propertyId: p.id,
-            propertySnapshot: p,
-            generatedAt: new Date().toISOString(),
-            year: new Date().getFullYear(),
-            totalAmountDue: totalAmountDue,
-            billType: 'property',
-        };
-    });
+    if (!isClient) return;
+    const idsJson = sessionStorage.getItem('selectedPropertyIdsForPrinting');
+    const billIdsJson = sessionStorage.getItem('selectedBillIdsForPrinting');
+    const demand = sessionStorage.getItem('printDemandMode') === 'true';
     
-    const success = await addBills(newBills);
-    if (success) {
-      toast({
-          title: 'Bills Recorded',
-          description: `${newBills.length} bills have been recorded in the history.`,
-      });
+    if (idsJson) {
+      const ids = JSON.parse(idsJson);
+      const source = properties.filter(p => ids.includes(p.id));
+      setAllProperties(source);
+    } else if (billIdsJson) {
+      const ids = JSON.parse(billIdsJson);
+      const source = bills.filter(b => ids.includes(b.id)).map(b => b.propertySnapshot as Property);
+      setAllProperties(source);
     }
-  };
+
+    setIsDemandNotice(demand);
+    setSettings({ general: store.settings.generalSettings || {}, appearance: store.settings.appearanceSettings || {} });
+  }, [isClient, properties, bills]);
 
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
-    onAfterPrint: () => recordBills(),
+    onAfterPrint: async () => {
+      const newBills = renderedProperties.map(p => ({
+        propertyId: p.id,
+        propertySnapshot: p,
+        generatedAt: new Date().toISOString(),
+        year: new Date().getFullYear(),
+        totalAmountDue: Number(getPropertyValue(p, 'Amount Due')) || 0,
+        billType: 'property' as const,
+      }));
+      await addBills(newBills);
+      toast({ title: 'Bills Recorded' });
+    }
   });
-
-  const handleGenerateAndPrint = () => {
-    if (renderedProperties.length === 0) {
-        toast({ variant: 'destructive', title: 'No Bills Ready', description: 'There are no bills prepared for printing.' });
-        return;
-    };
-    handlePrint();
-  };
 
   useEffect(() => {
     if (allProperties.length > 0 && isClient) {
-        setIsPreparing(true);
-        setRenderedProperties([]);
-        setProgress(0);
-        
-        const propertiesToRender = [...allProperties];
-        let currentIndex = 0;
-        const chunkSize = 40; // Increased batch size for performance
-
-        const renderChunk = () => {
-            if (currentIndex >= propertiesToRender.length) {
-                setIsPreparing(false);
-                return;
-            }
-
-            const nextIndex = Math.min(currentIndex + chunkSize, propertiesToRender.length);
-            const chunk = propertiesToRender.slice(currentIndex, nextIndex);
-            setRenderedProperties(prev => [...prev, ...chunk]);
-            setProgress(nextIndex);
-            currentIndex = nextIndex;
-
-            // Short delay to allow browser to yield but keep it fast
-            setTimeout(renderChunk, 5);
+        setIsPreparing(true); setRenderedProperties([]); setProgress(0);
+        let current = 0; const chunk = 40;
+        const render = () => {
+            if (current >= allProperties.length) { setIsPreparing(false); return; }
+            const next = Math.min(current + chunk, allProperties.length);
+            setRenderedProperties(p => [...p, ...allProperties.slice(current, next)]);
+            setProgress(next); current = next;
+            setTimeout(render, 5);
         };
-        
-        renderChunk();
+        render();
     }
   }, [allProperties, isClient]);
 
-  if (!isClient) return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
-
-  if (isPreparing) {
-    return (
-      <div className="flex flex-col min-h-screen bg-background">
-        <header className="no-print bg-card border-b p-4 flex items-center justify-between sticky top-0 z-10">
-          <h1 className="text-xl font-semibold">Accelerated Preparation...</h1>
-        </header>
-        <main className="flex-grow flex flex-col items-center justify-center text-center p-4">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-          <h2 className="text-2xl font-semibold">Optimizing Batch</h2>
-          <p className="text-muted-foreground mt-2 max-w-md">
-            Processing {allProperties.length} records. Performance optimizations enabled for large volumes.
-          </p>
-          <div className="w-full max-w-md mt-6">
-            <Progress value={allProperties.length > 0 ? (progress / allProperties.length) * 100 : 0} />
-            <p className="text-sm text-muted-foreground mt-2">
-              {progress} / {allProperties.length} ready
-            </p>
-          </div>
-        </main>
-      </div>
-    );
-  }
+  if (!isClient) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <header className="no-print bg-card border-b p-4 flex flex-col sm:flex-row items-center justify-between sticky top-0 z-10 gap-4">
-        <div className="flex items-center gap-4 w-full sm:w-auto">
-            <Button asChild variant="outline" size="sm">
-                <Link href="/billing">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back
-                </Link>
-            </Button>
-            <h1 className="text-lg sm:text-xl font-semibold">
-                Batch Print ({allProperties.length})
-            </h1>
+      <header className="no-print bg-card border-b p-4 flex justify-between sticky top-0 z-10">
+        <div className="flex items-center gap-4">
+            <Button asChild variant="outline" size="sm"><Link href="/billing"><ArrowLeft className="mr-2 h-4 w-4" />Back</Link></Button>
+            <h1 className="text-xl font-semibold">Batch Print ({allProperties.length})</h1>
         </div>
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-            <div className="flex items-center space-x-2 border px-3 py-1 rounded-md bg-red-50 dark:bg-red-950/20">
-                <Checkbox id="demand-mode" checked={isDemandNotice} onCheckedChange={(checked) => setIsDemandNotice(Boolean(checked))} />
-                <Label htmlFor="demand-mode" className="whitespace-nowrap text-red-700 dark:text-red-400 font-bold flex items-center gap-1">
-                  <FileWarning className="h-3 w-3" /> Demand Notice
-                </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-                <Checkbox id="compact-mode" checked={isCompact || billsPerPage === 4} onCheckedChange={(checked) => setIsCompact(Boolean(checked))} disabled={billsPerPage === 4} />
-                <Label htmlFor="compact-mode" className="whitespace-nowrap">Compact Mode</Label>
-            </div>
-            <div className="flex items-center space-x-2 w-full sm:w-auto">
-                <Label htmlFor="bills-per-page" className="whitespace-nowrap">Bills per Page</Label>
-                <Select value={String(billsPerPage)} onValueChange={(v) => setBillsPerPage(Number(v))}>
-                    <SelectTrigger id="bills-per-page" className="w-full sm:w-[80px]">
-                        <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="1">1</SelectItem>
-                        <SelectItem value="2">2</SelectItem>
-                        <SelectItem value="4">4</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            <Button onClick={handleGenerateAndPrint} disabled={renderedProperties.length === 0} className={cn("w-full sm:w-auto", isDemandNotice ? "bg-red-600 hover:bg-red-700" : "")}>
-              <Printer className="mr-2 h-4 w-4" />
-              Print Batch
-            </Button>
+        <div className="flex items-center gap-4">
+            <Select value={String(billsPerPage)} onValueChange={v => setBillsPerPage(Number(v))}><SelectTrigger className="w-[80px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="1">1</SelectItem><SelectItem value="2">2</SelectItem><SelectItem value="4">4</SelectItem></SelectContent></Select>
+            <Button onClick={() => handlePrint()} disabled={isPreparing}><Printer className="mr-2 h-4 w-4" />Print</Button>
         </div>
       </header>
-
-      <main className="flex-grow flex items-center justify-center p-4 print:hidden">
-         <div className="text-center">
-            <h2 className="text-2xl font-semibold">Batch Ready</h2>
-            <p className="text-muted-foreground mt-2">
-                The batch of {allProperties.length} notices is loaded and optimized for memory efficiency.
-            </p>
-            <p className="text-muted-foreground mt-1">Click "Print Batch" to open the system dialog.</p>
-         </div>
+      <main className="flex-grow flex flex-col items-center justify-center p-4 print:hidden">
+         {isPreparing ? <div className="w-full max-w-md"><Progress value={(progress / allProperties.length) * 100} /><p className="mt-2 text-center">Preparing {progress} / {allProperties.length}</p></div> : <p>Ready to Print</p>}
       </main>
-      
       <div className="absolute -left-[9999px] top-0 pointer-events-none">
         <BillSheet ref={componentRef} properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
       </div>

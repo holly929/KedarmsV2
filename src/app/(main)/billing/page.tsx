@@ -37,7 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Property, PropertyWithStatus, BillStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -90,18 +90,20 @@ export default function BillingPage() {
 
   const handleViewBill = (property: Property, isDemand: boolean = false) => {
     const type = getPropertyValue(property, 'Type')?.toLowerCase().includes('bop') ? 'BOP' : 'PROPERTY_RATE';
-    localStorage.setItem('selectedPropertiesForPrinting', JSON.stringify([property]));
-    localStorage.setItem('printDemandMode', isDemand ? 'true' : 'false');
-    localStorage.setItem('printNoticeType', type);
+    // Use sessionStorage for print selections to avoid QuotaExceededError on localStorage
+    sessionStorage.setItem('selectedPropertyIdsForPrinting', JSON.stringify([property.id]));
+    sessionStorage.setItem('printDemandMode', isDemand ? 'true' : 'false');
+    sessionStorage.setItem('printNoticeType', type);
     router.push('/properties/print-preview');
   };
 
   const handlePrintSelected = () => {
     if (selectedRows.length > 0) {
       const type = getPropertyValue(selectedProperties[0], 'Type')?.toLowerCase().includes('bop') ? 'BOP' : 'PROPERTY_RATE';
-      localStorage.setItem('selectedPropertiesForPrinting', JSON.stringify(selectedProperties));
-      localStorage.setItem('printDemandMode', 'false');
-      localStorage.setItem('printNoticeType', type);
+      // Use sessionStorage for print selections to avoid QuotaExceededError on localStorage
+      sessionStorage.setItem('selectedPropertyIdsForPrinting', JSON.stringify(selectedRows));
+      sessionStorage.setItem('printDemandMode', 'false');
+      sessionStorage.setItem('printNoticeType', type);
       router.push('/properties/print-preview');
     } else {
       toast({
