@@ -39,6 +39,8 @@ type AppearanceSettings = {
 
 const BillSheet = React.forwardRef<HTMLDivElement, { bops: Bop[], settings: { general: GeneralSettings, appearance: AppearanceSettings }, billsPerPage: number, isCompact: boolean, isDemandNotice: boolean }>(({ bops, settings, billsPerPage, isCompact, isDemandNotice }, ref) => {
     
+    const sheetStyle = { backgroundColor: 'white', minHeight: '297mm' };
+
     if (billsPerPage === 4) {
         const bopChunks: Bop[][] = [];
         for (let i = 0; i < bops.length; i += 4) {
@@ -46,12 +48,12 @@ const BillSheet = React.forwardRef<HTMLDivElement, { bops: Bop[], settings: { ge
         }
 
         return (
-            <div ref={ref} className="bg-white">
+            <div ref={ref} style={sheetStyle}>
                 {bopChunks.map((chunk, index) => (
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white grid grid-cols-2 grid-rows-2 box-border overflow-hidden">
                         {chunk.map((bop) => (
                             <div key={bop.id} className="w-full h-full box-border overflow-hidden border-dashed border-gray-400 [&:nth-child(1)]:border-r [&:nth-child(1)]:border-b [&:nth-child(2)]:border-b [&:nth-child(3)]:border-r break-inside-avoid">
-                               <div className="w-full h-full flex items-center justify-center">
+                               <div className="w-full h-full transform scale-[0.98] origin-center flex items-center justify-center">
                                     <PrintableContent data={bop} billType="bop" settings={settings} isCompact={true} isDemandNotice={isDemandNotice} />
                                </div>
                             </div>
@@ -69,12 +71,12 @@ const BillSheet = React.forwardRef<HTMLDivElement, { bops: Bop[], settings: { ge
         }
 
         return (
-            <div ref={ref} className="bg-white">
+            <div ref={ref} style={sheetStyle}>
                 {bopChunks.map((chunk, index) => (
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex flex-col box-border overflow-hidden">
                         {chunk.map((bop, chunkIndex) => (
                             <div key={bop.id} className="h-[148.5mm] w-full box-border overflow-hidden relative break-inside-avoid">
-                               <div className="w-full h-full flex items-center justify-center">
+                               <div className="w-full h-full transform scale-[0.98] origin-center flex items-center justify-center">
                                     <PrintableContent data={bop} billType="bop" settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
                                </div>
                                {chunk.length === 2 && chunkIndex === 0 && (
@@ -89,9 +91,9 @@ const BillSheet = React.forwardRef<HTMLDivElement, { bops: Bop[], settings: { ge
     }
     
     return (
-        <div ref={ref} className="bg-white">
+        <div ref={ref} style={sheetStyle}>
             {bops.map((bop) => (
-                <div key={bop.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white overflow-hidden p-[5mm] break-inside-avoid">
+                <div key={bop.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white overflow-hidden p-2 break-inside-avoid">
                     <div className="w-full h-full flex items-center justify-center">
                         <PrintableContent data={bop} billType="bop" settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
                     </div>
@@ -217,7 +219,7 @@ export default function BulkBopPrintPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <header className="no-print bg-card border-b p-4 flex justify-between sticky top-0 z-10">
+      <header className="no-print bg-card border-b p-4 flex justify-between sticky top-0 z-50">
         <div className="flex items-center gap-4">
             <Button asChild variant="outline" size="sm"><Link href="/bop-billing"><ArrowLeft className="h-4 w-4 mr-2" />Back</Link></Button>
             <h1 className="text-xl font-semibold">BOP Print ({allBops.length})</h1>
@@ -235,12 +237,12 @@ export default function BulkBopPrintPage() {
       </header>
 
       <main className="flex-grow flex items-center justify-center p-4 print:hidden">
-         {isPreparing ? <div className="w-full max-w-md"><Progress value={(progress / allBops.length) * 100} /><p className="mt-2 text-center">Preparing {progress} / {allBops.length}</p></div> : <p>Ready to Print</p>}
+         {isPreparing ? <div className="w-full max-w-md"><Progress value={(progress / allBops.length) * 100} /><p className="mt-2 text-center">Preparing {progress} / {allBops.length}</p></div> : <p className="font-medium text-muted-foreground italic">Ready to Print</p>}
       </main>
       
-      {/* Off-canvas print container for high-accuracy rendering */}
-      <div className="absolute -left-[9999px] top-0 pointer-events-none">
-        <div ref={componentRef}>
+      {/* Off-canvas high-fidelity print container */}
+      <div className="fixed top-0 left-0 -z-50 w-full h-full overflow-auto bg-white opacity-1 pointer-events-none">
+        <div ref={componentRef} className="bg-white">
             <BillSheet bops={renderedBops} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
         </div>
       </div>

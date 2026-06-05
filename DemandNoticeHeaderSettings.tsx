@@ -1,3 +1,3 @@
-// This file is stubbed to prevent global build conflicts in Next.js.
-// Settings are now managed via the system settings store.
+// This file is stubbed to prevent global build conflicts.
+// Settings are now managed centrally via the internal store.
 export {};

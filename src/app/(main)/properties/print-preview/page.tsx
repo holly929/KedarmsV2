@@ -24,16 +24,22 @@ type GeneralSettings = { assemblyName?: string; postalAddress?: string; contactP
 type AppearanceSettings = { assemblyLogo?: string; ghanaLogo?: string; signature?: string; billWarningText?: string; demandNoticeCaption?: string; fontFamily?: 'sans' | 'serif' | 'mono'; fontSize?: number; accentColor?: string; };
 
 const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], settings: { general: GeneralSettings, appearance: AppearanceSettings }, billsPerPage: number, isCompact: boolean, isDemandNotice: boolean }>(({ properties, settings, billsPerPage, isCompact, isDemandNotice }, ref) => {
+    
+    // Explicit background for the container
+    const sheetStyle = { backgroundColor: 'white', minHeight: '297mm' };
+
     if (billsPerPage === 4) {
         const chunks: Property[][] = [];
         for (let i = 0; i < properties.length; i += 4) chunks.push(properties.slice(i, i + 4));
         return (
-            <div ref={ref} className="bg-white">
+            <div ref={ref} style={sheetStyle}>
                 {chunks.map((chunk, index) => (
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white grid grid-cols-2 grid-rows-2 box-border overflow-hidden">
                         {chunk.map(p => (
-                            <div key={p.id} className="w-full h-full box-border overflow-hidden border-dashed border-gray-300 [&:nth-child(1)]:border-r [&:nth-child(1)]:border-b [&:nth-child(2)]:border-b [&:nth-child(3)]:border-r p-[5mm] break-inside-avoid">
-                                <PrintableContent property={p} settings={settings} isCompact={true} isDemandNotice={isDemandNotice} />
+                            <div key={p.id} className="w-full h-full box-border overflow-hidden border-dashed border-gray-300 [&:nth-child(1)]:border-r [&:nth-child(1)]:border-b [&:nth-child(2)]:border-b [&:nth-child(3)]:border-r p-1 break-inside-avoid">
+                                <div className="w-full h-full transform scale-[0.98] origin-center">
+                                    <PrintableContent property={p} settings={settings} isCompact={true} isDemandNotice={isDemandNotice} />
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -45,12 +51,14 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
         const chunks: Property[][] = [];
         for (let i = 0; i < properties.length; i += 2) chunks.push(properties.slice(i, i + 2));
         return (
-            <div ref={ref} className="bg-white">
+            <div ref={ref} style={sheetStyle}>
                 {chunks.map((chunk, index) => (
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex flex-col box-border overflow-hidden">
                         {chunk.map((p, ci) => (
-                            <div key={p.id} className="h-[148.5mm] w-full box-border overflow-hidden p-[8mm] relative break-inside-avoid">
-                                <PrintableContent property={p} settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
+                            <div key={p.id} className="h-[148.5mm] w-full box-border overflow-hidden p-1 relative break-inside-avoid">
+                                <div className="w-full h-full transform scale-[0.98] origin-center">
+                                    <PrintableContent property={p} settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
+                                </div>
                                 {chunk.length === 2 && ci === 0 && <div className="absolute bottom-0 left-[5%] right-[5%] h-[1px] border-t border-dashed border-gray-400"></div>}
                             </div>
                         ))}
@@ -60,9 +68,9 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
         );
     }
     return (
-        <div ref={ref} className="bg-white">
+        <div ref={ref} style={sheetStyle}>
             {properties.map(p => (
-                <div key={p.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white overflow-hidden p-[10mm] break-inside-avoid">
+                <div key={p.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white overflow-hidden p-2 break-inside-avoid">
                     <PrintableContent property={p} settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
                 </div>
             ))}
@@ -145,7 +153,7 @@ export default function BulkPrintPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <header className="no-print bg-card border-b p-4 flex justify-between sticky top-0 z-10">
+      <header className="no-print bg-card border-b p-4 flex justify-between sticky top-0 z-50">
         <div className="flex items-center gap-4">
             <Button asChild variant="outline" size="sm"><Link href="/billing"><ArrowLeft className="h-4 w-4 mr-2" />Back</Link></Button>
             <h1 className="text-xl font-semibold">Batch Print ({allProperties.length})</h1>
@@ -162,15 +170,21 @@ export default function BulkPrintPage() {
         </div>
       </header>
       <main className="flex-grow flex flex-col items-center justify-center p-4 print:hidden">
-         {isPreparing ? <div className="w-full max-w-md"><Progress value={(progress / allProperties.length) * 100} /><p className="mt-2 text-center">Preparing {progress} / {allProperties.length}</p></div> : <p className="text-muted-foreground">Ready to Print. Check the "Demand Notice" toggle above if needed.</p>}
+         {isPreparing ? <div className="w-full max-w-md"><Progress value={(progress / allProperties.length) * 100} /><p className="mt-2 text-center">Preparing {progress} / {allProperties.length}</p></div> : <div className="text-center space-y-2"><CheckCircle className="h-12 w-12 text-green-500 mx-auto" /><p className="text-muted-foreground font-medium">Ready to Print. Check the "Demand Notice" toggle above if needed.</p></div>}
       </main>
       
-      {/* Off-canvas print container for high-accuracy rendering */}
-      <div className="absolute -left-[9999px] top-0 pointer-events-none">
-        <div ref={componentRef}>
+      {/* High-fidelity render container (fixed but hidden from user) */}
+      <div className="fixed top-0 left-0 -z-50 w-full h-full overflow-auto bg-white opacity-1 pointer-events-none" style={{ WebkitPrintColorAdjust: 'exact' }}>
+        <div ref={componentRef} className="bg-white">
             <BillSheet properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
         </div>
       </div>
     </div>
   );
+}
+
+function CheckCircle({ className }: { className?: string }) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+    )
 }

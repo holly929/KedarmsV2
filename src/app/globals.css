@@ -73,30 +73,43 @@
 @media print {
   @page {
     margin: 0;
-    size: A4;
+    size: A4 portrait;
   }
 
   .no-print {
     display: none !important;
   }
 
-  body {
-    background-color: white !important;
+  html, body {
+    height: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: white !important;
     color: black !important;
-    margin: 0;
-    padding: 0;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
   .print-page-break {
-    page-break-after: always;
-    break-after: page;
+    page-break-after: always !important;
+    break-after: page !important;
+    display: block !important;
   }
 
-  /* Force visibility of hidden elements in print containers */
-  .printable-notice .hidden,
-  .printable-notice [class*="hidden"] {
+  /* Force visibility of logos and graphics */
+  img {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
     display: block !important;
+  }
+
+  /* Prevent elements from being hidden by Tailwind's screen-only classes */
+  .printable-content {
+    visibility: visible !important;
+    opacity: 1 !important;
+    display: block !important;
+    position: relative !important;
+    left: 0 !important;
   }
 }

@@ -39,6 +39,8 @@ type AppearanceSettings = {
 
 const BillSheet = React.forwardRef<HTMLDivElement, { licenses: License[], settings: { general: GeneralSettings, appearance: AppearanceSettings }, billsPerPage: number, isCompact: boolean, isDemandNotice: boolean }>(({ licenses, settings, billsPerPage, isCompact, isDemandNotice }, ref) => {
     
+    const sheetStyle = { backgroundColor: 'white', minHeight: '297mm' };
+
     if (billsPerPage === 4) {
         const licenseChunks: License[][] = [];
         for (let i = 0; i < licenses.length; i += 4) {
@@ -46,12 +48,12 @@ const BillSheet = React.forwardRef<HTMLDivElement, { licenses: License[], settin
         }
 
         return (
-            <div ref={ref} className="bg-white">
+            <div ref={ref} style={sheetStyle}>
                 {licenseChunks.map((chunk, index) => (
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white grid grid-cols-2 grid-rows-2 box-border overflow-hidden">
                         {chunk.map((license) => (
                             <div key={license.id} className="w-full h-full box-border overflow-hidden border-dashed border-gray-400 [&:nth-child(1)]:border-r [&:nth-child(1)]:border-b [&:nth-child(2)]:border-b [&:nth-child(3)]:border-r break-inside-avoid">
-                               <div className="w-full h-full flex items-center justify-center">
+                               <div className="w-full h-full transform scale-[0.98] origin-center flex items-center justify-center">
                                     <PrintableContent data={license} billType="license" settings={settings} isCompact={true} isDemandNotice={isDemandNotice} />
                                </div>
                             </div>
@@ -69,12 +71,12 @@ const BillSheet = React.forwardRef<HTMLDivElement, { licenses: License[], settin
         }
 
         return (
-            <div ref={ref} className="bg-white">
+            <div ref={ref} style={sheetStyle}>
                 {licenseChunks.map((chunk, index) => (
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex flex-col box-border overflow-hidden">
                         {chunk.map((license, chunkIndex) => (
                             <div key={license.id} className="h-[148.5mm] w-full box-border overflow-hidden relative break-inside-avoid">
-                               <div className="w-full h-full flex items-center justify-center">
+                               <div className="w-full h-full transform scale-[0.98] origin-center flex items-center justify-center">
                                     <PrintableContent data={license} billType="license" settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
                                </div>
                                {chunk.length === 2 && chunkIndex === 0 && (
@@ -89,9 +91,9 @@ const BillSheet = React.forwardRef<HTMLDivElement, { licenses: License[], settin
     }
     
     return (
-        <div ref={ref} className="bg-white">
+        <div ref={ref} style={sheetStyle}>
             {licenses.map((license) => (
-                <div key={license.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white overflow-hidden p-[5mm] break-inside-avoid">
+                <div key={license.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white overflow-hidden p-2 break-inside-avoid">
                     <div className="w-full h-full flex items-center justify-center">
                         <PrintableContent data={license} billType="license" settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
                     </div>
@@ -217,7 +219,7 @@ export default function BulkLicensePrintPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <header className="no-print bg-card border-b p-4 flex justify-between sticky top-0 z-10">
+      <header className="no-print bg-card border-b p-4 flex justify-between sticky top-0 z-50">
         <div className="flex items-center gap-4">
             <Button asChild variant="outline" size="sm"><Link href="/license-billing"><ArrowLeft className="h-4 w-4 mr-2" />Back</Link></Button>
             <h1 className="text-xl font-semibold">License Print ({allLicenses.length})</h1>
@@ -235,12 +237,12 @@ export default function BulkLicensePrintPage() {
       </header>
 
       <main className="flex-grow flex items-center justify-center p-4 print:hidden">
-         {isPreparing ? <div className="w-full max-w-md"><Progress value={(progress / allLicenses.length) * 100} /><p className="mt-2 text-center">Preparing {progress} / {allLicenses.length}</p></div> : <p>Ready to Print</p>}
+         {isPreparing ? <div className="w-full max-w-md"><Progress value={(progress / allLicenses.length) * 100} /><p className="mt-2 text-center">Preparing {progress} / {allLicenses.length}</p></div> : <p className="text-muted-foreground font-medium italic">Ready to Print</p>}
       </main>
       
-      {/* Off-canvas print container for high-accuracy rendering */}
-      <div className="absolute -left-[9999px] top-0 pointer-events-none">
-        <div ref={componentRef}>
+      {/* High-fidelity render container (fixed but hidden from user) */}
+      <div className="fixed top-0 left-0 -z-50 w-full h-full overflow-auto bg-white opacity-1 pointer-events-none">
+        <div ref={componentRef} className="bg-white">
             <BillSheet licenses={renderedLicenses} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
         </div>
       </div>
