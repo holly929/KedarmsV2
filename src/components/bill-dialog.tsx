@@ -118,7 +118,10 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
         color: 'black',
         backgroundColor: 'white',
         WebkitPrintColorAdjust: 'exact',
-        printColorAdjust: 'exact'
+        printColorAdjust: 'exact',
+        width: '210mm',
+        height: '297mm',
+        boxSizing: 'border-box'
     } as React.CSSProperties), [finalFontSize]);
 
     const accentStyle = useMemo(() => ({
@@ -210,10 +213,8 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
         style={baseStyle}
       >
         <div className="border-[3px] border-double border-black p-2 relative h-full flex flex-col bg-white box-border">
-          {/* Background Watermark */}
           <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
               {settings.appearance?.ghanaLogo && (
-                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img src={settings.appearance.ghanaLogo} alt="Watermark" width={180} height={180} style={{objectFit: 'contain'}} />
               )}
           </div>
@@ -222,7 +223,6 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
             <header className="flex justify-between items-center mb-1 border-b-2 border-black pb-1 shrink-0">
                 <div className="w-[60px] flex justify-start">
                     {settings.appearance?.ghanaLogo && (
-                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={settings.appearance.ghanaLogo} alt="Ghana" className="object-contain h-auto" style={{ width: '45px' }} />
                     )}
                 </div>
@@ -240,7 +240,6 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                 </div>
                 <div className="w-[60px] flex justify-end">
                     {settings.appearance?.assemblyLogo && (
-                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={settings.appearance.assemblyLogo} alt="Logo" className="object-contain h-auto" style={{ width: '45px' }} />
                     )}
                 </div>
@@ -348,7 +347,6 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                     <div className="w-[160px] text-center">
                         <div className="mx-auto flex items-center justify-center h-10">
                             {settings.appearance?.signature && (
-                                /* eslint-disable-next-line @next/next/no-img-element */
                                 <img src={settings.appearance.signature} alt="Signature" className="max-h-full max-w-full object-contain" />
                             )}
                         </div>
