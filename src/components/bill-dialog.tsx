@@ -115,8 +115,6 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
     const baseStyle = useMemo(() => ({
         fontSize: `${finalFontSize}px`,
         lineHeight: `${finalFontSize * 1.2}px`,
-        contain: 'layout style paint', 
-        transform: 'translateZ(0)',
     }), [finalFontSize]);
 
     const accentStyle = useMemo(() => ({

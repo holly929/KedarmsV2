@@ -46,17 +46,16 @@ const BillSheet = React.forwardRef<HTMLDivElement, { licenses: License[], settin
         }
 
         return (
-            <div ref={ref}>
+            <div ref={ref} className="bg-white">
                 {licenseChunks.map((chunk, index) => (
-                    <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white grid grid-cols-2 grid-rows-2 box-border">
+                    <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white grid grid-cols-2 grid-rows-2 box-border overflow-hidden">
                         {chunk.map((license) => (
-                            <div key={license.id} className="w-full h-full box-border overflow-hidden flex items-center justify-center border-dashed border-gray-400 [&:nth-child(1)]:border-r [&:nth-child(1)]:border-b [&:nth-child(2)]:border-b [&:nth-child(3)]:border-r">
-                               <div className="w-full h-full scale-[0.95] flex items-center justify-center">
+                            <div key={license.id} className="w-full h-full box-border overflow-hidden border-dashed border-gray-400 [&:nth-child(1)]:border-r [&:nth-child(1)]:border-b [&:nth-child(2)]:border-b [&:nth-child(3)]:border-r break-inside-avoid">
+                               <div className="w-full h-full flex items-center justify-center">
                                     <PrintableContent data={license} billType="license" settings={settings} isCompact={true} isDemandNotice={isDemandNotice} />
                                </div>
                             </div>
                         ))}
-                        {Array.from({ length: 4 - chunk.length }).map((_, i) => <div key={`empty-${i}`}></div>)}
                     </div>
                 ))}
             </div>
@@ -70,22 +69,19 @@ const BillSheet = React.forwardRef<HTMLDivElement, { licenses: License[], settin
         }
 
         return (
-            <div ref={ref}>
+            <div ref={ref} className="bg-white">
                 {licenseChunks.map((chunk, index) => (
-                    <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex flex-col justify-center items-center box-border">
+                    <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex flex-col box-border overflow-hidden">
                         {chunk.map((license, chunkIndex) => (
-                            <React.Fragment key={license.id}>
-                               <div className="h-[148.5mm] w-full box-border overflow-hidden flex items-center justify-center">
-                                   <div className="w-full h-full scale-[0.95] flex items-center justify-center">
-                                        <PrintableContent data={license} billType="license" settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
-                                   </div>
+                            <div key={license.id} className="h-[148.5mm] w-full box-border overflow-hidden relative break-inside-avoid">
+                               <div className="w-full h-full flex items-center justify-center">
+                                    <PrintableContent data={license} billType="license" settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
                                </div>
                                {chunk.length === 2 && chunkIndex === 0 && (
-                                   <div className="w-[95%] h-[1px] border-t border-dashed border-gray-400 self-center"></div>
+                                   <div className="absolute bottom-0 left-[5%] right-[5%] h-[1px] border-t border-dashed border-gray-400"></div>
                                )}
-                            </React.Fragment>
+                            </div>
                         ))}
-                         {chunk.length < 2 && <div className="h-[148.5mm] w-full"></div>}
                     </div>
                 ))}
             </div>
@@ -93,25 +89,14 @@ const BillSheet = React.forwardRef<HTMLDivElement, { licenses: License[], settin
     }
     
     return (
-        <div ref={ref}>
-            <div className="print:space-y-0">
-                {licenses.length > 0 ? (
-                    licenses.map((license) => (
-                        <div key={license.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex items-center justify-center">
-                            <div className="w-full h-full scale-[0.95] flex items-center justify-center">
-                                <PrintableContent data={license} billType="license" settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
-                            </div>
-                        </div>
-                    ))
-                ) : (
-                    <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] text-center">
-                        <h2 className="text-2xl font-semibold">No License Records to Print</h2>
-                        <p className="text-muted-foreground mt-2">
-                            It seems no records were selected. Please go back and select some license records to print.
-                        </p>
+        <div ref={ref} className="bg-white">
+            {licenses.map((license) => (
+                <div key={license.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white overflow-hidden p-[5mm] break-inside-avoid">
+                    <div className="w-full h-full flex items-center justify-center">
+                        <PrintableContent data={license} billType="license" settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
                     </div>
-                )}
-            </div>
+                </div>
+            ))}
         </div>
     );
 });
@@ -181,58 +166,23 @@ export default function BulkLicensePrintPage() {
   const recordBills = async () => {
     if (renderedLicenses.length === 0) return;
 
-    const newBills: Omit<Bill, 'id'>[] = renderedLicenses.map(l => {
-        // Prioritize imported "Amount Due"
-        const importedAmountDue = Number(String(getPropertyValue(l, 'Amount Due') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
-        
-        let totalAmountDue = 0;
-        if (!isNaN(importedAmountDue) && importedAmountDue !== 0) {
-            totalAmountDue = importedAmountDue;
-        } else {
-            const rate = Number(String(getPropertyValue(l, 'License Fee') || getPropertyValue(l, 'Property Rate') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
-            const bopAmt = Number(String(getPropertyValue(l, 'Bop Amount') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
-            const arrears = Number(String(getPropertyValue(l, 'Arrears') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
-            const payment = Number(String(getPropertyValue(l, 'Payment') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
-            totalAmountDue = rate + bopAmt + arrears - payment;
-        }
-
-        return {
-            propertyId: l.id,
-            propertySnapshot: l,
-            generatedAt: new Date().toISOString(),
-            year: new Date().getFullYear(),
-            totalAmountDue: totalAmountDue,
-            billType: 'license',
-        };
-    }).filter(Boolean) as Omit<Bill, 'id'>[];
+    const newBills = renderedLicenses.map(l => ({
+        propertyId: l.id,
+        propertySnapshot: l,
+        generatedAt: new Date().toISOString(),
+        year: new Date().getFullYear(),
+        totalAmountDue: Number(getPropertyValue(l, 'Amount Due')) || 0,
+        billType: 'license' as const,
+    }));
     
-    if (newBills.length > 0) {
-        const success = await addBills(newBills);
-        if (success) {
-          toast({
-              title: 'Bills Recorded',
-              description: `${newBills.length} license bills have been recorded in the bill history.`,
-          });
-        }
-    }
+    await addBills(newBills);
+    toast({ title: 'Bills Recorded' });
   };
 
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
     onAfterPrint: () => recordBills(),
   });
-
-  const handleGenerateAndPrint = () => {
-    if (renderedLicenses.length === 0) {
-        toast({
-            variant: 'destructive',
-            title: 'No Bills Ready',
-            description: 'There are no bills prepared for printing.',
-        });
-        return;
-    };
-    handlePrint();
-  };
 
   useEffect(() => {
     if (allLicenses.length > 0 && isClient) {
@@ -263,94 +213,32 @@ export default function BulkLicensePrintPage() {
     }
   }, [allLicenses, isClient]);
 
-  if (!isClient) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (isPreparing) {
-    return (
-      <div className="flex flex-col min-h-screen bg-background">
-        <header className="no-print bg-card border-b p-4 flex items-center justify-between sticky top-0 z-10">
-          <h1 className="text-xl font-semibold">Preparing Bills...</h1>
-        </header>
-        <main className="flex-grow flex flex-col items-center justify-center text-center p-4">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-          <h2 className="text-2xl font-semibold">Please Wait</h2>
-          <p className="text-muted-foreground mt-2 max-w-md">
-            We are preparing {allLicenses.length} bills for printing. This may take a moment.
-          </p>
-          <div className="w-full max-w-md mt-6">
-            <Progress value={allLicenses.length > 0 ? (progress / allLicenses.length) * 100 : 0} />
-            <p className="text-sm text-muted-foreground mt-2">
-              {progress} / {allLicenses.length} bills ready
-            </p>
-          </div>
-        </main>
-      </div>
-    );
-  }
+  if (!isClient) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <header className="no-print bg-card border-b p-4 flex flex-col sm:flex-row items-center justify-between sticky top-0 z-10 gap-4">
-        <div className="flex items-center gap-4 w-full sm:w-auto">
-            <Button asChild variant="outline" size="sm">
-                <Link href="/license-billing">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back
-                </Link>
-            </Button>
-            <h1 className="text-lg sm:text-xl font-semibold">
-                Print Preview ({allLicenses.length} {allLicenses.length === 1 ? 'Bill' : 'Bills'})
-            </h1>
+      <header className="no-print bg-card border-b p-4 flex justify-between sticky top-0 z-10">
+        <div className="flex items-center gap-4">
+            <Button asChild variant="outline" size="sm"><Link href="/license-billing"><ArrowLeft className="h-4 w-4 mr-2" />Back</Link></Button>
+            <h1 className="text-xl font-semibold">License Print ({allLicenses.length})</h1>
         </div>
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+        <div className="flex items-center gap-4">
             <div className="flex items-center space-x-2 border px-3 py-1 rounded-md bg-red-50 dark:bg-red-950/20">
                 <Checkbox id="demand-mode" checked={isDemandNotice} onCheckedChange={(checked) => setIsDemandNotice(Boolean(checked))} />
-                <Label htmlFor="demand-mode" className="whitespace-nowrap text-red-700 dark:text-red-400 font-bold flex items-center gap-1">
-                  <FileWarning className="h-3 w-3" /> Demand Notice
-                </Label>
+                <Label htmlFor="demand-mode" className="whitespace-nowrap text-red-700 dark:text-red-400 font-bold">Demand Notice</Label>
             </div>
-            <div className="flex items-center space-x-2">
-                <Checkbox id="compact-mode" checked={isCompact || billsPerPage === 4} onCheckedChange={(checked) => setIsCompact(Boolean(checked))} disabled={billsPerPage === 4} />
-                <Label htmlFor="compact-mode" className="whitespace-nowrap">Compact Mode</Label>
-            </div>
-            <div className="flex items-center space-x-2 w-full sm:w-auto">
-                <Label htmlFor="bills-per-page" className="whitespace-nowrap">Bills per Page</Label>
-                <Select value={String(billsPerPage)} onValueChange={(v) => setBillsPerPage(Number(v))}>
-                    <SelectTrigger id="bills-per-page" className="w-full sm:w-[80px]">
-                        <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="1">1</SelectItem>
-                        <SelectItem value="2">2</SelectItem>
-                        <SelectItem value="4">4</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            <Button onClick={handleGenerateAndPrint} disabled={renderedLicenses.length === 0} className={cn("w-full sm:w-auto", isDemandNotice ? "bg-red-600 hover:bg-red-700" : "")}>
-              <Printer className="mr-2 h-4 w-4" />
-              Print & Record
+            <Select value={String(billsPerPage)} onValueChange={v => setBillsPerPage(Number(v))}><SelectTrigger className="w-[80px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="1">1</SelectItem><SelectItem value="2">2</SelectItem><SelectItem value="4">4</SelectItem></SelectContent></Select>
+            <Button onClick={() => handlePrint()} disabled={isPreparing} className={cn(isDemandNotice ? "bg-red-600 hover:bg-red-700" : "")}>
+                <Printer className="mr-2 h-4 w-4" />Print
             </Button>
         </div>
       </header>
 
       <main className="flex-grow flex items-center justify-center p-4 print:hidden">
-         <div className="text-center">
-            <h2 className="text-2xl font-semibold">Ready to Print</h2>
-            <p className="text-muted-foreground mt-2">
-                Clicking the print button will open the print dialog and record the bills in your history.
-            </p>
-            <p className="text-muted-foreground mt-1">Click the "Print & Record" button above to continue.</p>
-         </div>
+         {isPreparing ? <div className="w-full max-w-md"><Progress value={(progress / allLicenses.length) * 100} /><p className="mt-2 text-center">Preparing {progress} / {allLicenses.length}</p></div> : <p>Ready to Print</p>}
       </main>
       
-      {/* Hidden print container - positioned off-screen to keep it rendered in DOM */}
-      <div className="absolute -left-[9999px] top-0 pointer-events-none">
+      <div className="fixed opacity-0 pointer-events-none top-0 left-0" style={{ zIndex: -1 }}>
         <BillSheet ref={componentRef} licenses={renderedLicenses} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
       </div>
     </div>

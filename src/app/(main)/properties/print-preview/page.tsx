@@ -135,7 +135,7 @@ export default function BulkPrintPage() {
             const next = Math.min(current + chunk, allProperties.length);
             setRenderedProperties(p => [...p, ...allProperties.slice(current, next)]);
             setProgress(next); current = next;
-            setTimeout(render, 5);
+            setTimeout(render, 10);
         };
         render();
     }
@@ -147,7 +147,7 @@ export default function BulkPrintPage() {
     <div className="flex flex-col min-h-screen bg-background">
       <header className="no-print bg-card border-b p-4 flex justify-between sticky top-0 z-10">
         <div className="flex items-center gap-4">
-            <Button asChild variant="outline" size="sm"><Link href="/billing"><ArrowLeft className="mr-2 h-4 w-4" />Back</Link></Button>
+            <Button asChild variant="outline" size="sm"><Link href="/billing"><ArrowLeft className="h-4 w-4 mr-2" />Back</Link></Button>
             <h1 className="text-xl font-semibold">Batch Print ({allProperties.length})</h1>
         </div>
         <div className="flex items-center gap-4">
@@ -164,7 +164,7 @@ export default function BulkPrintPage() {
       <main className="flex-grow flex flex-col items-center justify-center p-4 print:hidden">
          {isPreparing ? <div className="w-full max-w-md"><Progress value={(progress / allProperties.length) * 100} /><p className="mt-2 text-center">Preparing {progress} / {allProperties.length}</p></div> : <p className="text-muted-foreground">Ready to Print. Check the "Demand Notice" toggle above if needed.</p>}
       </main>
-      <div className="absolute -left-[9999px] top-0 pointer-events-none">
+      <div className="fixed opacity-0 pointer-events-none top-0 left-0" style={{ zIndex: -1 }}>
         <BillSheet ref={componentRef} properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
       </div>
     </div>

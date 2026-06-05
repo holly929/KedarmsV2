@@ -51,7 +51,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { bops: Bop[], settings: { ge
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white grid grid-cols-2 grid-rows-2 box-border overflow-hidden">
                         {chunk.map((bop) => (
                             <div key={bop.id} className="w-full h-full box-border overflow-hidden border-dashed border-gray-400 [&:nth-child(1)]:border-r [&:nth-child(1)]:border-b [&:nth-child(2)]:border-b [&:nth-child(3)]:border-r break-inside-avoid">
-                               <div className="w-full h-full scale-[0.95] flex items-center justify-center">
+                               <div className="w-full h-full flex items-center justify-center">
                                     <PrintableContent data={bop} billType="bop" settings={settings} isCompact={true} isDemandNotice={isDemandNotice} />
                                </div>
                             </div>
@@ -74,7 +74,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { bops: Bop[], settings: { ge
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex flex-col box-border overflow-hidden">
                         {chunk.map((bop, chunkIndex) => (
                             <div key={bop.id} className="h-[148.5mm] w-full box-border overflow-hidden relative break-inside-avoid">
-                               <div className="w-full h-full scale-[0.95] flex items-center justify-center">
+                               <div className="w-full h-full flex items-center justify-center">
                                     <PrintableContent data={bop} billType="bop" settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
                                </div>
                                {chunk.length === 2 && chunkIndex === 0 && (
@@ -238,7 +238,7 @@ export default function BulkBopPrintPage() {
          {isPreparing ? <div className="w-full max-w-md"><Progress value={(progress / allBops.length) * 100} /><p className="mt-2 text-center">Preparing {progress} / {allBops.length}</p></div> : <p>Ready to Print</p>}
       </main>
       
-      <div className="absolute -left-[9999px] top-0 pointer-events-none">
+      <div className="fixed opacity-0 pointer-events-none top-0 left-0" style={{ zIndex: -1 }}>
         <BillSheet ref={componentRef} bops={renderedBops} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
       </div>
     </div>
