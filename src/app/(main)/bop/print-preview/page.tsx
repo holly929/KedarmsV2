@@ -48,7 +48,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { bops: Bop[], settings: { ge
         }
 
         return (
-            <div ref={ref} style={sheetStyle}>
+            <div ref={ref} style={sheetStyle} className="bg-white text-black">
                 {bopChunks.map((chunk, index) => (
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white grid grid-cols-2 grid-rows-2 box-border overflow-hidden">
                         {chunk.map((bop) => (
@@ -71,7 +71,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { bops: Bop[], settings: { ge
         }
 
         return (
-            <div ref={ref} style={sheetStyle}>
+            <div ref={ref} style={sheetStyle} className="bg-white text-black">
                 {bopChunks.map((chunk, index) => (
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex flex-col box-border overflow-hidden">
                         {chunk.map((bop, chunkIndex) => (
@@ -91,7 +91,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { bops: Bop[], settings: { ge
     }
     
     return (
-        <div ref={ref} style={sheetStyle}>
+        <div ref={ref} style={sheetStyle} className="bg-white text-black">
             {bops.map((bop) => (
                 <div key={bop.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white overflow-hidden p-2 break-inside-avoid">
                     <div className="w-full h-full flex items-center justify-center">
@@ -240,8 +240,13 @@ export default function BulkBopPrintPage() {
          {isPreparing ? <div className="w-full max-w-md"><Progress value={(progress / allBops.length) * 100} /><p className="mt-2 text-center">Preparing {progress} / {allBops.length}</p></div> : <p className="font-medium text-muted-foreground italic">Ready to Print</p>}
       </main>
       
-      {/* Off-canvas high-fidelity print container */}
-      <div className="fixed top-0 left-0 -z-50 w-full h-full overflow-auto bg-white opacity-1 pointer-events-none">
+      {/* 
+          OFF-CANVAS RENDERING STRATEGY:
+          We use absolute positioning far to the left with opacity 1. 
+          This ensures the browser layout engine fully paints the content, 
+          styles, and barcode hooks before react-to-print captures them.
+      */}
+      <div className="absolute left-[-9999px] top-0 pointer-events-none bg-white text-black" style={{ width: '210mm' }}>
         <div ref={componentRef} className="bg-white">
             <BillSheet bops={renderedBops} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
         </div>

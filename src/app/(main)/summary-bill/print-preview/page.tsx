@@ -49,6 +49,8 @@ const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
     const baseStyle = {
         fontSize: `${fontSize || 10}px`,
         lineHeight: `${(fontSize || 10) * 1.4}px`,
+        backgroundColor: 'white',
+        color: 'black'
     };
 
     const filteredHeaders = headers.filter(h => h && String(h).trim() !== '' && !String(h).toLowerCase().startsWith('__empty'));
@@ -58,7 +60,7 @@ const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
     const contactPhone = settings.general?.contactPhone || '0242122039/0244971784';
 
   return (
-    <div className={cn("text-black bg-white w-[210mm] h-[297mm] box-border p-8 overflow-hidden relative", fontClass)} style={baseStyle}>
+    <div ref={ref} className={cn("text-black bg-white w-[210mm] h-[297mm] box-border p-8 overflow-hidden relative", fontClass)} style={baseStyle}>
       <div className="h-full flex flex-col">
         <header className="mb-4 pb-4">
             <div className="flex justify-between items-center text-center">
@@ -232,10 +234,15 @@ export default function SummaryBillPrintPage() {
          </div>
       </main>
 
-      {/* Off-canvas print container for high-accuracy rendering */}
-      <div className="absolute -left-[9999px] top-0 pointer-events-none">
+      {/* 
+          OFF-CANVAS RENDERING STRATEGY:
+          We use absolute positioning far to the left with opacity 1. 
+          This ensures the browser layout engine fully paints the content, 
+          styles, and barcode hooks before react-to-print captures them.
+      */}
+      <div className="absolute left-[-9999px] top-0 pointer-events-none bg-white text-black" style={{ width: '210mm' }}>
           {sheetsToRender.length > 0 && (
-            <div ref={componentRef}>
+            <div ref={componentRef} className="bg-white">
                 {sheetsToRender.map((sheet, index) => (
                     <div key={sheet.name} className={index < sheetsToRender.length - 1 ? 'print-page-break' : ''}>
                        <PrintableSummaryBill data={sheet.data} headers={sheet.headers} settings={settings} sheetName={sheet.name} />

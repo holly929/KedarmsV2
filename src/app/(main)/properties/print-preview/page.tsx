@@ -31,7 +31,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
         const chunks: Property[][] = [];
         for (let i = 0; i < properties.length; i += 4) chunks.push(properties.slice(i, i + 4));
         return (
-            <div ref={ref} style={sheetStyle}>
+            <div ref={ref} style={sheetStyle} className="bg-white text-black">
                 {chunks.map((chunk, index) => (
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white grid grid-cols-2 grid-rows-2 box-border overflow-hidden">
                         {chunk.map(p => (
@@ -50,7 +50,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
         const chunks: Property[][] = [];
         for (let i = 0; i < properties.length; i += 2) chunks.push(properties.slice(i, i + 2));
         return (
-            <div ref={ref} style={sheetStyle}>
+            <div ref={ref} style={sheetStyle} className="bg-white text-black">
                 {chunks.map((chunk, index) => (
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex flex-col box-border overflow-hidden">
                         {chunk.map((p, ci) => (
@@ -67,7 +67,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
         );
     }
     return (
-        <div ref={ref} style={sheetStyle}>
+        <div ref={ref} style={sheetStyle} className="bg-white text-black">
             {properties.map(p => (
                 <div key={p.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white overflow-hidden p-2 break-inside-avoid">
                     <PrintableContent data={p} billType="property" settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
@@ -172,8 +172,13 @@ export default function BulkPrintPage() {
          {isPreparing ? <div className="w-full max-w-md"><Progress value={(progress / allProperties.length) * 100} /><p className="mt-2 text-center">Preparing {progress} / {allProperties.length}</p></div> : <div className="text-center space-y-2"><CheckCircle className="h-12 w-12 text-green-500 mx-auto" /><p className="text-muted-foreground font-medium">Ready to Print. Check the "Demand Notice" toggle above if needed.</p></div>}
       </main>
       
-      {/* Off-canvas high-fidelity render container */}
-      <div className="fixed top-0 left-0 -z-50 w-full h-full overflow-auto bg-white opacity-0 pointer-events-none" style={{ WebkitPrintColorAdjust: 'exact' }}>
+      {/* 
+          OFF-CANVAS RENDERING STRATEGY:
+          We use absolute positioning far to the left with opacity 1. 
+          This ensures the browser layout engine fully paints the content, 
+          styles, and barcode hooks before react-to-print captures them.
+      */}
+      <div className="absolute left-[-9999px] top-0 pointer-events-none bg-white text-black" style={{ width: '210mm' }}>
         <div ref={componentRef} className="bg-white">
             <BillSheet properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
         </div>
