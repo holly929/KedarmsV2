@@ -15,24 +15,49 @@ const BulkPrintPage = () => {
   if (data.length === 0) return <div>Loading notices...</div>;
 
   return (
-    <div className="print-container">
+    /* 
+       High-accuracy positioning trick: 
+       Content is rendered off-canvas instead of using opacity: 0. 
+       This ensures all hooks (Barcodes, styles) are fully rendered by the engine.
+    */
+    <div 
+      className="print-only-container absolute left-[-9999px] top-0 pointer-events-none print:static print:left-0 print:pointer-events-auto" 
+      aria-hidden="true"
+    >
       {data.map((notice) => (
-        <div key={notice.id} className="printable-notice">
+        <div 
+          key={notice.id} 
+          className="printable-notice relative h-[297mm] w-[210mm] overflow-hidden bg-white text-black p-10 print:block"
+        >
           <DemandNoticeTemplate data={notice} />
         </div>
       ))}
     </div>
   );
 };
+
 /* print.css */
 @media print {
-  /* Hide UI elements like buttons or navbars */
+  @page {
+    margin: 0;
+    size: A4;
+  }
+
   .no-print {
     display: none;
   }
 
-  /* Force a page break after each notice */
+  /* Force visibility for elements hidden via Tailwind utilities */
+  .printable-notice .hidden,
+  .printable-notice [class*="hidden"] {
+    display: block !important;
+  }
+
   .printable-notice {
+    background-color: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
     break-after: page;
     page-break-after: always; /* Fallback for older browsers */
   }

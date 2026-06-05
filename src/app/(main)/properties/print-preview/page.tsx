@@ -164,8 +164,9 @@ export default function BulkPrintPage() {
       <main className="flex-grow flex flex-col items-center justify-center p-4 print:hidden">
          {isPreparing ? <div className="w-full max-w-md"><Progress value={(progress / allProperties.length) * 100} /><p className="mt-2 text-center">Preparing {progress} / {allProperties.length}</p></div> : <p className="text-muted-foreground">Ready to Print. Check the "Demand Notice" toggle above if needed.</p>}
       </main>
-      {/* Hidden print container - off screen but not opacity:0 to allow effect rendering */}
-      <div className="fixed top-0 left-0 -z-50 pointer-events-none" style={{ width: '210mm', height: '0', overflow: 'hidden' }}>
+      
+      {/* Off-canvas print container for high-accuracy rendering */}
+      <div className="absolute -left-[9999px] top-0 pointer-events-none">
         <div ref={componentRef}>
             <BillSheet properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
         </div>

@@ -7,6 +7,15 @@ const puppeteer = require('puppeteer');
  * @returns {Promise<Buffer>} - PDF buffer.
  */
 async function generateBulkDemandNoticePDF(notices, type) {
+  /**
+   * Ensures placeholders are rendered professionally for print.
+   */
+  const formatValue = (val) => {
+    if (val === 0 || val === "0") return "0";
+    if (!val || String(val).trim() === "") return "...";
+    return val;
+  };
+
   const browser = await puppeteer.launch({ headless: 'new' });
   const page = await browser.newPage();
   const isPropertyRate = type === 'PROPERTY_RATE';
@@ -16,15 +25,37 @@ async function generateBulkDemandNoticePDF(notices, type) {
     <html>
       <head>
         <style>
-          body { font-family: Arial, sans-serif; }
+          @page {
+            margin: 0;
+            size: A4;
+          }
+          body { 
+            font-family: Arial, sans-serif; 
+            background-color: white !important;
+            color: black !important;
+            margin: 0;
+          }
           .notice-container {
-            padding: 20px;
+            position: relative;
+            padding: 40px;
+            height: 297mm;
+            width: 210mm;
+            box-sizing: border-box;
+            overflow: hidden;
             page-break-after: always;
+            background-color: white !important;
           }
           .header { text-align: center; font-weight: bold; font-size: 1.2em; }
           .content { margin-top: 20px; }
           /* Ensure the last notice doesn't have an empty trailing page */
           .notice-container:last-child { page-break-after: auto; }
+
+          /* Prevent template utilities from hiding content in the PDF */
+          .notice-container .hidden, 
+          .notice-container [style*="display: none"],
+          .notice-container [class*="hidden"] { 
+            display: block !important; 
+          }
         </style>
       </head>
       <body>
@@ -34,18 +65,18 @@ async function generateBulkDemandNoticePDF(notices, type) {
               ${isPropertyRate ? 'PROPERTY RATE DEMAND NOTICE' : 'BUSINESS OPERATING PERMIT (BOP) DEMAND NOTICE'}
             </div>
             <div class="content">
-              <p>Reference: ${notice.referenceNumber}</p>
-              <p>Recipient: ${notice.recipientName}</p>
+              <p>Reference: ${formatValue(notice.referenceNumber)}</p>
+              <p>Recipient: ${formatValue(notice.recipientName)}</p>
               
               ${isPropertyRate ? `
-                <p>Property Address: ${notice.propertyAddress || 'N/A'}</p>
-                <p>Block/Lot: ${notice.blockLot || 'N/A'}</p>
+                <p>Property Address: ${formatValue(notice.propertyAddress)}</p>
+                <p>Block/Lot: ${formatValue(notice.blockLot)}</p>
               ` : `
-                <p>Business Name: ${notice.businessName || 'N/A'}</p>
-                <p>Business Category: ${notice.category || 'N/A'}</p>
+                <p>Business Name: ${formatValue(notice.businessName)}</p>
+                <p>Business Category: ${formatValue(notice.category)}</p>
               `}
 
-              <p>Amount Due: $${notice.amount}</p>
+              <p>Amount Due: $${formatValue(notice.amount)}</p>
               <p>Due Date: ${new Date(notice.dueDate).toLocaleDateString()}</p>
             </div>
           </div>

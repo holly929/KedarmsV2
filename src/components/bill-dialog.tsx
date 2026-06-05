@@ -196,8 +196,16 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
     }, [data, totalAmountPayable]);
 
     return (
-      <div ref={ref} className={cn("text-black bg-white w-full h-full box-border break-inside-avoid page-break-inside-avoid print-only", fontClass, isCompact ? 'p-1' : 'p-2')} style={baseStyle}>
-        <div className="border-[3px] border-double border-black p-1.5 relative h-full flex flex-col shadow-sm overflow-hidden bg-white">
+      <div 
+        ref={ref} 
+        className={cn(
+          "text-black bg-white w-[210mm] h-[297mm] box-border break-inside-avoid page-break-inside-avoid relative overflow-hidden", 
+          fontClass, 
+          isCompact ? 'p-1' : 'p-2'
+        )} 
+        style={baseStyle}
+      >
+        <div className="border-[3px] border-double border-black p-1.5 relative h-full flex flex-col shadow-sm bg-white box-border">
           <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
               {settings.appearance?.ghanaLogo && (
                   /* eslint-disable-next-line @next/next/no-img-element */
@@ -241,7 +249,7 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                 )}
             </div>
             
-            <main className="border-2 border-black flex-grow flex flex-col overflow-hidden min-h-0">
+            <main className="border-2 border-black flex-grow flex flex-col overflow-hidden min-h-0 bg-white">
                 {billType === 'property' ? (
                   <>
                     <div className="flex border-b-2 border-black shrink-0">
@@ -325,7 +333,7 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                 )}
             </main>
             
-            <footer className="mt-1 pt-0.5 flex flex-col gap-1 shrink-0">
+            <footer className="mt-1 pt-0.5 flex flex-col gap-1 shrink-0 bg-white">
                 <div className="flex items-end justify-between gap-4">
                     <div className="flex-1 flex flex-col items-start">
                         <span className="text-[0.5em] font-bold text-muted-foreground tracking-tighter uppercase mb-0.5">Secure Transaction Identifier</span>
@@ -406,15 +414,15 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col">
-            <div className="flex-1 overflow-y-auto bg-slate-900/10 p-4 md:p-8">
+          <div className="flex-1 flex flex-col bg-slate-900/10">
+            <div className="flex-1 overflow-y-auto p-4 md:p-8">
                  {!settings.general ? (
                     <div className="flex flex-col items-center justify-center h-[297mm] bg-white rounded-lg shadow-xl">
                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
                         <p className="mt-4 font-medium">Preparing High-Res Preview...</p>
                     </div>
                  ) : (
-                    <div className="w-[210mm] min-h-[297mm] mx-auto bg-white shadow-2xl overflow-hidden">
+                    <div className="mx-auto bg-white shadow-2xl overflow-hidden" style={{ width: '210mm', height: '297mm' }}>
                         <PrintableContent 
                             ref={componentRef} 
                             data={bill.propertySnapshot} 

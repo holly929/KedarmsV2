@@ -69,3 +69,34 @@
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  @page {
+    margin: 0;
+    size: A4;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background-color: white !important;
+    color: black !important;
+    margin: 0;
+    padding: 0;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .print-page-break {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  /* Force visibility of hidden elements in print containers */
+  .printable-notice .hidden,
+  .printable-notice [class*="hidden"] {
+    display: block !important;
+  }
+}

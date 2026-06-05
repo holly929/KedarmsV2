@@ -58,7 +58,7 @@ const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
     const contactPhone = settings.general?.contactPhone || '0242122039/0244971784';
 
   return (
-    <div className={cn("text-black bg-white w-full h-full box-border p-8", fontClass)} style={baseStyle}>
+    <div className={cn("text-black bg-white w-[210mm] h-[297mm] box-border p-8 overflow-hidden relative", fontClass)} style={baseStyle}>
       <div className="h-full flex flex-col">
         <header className="mb-4 pb-4">
             <div className="flex justify-between items-center text-center">
@@ -67,7 +67,7 @@ const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
                     <img src={settings.appearance.ghanaLogo} alt="Ghana Coat of Arms" style={{ objectFit: 'contain', width: '80px', height: 'auto' }} />
                 ) : <div className="w-[80px]"></div>}
                 <div className="flex flex-col items-center">
-                    <h1 className="font-bold tracking-tight text-3xl uppercase">{assemblyName}</h1>
+                    <h1 className="font-bold tracking-tight text-3xl uppercase leading-tight">{assemblyName}</h1>
                     <p className="text-base font-medium">{postalAddress}</p>
                     <p className="text-base font-medium">TEL: {contactPhone}</p>
                     <h2 className="font-bold tracking-widest text-xl text-center mt-4 border-y-2 border-black py-2 w-full uppercase">
@@ -81,18 +81,18 @@ const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
             </div>
         </header>
         
-        <main className="flex-grow">
+        <main className="flex-grow bg-white">
           <Table>
             <TableHeader>
               <TableRow>
-                {filteredHeaders.map(header => <TableHead key={header} className="border border-black text-black font-bold">{header}</TableHead>)}
+                {filteredHeaders.map(header => <TableHead key={header} className="border border-black text-black font-bold uppercase text-[10px]">{header}</TableHead>)}
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.map(row => (
                 <TableRow key={row.id}>
                   {filteredHeaders.map(header => (
-                    <TableCell key={header} className="border border-black">{String(row[header] ?? '')}</TableCell>
+                    <TableCell key={header} className="border border-black text-black text-[9px]">{String(row[header] ?? '')}</TableCell>
                   ))}
                 </TableRow>
               ))}
@@ -100,7 +100,7 @@ const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
           </Table>
         </main>
         
-        <footer className="mt-auto pt-16">
+        <footer className="mt-auto pt-8 shrink-0 bg-white">
             <div className="flex justify-end">
                  <div className="w-1/3 text-center">
                     <div className="mx-auto flex items-center justify-center h-16">
@@ -109,7 +109,7 @@ const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
                             <img src={settings.appearance.signature} alt="Signature" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
                         )}
                     </div>
-                    <p className="border-t-2 border-black max-w-[12rem] mx-auto mt-1 pt-1 font-bold">
+                    <p className="border-t-2 border-black max-w-[12rem] mx-auto mt-1 pt-1 font-bold text-xs">
                         COORDINATING DIRECTOR
                     </p>
                 </div>
@@ -232,7 +232,7 @@ export default function SummaryBillPrintPage() {
          </div>
       </main>
 
-      {/* Hidden print container - positioned off-screen to keep it rendered in DOM */}
+      {/* Off-canvas print container for high-accuracy rendering */}
       <div className="absolute -left-[9999px] top-0 pointer-events-none">
           {sheetsToRender.length > 0 && (
             <div ref={componentRef}>
