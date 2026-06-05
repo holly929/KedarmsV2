@@ -184,12 +184,8 @@ export default function BulkPrintPage() {
          )}
       </main>
       
-      {/* 
-          PRINTABLE AREA:
-          This container is visible normally (for layout painting) but styled 
-          by @media print to take over the entire page during printing.
-      */}
-      <div className="printable-area opacity-0 pointer-events-none fixed top-0 left-0 -z-50 print:opacity-100 print:static print:z-auto">
+      {/* FIXED POSITIONING FOR RENDERING ENGINE (Prevents Blank Pages) */}
+      <div className="fixed top-0 left-0 -z-50 pointer-events-none printable-area bg-white opacity-100 print:static print:z-auto">
         <div ref={componentRef} className="bg-white">
             <BillSheet properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
         </div>
