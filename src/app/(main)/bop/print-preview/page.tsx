@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useReactToPrint } from 'react-to-print';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, Printer, FileWarning } from 'lucide-react';
+import { ArrowLeft, Loader2, Printer, CheckCircle } from 'lucide-react';
 
 import type { Bop, Bill } from '@/lib/types';
 import { PrintableContent } from '@/components/bill-dialog';
@@ -236,17 +236,23 @@ export default function BulkBopPrintPage() {
         </div>
       </header>
 
-      <main className="flex-grow flex items-center justify-center p-4 print:hidden">
-         {isPreparing ? <div className="w-full max-w-md"><Progress value={(progress / allBops.length) * 100} /><p className="mt-2 text-center">Preparing {progress} / {allBops.length}</p></div> : <p className="font-medium text-muted-foreground italic">Ready to Print</p>}
+      <main className="flex-grow flex flex-col items-center p-4 md:p-8 overflow-y-auto no-print">
+         {isPreparing ? (
+            <div className="w-full max-w-md mt-10"><Progress value={(progress / allBops.length) * 100} /><p className="mt-2 text-center">Preparing {progress} / {allBops.length}</p></div>
+         ) : (
+            <div className="space-y-8 w-full flex flex-col items-center">
+                <div className="text-center space-y-2 mb-4">
+                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
+                    <p className="text-muted-foreground font-medium">Ready to Print. Documents are rendered below for verification.</p>
+                </div>
+                <div className="scale-[0.4] sm:scale-[0.5] md:scale-[0.6] lg:scale-[0.7] origin-top bg-muted/20 p-8 rounded-2xl shadow-inner border-2 border-dashed">
+                     <BillSheet bops={renderedBops} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
+                </div>
+            </div>
+         )}
       </main>
       
-      {/* 
-          OFF-CANVAS RENDERING STRATEGY:
-          We use absolute positioning far to the left with opacity 1. 
-          This ensures the browser layout engine fully paints the content, 
-          styles, and barcode hooks before react-to-print captures them.
-      */}
-      <div className="absolute left-[-9999px] top-0 pointer-events-none bg-white text-black" style={{ width: '210mm' }}>
+      <div className="printable-area opacity-0 pointer-events-none fixed top-0 left-0 -z-50 print:opacity-100 print:static print:z-auto">
         <div ref={componentRef} className="bg-white">
             <BillSheet bops={renderedBops} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
         </div>

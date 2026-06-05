@@ -92,12 +92,16 @@
   }
 
   /* Force elements to be visible and correctly colored during print */
-  .printable-content {
+  .printable-area {
+    position: static !important;
+    width: 210mm !important;
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
     background: white !important;
     color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .print-page-break {

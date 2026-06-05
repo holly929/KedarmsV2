@@ -145,7 +145,7 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
         const identityKeys = ['owner', 'name', 'town', 'suburb', 'property no', 's/n', 'sn', 'hotel', 'guest house', 'entity', 'business'];
         const isIdentityField = identityKeys.some(k => valueKey.toLowerCase().includes(k));
 
-        if (isIdentityField && isPlaceholder) return '...';
+        if (isIdentityField && (isPlaceholder || strVal === '0')) return '...';
         
         const numericKeys = ['license fee', 'bop amount', 'arrears', 'payment', 'rateable value', 'rate impost', 'total payment', 'permit fee', 'sanitation charged', 'previous balance', 'amount due', 'property rate'];
         if (numericKeys.some(k => valueKey.toLowerCase().includes(k))) {
@@ -185,14 +185,14 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
         const nameVal = getPropertyValue(data as any, 'Owner Name') || getPropertyValue(data as any, 'Business Name') || getPropertyValue(data as any, 'Name of Hotel/Guest House') || '...';
         const strVal = String(nameVal).trim();
         const isPlaceholder = /^[0. \-]+$/.test(strVal);
-        return (isPlaceholder || strVal === '') ? '...' : strVal.toUpperCase();
+        return (isPlaceholder || strVal === '' || strVal === '0') ? '...' : strVal.toUpperCase();
     }, [data]);
 
     const suburbHeaderDisplay = useMemo(() => {
       if (!data) return '';
       const subVal = String(getPropertyValue(data as any, 'Suburb') || '').trim();
       const isPlaceholder = /^[0. \-]+$/.test(subVal);
-      return (isPlaceholder || subVal === '') ? '' : subVal.toUpperCase();
+      return (isPlaceholder || subVal === '' || subVal === '0') ? '' : subVal.toUpperCase();
     }, [data]);
 
     const barcodeValue = useMemo(() => {
@@ -215,6 +215,7 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
         <div className="border-[3px] border-double border-black p-2 relative h-full flex flex-col bg-white box-border">
           <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
               {settings.appearance?.ghanaLogo && (
+                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img src={settings.appearance.ghanaLogo} alt="Watermark" width={180} height={180} style={{objectFit: 'contain'}} />
               )}
           </div>
@@ -223,6 +224,7 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
             <header className="flex justify-between items-center mb-1 border-b-2 border-black pb-1 shrink-0">
                 <div className="w-[60px] flex justify-start">
                     {settings.appearance?.ghanaLogo && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={settings.appearance.ghanaLogo} alt="Ghana" className="object-contain h-auto" style={{ width: '45px' }} />
                     )}
                 </div>
@@ -240,6 +242,7 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                 </div>
                 <div className="w-[60px] flex justify-end">
                     {settings.appearance?.assemblyLogo && (
+                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={settings.appearance.assemblyLogo} alt="Logo" className="object-contain h-auto" style={{ width: '45px' }} />
                     )}
                 </div>
@@ -347,6 +350,7 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                     <div className="w-[160px] text-center">
                         <div className="mx-auto flex items-center justify-center h-10">
                             {settings.appearance?.signature && (
+                                /* eslint-disable-next-line @next/next/no-img-element */
                                 <img src={settings.appearance.signature} alt="Signature" className="max-h-full max-w-full object-contain" />
                             )}
                         </div>
