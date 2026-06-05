@@ -32,7 +32,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
                 {chunks.map((chunk, index) => (
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white grid grid-cols-2 grid-rows-2 box-border overflow-hidden">
                         {chunk.map(p => (
-                            <div key={p.id} className="w-full h-full box-border overflow-hidden border-dashed border-gray-300 [&:nth-child(1)]:border-r [&:nth-child(1)]:border-b [&:nth-child(2)]:border-b [&:nth-child(3)]:border-r p-[5mm]">
+                            <div key={p.id} className="w-full h-full box-border overflow-hidden border-dashed border-gray-300 [&:nth-child(1)]:border-r [&:nth-child(1)]:border-b [&:nth-child(2)]:border-b [&:nth-child(3)]:border-r p-[5mm] break-inside-avoid">
                                 <PrintableContent property={p} settings={settings} isCompact={true} isDemandNotice={isDemandNotice} />
                             </div>
                         ))}
@@ -49,7 +49,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
                 {chunks.map((chunk, index) => (
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex flex-col box-border overflow-hidden">
                         {chunk.map((p, ci) => (
-                            <div key={p.id} className="h-[148.5mm] w-full box-border overflow-hidden p-[8mm] relative">
+                            <div key={p.id} className="h-[148.5mm] w-full box-border overflow-hidden p-[8mm] relative break-inside-avoid">
                                 <PrintableContent property={p} settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
                                 {chunk.length === 2 && ci === 0 && <div className="absolute bottom-0 left-[5%] right-[5%] h-[1px] border-t border-dashed border-gray-400"></div>}
                             </div>
@@ -62,7 +62,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
     return (
         <div ref={ref} className="bg-white">
             {properties.map(p => (
-                <div key={p.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white overflow-hidden p-[10mm]">
+                <div key={p.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white overflow-hidden p-[10mm] break-inside-avoid">
                     <PrintableContent property={p} settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
                 </div>
             ))}
@@ -151,12 +151,18 @@ export default function BulkPrintPage() {
             <h1 className="text-xl font-semibold">Batch Print ({allProperties.length})</h1>
         </div>
         <div className="flex items-center gap-4">
+            <div className="flex items-center space-x-2 border px-3 py-1 rounded-md bg-red-50 dark:bg-red-950/20">
+                <Checkbox id="demand-mode" checked={isDemandNotice} onCheckedChange={(checked) => setIsDemandNotice(Boolean(checked))} />
+                <Label htmlFor="demand-mode" className="whitespace-nowrap text-red-700 dark:text-red-400 font-bold">Demand Notice</Label>
+            </div>
             <Select value={String(billsPerPage)} onValueChange={v => setBillsPerPage(Number(v))}><SelectTrigger className="w-[80px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="1">1</SelectItem><SelectItem value="2">2</SelectItem><SelectItem value="4">4</SelectItem></SelectContent></Select>
-            <Button onClick={() => handlePrint()} disabled={isPreparing}><Printer className="mr-2 h-4 w-4" />Print</Button>
+            <Button onClick={() => handlePrint()} disabled={isPreparing} className={cn(isDemandNotice ? "bg-red-600 hover:bg-red-700" : "")}>
+                <Printer className="mr-2 h-4 w-4" />Print
+            </Button>
         </div>
       </header>
       <main className="flex-grow flex flex-col items-center justify-center p-4 print:hidden">
-         {isPreparing ? <div className="w-full max-w-md"><Progress value={(progress / allProperties.length) * 100} /><p className="mt-2 text-center">Preparing {progress} / {allProperties.length}</p></div> : <p>Ready to Print</p>}
+         {isPreparing ? <div className="w-full max-w-md"><Progress value={(progress / allProperties.length) * 100} /><p className="mt-2 text-center">Preparing {progress} / {allProperties.length}</p></div> : <p className="text-muted-foreground">Ready to Print. Check the "Demand Notice" toggle above if needed.</p>}
       </main>
       <div className="absolute -left-[9999px] top-0 pointer-events-none">
         <BillSheet ref={componentRef} properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
