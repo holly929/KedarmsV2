@@ -60,7 +60,6 @@
     size: A4 portrait;
   }
 
-  /* Universal Reset for Print Engine */
   html, body {
     height: auto !important;
     margin: 0 !important;
@@ -76,13 +75,12 @@
     display: none !important;
   }
 
-  /* FORCE VISIBILITY ON PAINTED BUFFER */
   .printable-area {
     display: block !important;
     visibility: visible !important;
     position: static !important;
     opacity: 1 !important;
-    z-index: 100 !important;
+    z-index: 1000 !important;
     background-color: #ffffff !important;
     color: #000000 !important;
   }
@@ -98,9 +96,19 @@
     print-color-adjust: exact !important;
     display: block !important;
   }
+
+  * {
+    color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 }
 
 .print-page-break {
     page-break-after: always;
     break-after: page;
+}
+
+.printable-content * {
+  color: #000000 !important;
 }

@@ -122,13 +122,15 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
         printColorAdjust: 'exact',
         width: isCompact ? '100%' : '210mm',
         height: isCompact ? '100%' : '297mm',
+        minHeight: isCompact ? '100%' : '297mm',
         boxSizing: 'border-box'
     } as React.CSSProperties), [finalFontSize, isCompact]);
 
     const accentStyle = useMemo(() => ({
         backgroundColor: isDemandNotice ? '#fee2e2' : (accentColor || '#f8fafc'),
         WebkitPrintColorAdjust: 'exact',
-        printColorAdjust: 'exact'
+        printColorAdjust: 'exact',
+        color: '#000000'
     } as React.CSSProperties), [accentColor, isDemandNotice]);
     
     const formatValue = useCallback((valueKey: string) => {
@@ -136,10 +138,8 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
         const val = getPropertyValue(data as any, valueKey);
         const strVal = val !== null && val !== undefined ? String(val).trim() : '';
         
-        const isPlaceholder = /^[0. \-]+$/.test(strVal) || strVal === '';
         const identityKeys = ['owner', 'name', 'town', 'suburb', 'property no', 's/n', 'sn', 'hotel', 'guest house', 'entity', 'business'];
-        
-        if (identityKeys.some(k => valueKey.toLowerCase().includes(k)) && (isPlaceholder || strVal === '0')) return '...';
+        if (identityKeys.some(k => valueKey.toLowerCase().includes(k)) && (strVal === '0' || strVal === '')) return '...';
         
         const numericKeys = ['license fee', 'bop amount', 'arrears', 'payment', 'rateable value', 'rate impost', 'total payment', 'permit fee', 'sanitation charged', 'previous balance', 'amount due', 'property rate'];
         if (numericKeys.some(k => valueKey.toLowerCase().includes(k))) {
@@ -194,7 +194,7 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
     }, [data, totalAmountPayable]);
 
     return (
-      <div ref={ref} className={cn("printable-content text-[#000000] bg-[#ffffff] box-border relative overflow-hidden", fontClass, isCompact ? 'p-1' : 'p-3')} style={baseStyle}>
+      <div ref={ref} className={cn("printable-content bg-[#ffffff] box-border relative overflow-hidden", fontClass, isCompact ? 'p-1' : 'p-3')} style={baseStyle}>
         <div className="border-[3px] border-double border-black p-2 relative h-full flex flex-col bg-white box-border">
           <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.04] pointer-events-none">
               {settings.appearance?.ghanaLogo && (
@@ -203,7 +203,7 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
           </div>
           
           <div className="relative z-10 flex flex-col h-full bg-transparent">
-            <header className="flex justify-between items-center mb-1 border-b-2 border-black pb-1 shrink-0">
+            <header className="flex justify-between items-center mb-1 border-b-2 border-black pb-1 shrink-0 bg-transparent">
                 <div className="w-[60px]">
                     {settings.appearance?.ghanaLogo && (
                         <img src={settings.appearance.ghanaLogo} alt="Ghana" style={{ width: '48px', height: 'auto', objectFit: 'contain' }} />
@@ -246,7 +246,7 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                 </div>
             </div>
             
-            <main className="border-2 border-black flex-grow flex flex-col overflow-hidden bg-white">
+            <main className="border-2 border-black flex-grow flex flex-col overflow-hidden bg-white min-h-0">
                 {billType === 'property' ? (
                   <>
                     <div className="flex border-b-2 border-black shrink-0">
@@ -260,14 +260,14 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                              <span className="text-[1.2em] leading-none text-[#000000]">(GH&#8373;)</span>
                         </div>
                     </div>
-                    <div className="flex flex-1 overflow-hidden">
-                        <div className="w-[65%] border-r-2 border-black flex flex-col">
+                    <div className="flex flex-1 overflow-hidden min-h-0">
+                        <div className="w-[65%] border-r-2 border-black flex flex-col min-h-0">
                             <div className="flex border-b border-black bg-[#f1f5f9] text-[0.65em] font-bold shrink-0">
                                 <div className="w-1/3 p-1 text-center border-r border-black/10">PARTICULARS</div>
                                 <div className="w-1/3 p-1 text-center border-r border-black/10">RV: {formatValue('Rateable Value')}</div>
                                 <div className="w-1/3 p-1 text-center">IMPOST: {formatValue('Rate Impost')}</div>
                             </div>
-                            <div className="flex-grow">
+                            <div className="flex-grow overflow-hidden">
                                 <BillRow label="ANNUAL RATE CHARGED" value={formatToTwoDecimals(parseNumeric(getPropertyValue(data as any, 'Rateable Value')) * parseNumeric(getPropertyValue(data as any, 'Rate Impost')))} />
                                 <BillRow label="SANITATION LEVY" value={formatValue('Sanitation Charged')} />
                                 <BillRow label="CURRENT YEAR DUE" value={formatToTwoDecimals((parseNumeric(getPropertyValue(data as any, 'Rateable Value')) * parseNumeric(getPropertyValue(data as any, 'Rate Impost'))) + parseNumeric(getPropertyValue(data as any, 'Sanitation Charged')))} isBold />
@@ -282,7 +282,7 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                         </div>
                         <div className="w-[35%] flex flex-col text-right font-bold bg-[#fafafa]">
                             <div className="p-1 border-b border-black bg-[#f1f5f9] text-[0.6em] text-center shrink-0">VALUE (GH&#8373;)</div>
-                            <div className="flex-1 flex flex-col font-mono text-[0.9em]">
+                            <div className="flex-1 flex flex-col font-mono text-[0.9em] min-h-0">
                                 <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end">{formatToTwoDecimals(parseNumeric(getPropertyValue(data as any, 'Rateable Value')) * parseNumeric(getPropertyValue(data as any, 'Rate Impost')))}</div>
                                 <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end">{formatValue('Sanitation Charged')}</div>
                                 <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end font-bold">{formatToTwoDecimals((parseNumeric(getPropertyValue(data as any, 'Rateable Value')) * parseNumeric(getPropertyValue(data as any, 'Rate Impost'))) + parseNumeric(getPropertyValue(data as any, 'Sanitation Charged')))}</div>
@@ -295,8 +295,8 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                     </div>
                   </>
                 ) : (
-                  <div className="flex flex-col flex-1 bg-white">
-                    <div className="flex-1 p-2 space-y-1">
+                  <div className="flex flex-col flex-1 bg-white min-h-0">
+                    <div className="flex-1 p-2 space-y-1 overflow-hidden min-h-0">
                         {billType === 'bop' ? (
                             <>
                                 <BillRow label="PERMIT FEE (BUSINESS LICENSE)" value={formatValue('Permit Fee')} />

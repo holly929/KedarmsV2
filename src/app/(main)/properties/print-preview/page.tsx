@@ -89,7 +89,7 @@ export default function BulkPrintPage() {
   const [renderedProperties, setRenderedProperties] = useState<Property[]>([]);
   const [settings, setSettings] = useState<{general: GeneralSettings, appearance: AppearanceSettings}>({ general: {}, appearance: {} });
   const [isClient, setIsClient] = useState(false);
-  const [isPreparing, setIsPreparing] = useState(false);
+  const [isPreparing, setIsPreparing] = useState(true);
   const [progress, setProgress] = useState(0);
   const [billsPerPage, setBillsPerPage] = useState(2);
   const [isCompact, setIsCompact] = useState(false);
@@ -103,16 +103,15 @@ export default function BulkPrintPage() {
     const billIdsJson = sessionStorage.getItem('selectedBillIdsForPrinting');
     const demand = sessionStorage.getItem('printDemandMode') === 'true';
     
+    let source: Property[] = [];
     if (idsJson) {
       const ids = JSON.parse(idsJson);
-      const source = properties.filter(p => ids.includes(p.id));
-      setAllProperties(source);
+      source = properties.filter(p => ids.includes(p.id));
     } else if (billIdsJson) {
       const ids = JSON.parse(billIdsJson);
-      const source = bills.filter(b => ids.includes(b.id)).map(b => b.propertySnapshot as Property);
-      setAllProperties(source);
+      source = bills.filter(b => ids.includes(b.id)).map(b => b.propertySnapshot as Property);
     }
-
+    setAllProperties(source);
     setIsDemandNotice(demand);
     setSettings({ general: store.settings.generalSettings || {}, appearance: store.settings.appearanceSettings || {} });
   }, [isClient, properties, bills]);
@@ -136,16 +135,25 @@ export default function BulkPrintPage() {
 
   useEffect(() => {
     if (allProperties.length > 0 && isClient) {
-        setIsPreparing(true); setRenderedProperties([]); setProgress(0);
-        let current = 0; const chunk = 50;
+        setIsPreparing(true); 
+        setRenderedProperties([]); 
+        setProgress(0);
+        let current = 0; 
+        const chunk = 50;
         const render = () => {
-            if (current >= allProperties.length) { setIsPreparing(false); return; }
+            if (current >= allProperties.length) { 
+                setIsPreparing(false); 
+                return; 
+            }
             const next = Math.min(current + chunk, allProperties.length);
-            setRenderedProperties(p => [...p, ...allProperties.slice(current, next)]);
-            setProgress(next); current = next;
-            setTimeout(render, 10);
+            setRenderedProperties(prev => [...prev, ...allProperties.slice(current, next)]);
+            setProgress(next); 
+            current = next;
+            setTimeout(render, 50); // Increased timeout to allow browser to paint
         };
         render();
+    } else if (allProperties.length === 0 && isClient) {
+        setIsPreparing(false);
     }
   }, [allProperties, isClient]);
 
@@ -170,7 +178,7 @@ export default function BulkPrintPage() {
                 <Label className="text-[10px] font-bold uppercase text-muted-foreground">Layout</Label>
                 <Select value={String(billsPerPage)} onValueChange={v => setBillsPerPage(Number(v))}><SelectTrigger className="w-[100px] h-9"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="1">1 Per Page</SelectItem><SelectItem value="2">2 Per Page</SelectItem><SelectItem value="4">4 Per Page</SelectItem></SelectContent></Select>
             </div>
-            <Button onClick={() => handlePrint()} disabled={isPreparing} className={cn("h-9 px-8 font-bold", isDemandNotice ? "bg-red-600 hover:bg-red-700" : "bg-primary")}>
+            <Button onClick={() => handlePrint()} disabled={isPreparing || allProperties.length === 0} className={cn("h-9 px-8 font-bold", isDemandNotice ? "bg-red-600 hover:bg-red-700" : "bg-primary")}>
                 <Printer className="mr-2 h-4 w-4" />Print Batch
             </Button>
         </div>
@@ -182,9 +190,18 @@ export default function BulkPrintPage() {
                 <Loader2 className="h-10 w-10 animate-spin mx-auto text-primary" />
                 <div className="space-y-1">
                     <p className="font-bold">Building High-Fidelity Buffer...</p>
-                    <Progress value={(progress / allProperties.length) * 100} className="h-2" />
+                    <Progress value={allProperties.length > 0 ? (progress / allProperties.length) * 100 : 0} className="h-2" />
                     <p className="text-xs text-muted-foreground">{progress} of {allProperties.length} rendered</p>
                 </div>
+            </div>
+         ) : allProperties.length === 0 ? (
+            <div className="mt-20 text-center space-y-4">
+                <div className="bg-muted h-16 w-16 rounded-full flex items-center justify-center mx-auto">
+                    <FileWarning className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h2 className="text-xl font-bold">No Records Selected</h2>
+                <p className="text-muted-foreground">Go back to properties and select at least one item to print.</p>
+                <Button asChild><Link href="/billing">Return to Billing</Link></Button>
             </div>
          ) : (
             <div className="space-y-12 w-full flex flex-col items-center">
@@ -207,7 +224,6 @@ export default function BulkPrintPage() {
          )}
       </main>
       
-      {/* HIGH-ACCURACY RENDER BUFFER (VISIBLE TO BROWSER BUT OFF-CANVAS) */}
       <div className="fixed top-0 left-[-9999px] -z-50 pointer-events-none opacity-100 bg-[#ffffff] text-[#000000] printable-area" style={{ width: '210mm' }}>
         <div ref={componentRef} className="bg-[#ffffff]">
             <BillSheet properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
