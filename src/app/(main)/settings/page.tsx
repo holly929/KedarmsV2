@@ -389,6 +389,7 @@ export default function SettingsPage() {
                         <div className="w-[210mm] min-h-[297mm] mx-auto bg-white shadow-2xl">
                              <PrintableContent 
                                 data={DUMMY_PROPERTY as any}
+                                billType="property"
                                 settings={{
                                     general: generalValues,
                                     appearance: appearanceValues
@@ -542,7 +543,7 @@ export default function SettingsPage() {
                                 <Info className="h-4 w-4 text-blue-600" />
                                 <AlertTitle className="text-blue-700">Action Required</AlertTitle>
                                 <AlertDescription className="text-blue-600 text-xs">
-                                    <p className="mb-2">Your server is blocking the app from communicating with Arkesel. Please provide these domains to your Network Team for whitelisting on <strong>Port 443</strong>:</p>
+                                    <p className="mb-2">Your server is blocking the app from communicating with Arkesel. Please provide these domains to your Network Team for whitelisting on firewall/proxy:</p>
                                     <ul className="list-disc pl-4 space-y-1 font-mono font-bold">
                                         <li>openapi.arkesel.com</li>
                                         <li>api.arkesel.com</li>
@@ -708,7 +709,7 @@ export default function SettingsPage() {
                                     <AlertDialogHeader>
                                         <AlertDialogTitle className="text-destructive">PERMANENT SYSTEM RESET</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                            This is a high-level destructive action. ALL properties, BOPs, payments, users, and branding settings will be permanently destroyed. The system will return to its original blank state.
+                                            This is a high-level destructive action. ALL properties, BOPs, payments, users, and branding settings will be permanently destroyed. The system will reset to defaults after reload.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
