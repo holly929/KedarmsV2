@@ -1,371 +1,276 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo, useCallback, forwardRef, memo } from 'react';
+import { useState, useEffect, useRef, useMemo, forwardRef, memo } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import JsBarcode from 'jsbarcode';
 import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import type { Property, Bop, License, Bill } from '@/lib/types';
-import { Printer, Loader2, ShieldCheck } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Printer, ShieldCheck } from 'lucide-react';
 import { getPropertyValue } from '@/lib/property-utils';
 import { store } from '@/lib/store';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
-interface BillDialogProps {
-  bill: Bill | null;
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
-}
-
-type GeneralSettings = {
-  assemblyName?: string;
-  postalAddress?: string;
-  contactPhone?: string;
-};
-
-type AppearanceSettings = {
-  assemblyLogo?: string;
-  ghanaLogo?: string;
-  signature?: string;
-  billWarningText?: string;
-  demandNoticeCaption?: string;
-  fontFamily?: 'sans' | 'serif' | 'mono';
-  fontSize?: number;
-  accentColor?: string;
+// PURE INLINE STYLES FOR PRINT RELIABILITY
+const styles = {
+  container: {
+    backgroundColor: '#ffffff',
+    color: '#000000',
+    width: '210mm',
+    minHeight: '297mm',
+    padding: '15mm',
+    boxSizing: 'border-box' as const,
+    position: 'relative' as const,
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    overflow: 'hidden' as const,
+  },
+  innerBorder: {
+    border: '4px double #000000',
+    padding: '10px',
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    position: 'relative' as const,
+    flexGrow: 1,
+  },
+  watermark: {
+    position: 'absolute' as const,
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    opacity: 0.05,
+    width: '300px',
+    height: '300px',
+    objectFit: 'contain' as const,
+    pointerEvents: 'none' as const,
+    zIndex: 0,
+  },
+  header: {
+    borderBottom: '2px solid #000000',
+    paddingBottom: '10px',
+    marginBottom: '15px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    textAlign: 'center' as const,
+    zIndex: 1,
+  },
+  row: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    padding: '4px 0',
+    borderBottom: '1px solid #e5e7eb',
+    fontSize: '12px',
+  },
+  boldRow: {
+    fontWeight: 'bold',
+    backgroundColor: '#f9fafb',
+    borderTop: '1px solid #000000',
+    borderBottom: '1px solid #000000',
+    padding: '6px 4px',
+  },
+  totalSection: {
+    marginTop: 'auto',
+    padding: '15px',
+    border: '2px solid #000000',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
+  },
+  footer: {
+    marginTop: '20px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  }
 };
 
 const parseNumeric = (val: any): number => {
-    if (val === undefined || val === null) return 0;
-    if (typeof val === 'number') return val;
-    const cleaned = String(val).replace(/,/g, '').replace(/[^0-9.-]/g, '');
-    const num = parseFloat(cleaned);
-    return isNaN(num) ? 0 : num;
+  if (val === undefined || val === null) return 0;
+  if (typeof val === 'number') return val;
+  const cleaned = String(val).replace(/,/g, '').replace(/[^0-9.-]/g, '');
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? 0 : num;
 };
 
-const formatToTwoDecimals = (val: any): string => {
-    const num = parseNumeric(val);
-    return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const formatCurrency = (val: any): string => {
+  return parseNumeric(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-const BarcodeComponent = memo(({ value, isCompact }: { value: string; isCompact: boolean }) => {
-    const ref = useRef<SVGSVGElement | null>(null);
-
-    useEffect(() => {
-        if (ref.current && value) {
-            try {
-                JsBarcode(ref.current, value, {
-                    format: "CODE128",
-                    width: isCompact ? 1.0 : 1.3,
-                    height: isCompact ? 25 : 35,
-                    fontSize: isCompact ? 8 : 10,
-                    margin: 0,
-                    displayValue: false,
-                    background: '#ffffff',
-                    lineColor: '#000000'
-                });
-            } catch (e) {
-                console.error("Barcode generation failed", e);
-            }
-        }
-    }, [value, isCompact]);
-
-    return <svg ref={ref} className="block mx-auto" style={{ maxWidth: '100%', height: 'auto' }} />;
+const Barcode = memo(({ value }: { value: string }) => {
+  const ref = useRef<SVGSVGElement | null>(null);
+  useEffect(() => {
+    if (ref.current && value) {
+      try {
+        JsBarcode(ref.current, value, {
+          format: "CODE128",
+          width: 1.2,
+          height: 30,
+          margin: 0,
+          displayValue: false,
+          lineColor: '#000000'
+        });
+      } catch (e) { console.error(e); }
+    }
+  }, [value]);
+  return <svg ref={ref} style={{ maxWidth: '100%' }} />;
 });
-BarcodeComponent.displayName = 'BarcodeComponent';
+Barcode.displayName = 'Barcode';
 
-const BillRow = ({ label, value, isBold = false }: { label: string; value: string | number; isBold?: boolean }) => (
-  <div className={cn("flex justify-between p-1 border-b border-black/10 items-center", isBold ? 'font-bold' : '')} style={{ color: '#000000' }}>
-    <span className="text-[0.75em] uppercase tracking-tighter text-[#000000]">{label}</span>
-    <span className="text-right font-mono text-[0.85em] text-[#000000]">{value}</span>
-  </div>
-);
-
-interface PrintableContentProps {
-  property?: Property;
-  data?: Property | Bop | License;
-  billType?: 'property' | 'bop' | 'license';
-  settings: { general?: GeneralSettings, appearance?: AppearanceSettings }; 
-  isCompact?: boolean; 
+export const PrintableContent = forwardRef<HTMLDivElement, { 
+  data: any; 
+  billType: 'property' | 'bop' | 'license'; 
+  settings: any; 
   isDemandNotice?: boolean;
-}
+  isCompact?: boolean;
+}>(({ data, billType, settings, isDemandNotice }, ref) => {
+  
+  if (!data) return null;
 
-const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
-  ({ property: propertyProp, data: dataProp, billType: billTypeProp, settings, isCompact = false, isDemandNotice = false }, ref) => {
-    
-    const data = dataProp || propertyProp;
-    const billType = billTypeProp || 'property';
-    
-    const { fontFamily, fontSize, accentColor } = settings.appearance || {};
+  const totalAmountDue = useMemo(() => {
+    const importedTotal = parseNumeric(getPropertyValue(data, 'Amount Due'));
+    if (importedTotal !== 0) return importedTotal;
 
-    const fontClass = useMemo(() => {
-      const config: Record<string, string> = {
-        sans: 'font-sans',
-        serif: 'font-serif',
-        mono: 'font-mono'
-      };
-      return config[fontFamily || 'sans'] || config.sans;
-    }, [fontFamily]);
+    if (billType === 'property') {
+      const rv = parseNumeric(getPropertyValue(data, 'Rateable Value'));
+      const ri = parseNumeric(getPropertyValue(data, 'Rate Impost'));
+      const sc = parseNumeric(getPropertyValue(data, 'Sanitation Charged'));
+      const pb = parseNumeric(getPropertyValue(data, 'Previous Balance'));
+      const tp = parseNumeric(getPropertyValue(data, 'Total Payment'));
+      return (rv * ri) + sc + pb - tp;
+    } else if (billType === 'bop') {
+      return (parseNumeric(getPropertyValue(data, 'Permit Fee')) + parseNumeric(getPropertyValue(data, 'Arrears'))) - parseNumeric(getPropertyValue(data, 'Payment'));
+    } else {
+      const lf = parseNumeric(getPropertyValue(data, 'Property Rate')) || parseNumeric(getPropertyValue(data, 'License Fee'));
+      return (lf + parseNumeric(getPropertyValue(data, 'Bop Amount')) + parseNumeric(getPropertyValue(data, 'Arrears'))) - parseNumeric(getPropertyValue(data, 'Payment'));
+    }
+  }, [data, billType]);
 
-    const finalFontSize = useMemo(() => {
-        const baseSize = fontSize || 11;
-        return isCompact ? Math.max(8, baseSize - 2) : baseSize;
-    }, [fontSize, isCompact]);
+  const identifier = getPropertyValue(data, 'Property No') || getPropertyValue(data, 'S/N') || getPropertyValue(data, 'SN') || 'N/A';
+  const owner = (getPropertyValue(data, 'Owner Name') || getPropertyValue(data, 'Business Name') || getPropertyValue(data, 'Name of Hotel/Guest House') || 'N/A').toUpperCase();
 
-    const baseStyle = useMemo(() => ({
-        fontSize: `${finalFontSize}px`,
-        lineHeight: `${finalFontSize * 1.2}px`,
-        color: '#000000',
-        backgroundColor: '#ffffff',
-        WebkitPrintColorAdjust: 'exact',
-        printColorAdjust: 'exact',
-        width: isCompact ? '100%' : '210mm',
-        height: isCompact ? '100%' : '297mm',
-        minHeight: isCompact ? '100%' : '297mm',
-        boxSizing: 'border-box' as const
-    }), [finalFontSize, isCompact]);
-
-    const accentStyle = useMemo(() => ({
-        backgroundColor: isDemandNotice ? '#fee2e2' : (accentColor || '#f1f5f9'),
-        WebkitPrintColorAdjust: 'exact',
-        printColorAdjust: 'exact',
-        color: '#000000'
-    } as React.CSSProperties), [accentColor, isDemandNotice]);
-    
-    const formatValue = useCallback((valueKey: string) => {
-        if (!data) return '...';
-        const val = getPropertyValue(data as any, valueKey);
-        const strVal = val !== null && val !== undefined ? String(val).trim() : '';
+  return (
+    <div ref={ref} style={styles.container}>
+      <div style={styles.innerBorder}>
+        {settings.appearance?.ghanaLogo && (
+          <img src={settings.appearance.ghanaLogo} alt="" style={styles.watermark} />
+        )}
         
-        const identityKeys = ['owner', 'name', 'town', 'suburb', 'property no', 's/n', 'sn', 'hotel', 'guest house', 'entity', 'business'];
-        if (identityKeys.some(k => valueKey.toLowerCase().includes(k)) && (strVal === '0' || strVal === '')) return '...';
-        
-        const numericKeys = ['license fee', 'bop amount', 'arrears', 'payment', 'rateable value', 'rate impost', 'total payment', 'permit fee', 'sanitation charged', 'previous balance', 'amount due', 'property rate'];
-        if (numericKeys.some(k => valueKey.toLowerCase().includes(k))) {
-            if (valueKey.toLowerCase().includes('impost')) return strVal || '0.00';
-            return formatToTwoDecimals(val);
-        }
-        
-        return strVal || '...';
-    }, [data]);
-    
-    const totalAmountPayableNum = useMemo(() => {
-        if (!data) return 0;
-        const importedTotal = parseNumeric(getPropertyValue(data as any, 'Amount Due'));
-        if (importedTotal !== 0) return importedTotal;
-
-        let calculated = 0;
-        if (billType === 'property') {
-            const rv = parseNumeric(getPropertyValue(data as any, 'Rateable Value'));
-            const ri = parseNumeric(getPropertyValue(data as any, 'Rate Impost'));
-            const sc = parseNumeric(getPropertyValue(data as any, 'Sanitation Charged'));
-            const pb = parseNumeric(getPropertyValue(data as any, 'Previous Balance'));
-            const tp = parseNumeric(getPropertyValue(data as any, 'Total Payment'));
-            calculated = (rv * ri) + sc + pb - tp;
-        } else if (billType === 'bop') {
-            calculated = (parseNumeric(getPropertyValue(data as any, 'Permit Fee')) + parseNumeric(getPropertyValue(data as any, 'Arrears'))) - parseNumeric(getPropertyValue(data as any, 'Payment'));
-        } else {
-            const lf = parseNumeric(getPropertyValue(data as any, 'Property Rate')) || parseNumeric(getPropertyValue(data as any, 'License Fee'));
-            calculated = (lf + parseNumeric(getPropertyValue(data as any, 'Bop Amount')) + parseNumeric(getPropertyValue(data as any, 'Arrears'))) - parseNumeric(getPropertyValue(data as any, 'Payment'));
-        }
-        return calculated;
-    }, [data, billType]);
-
-    const totalAmountPayable = useMemo(() => formatToTwoDecimals(totalAmountPayableNum), [totalAmountPayableNum]);
-
-    const billedToName = useMemo(() => {
-        if (!data) return '...';
-        const nameVal = getPropertyValue(data as any, 'Owner Name') || getPropertyValue(data as any, 'Business Name') || getPropertyValue(data as any, 'Name of Hotel/Guest House') || '...';
-        const strVal = String(nameVal).trim();
-        return (strVal === '' || strVal === '0') ? '...' : strVal.toUpperCase();
-    }, [data]);
-
-    const suburbDisplay = useMemo(() => {
-        const val = String(getPropertyValue(data as any, 'Suburb') || '').trim();
-        return (val === '' || val === '0') ? '' : val.toUpperCase();
-    }, [data]);
-
-    const barcodeValue = useMemo(() => {
-        if (!data) return '';
-        const idStr = String(getPropertyValue(data as any, 'Property No') || getPropertyValue(data as any, 'S/N') || getPropertyValue(data as any, 'SN') || data.id);
-        const amtStr = totalAmountPayable.replace(/[^0-9.]/g, '');
-        return `${idStr}|${amtStr}|${new Date().getFullYear()}`;
-    }, [data, totalAmountPayable]);
-
-    return (
-      <div ref={ref} className={cn("printable-content bg-[#ffffff] box-border relative overflow-hidden", fontClass, isCompact ? 'p-1' : 'p-4')} style={baseStyle}>
-        <div className="border-[4px] border-double border-black p-2 relative h-full flex flex-col bg-white box-border">
-          <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.05] pointer-events-none">
-              {settings.appearance?.ghanaLogo && (
-                  <img src={settings.appearance.ghanaLogo} alt="Watermark" style={{objectFit: 'contain', width: '280px', height: '280px'}} />
-              )}
+        <header style={styles.header}>
+          <div style={{ width: '60px' }}>
+            {settings.appearance?.ghanaLogo && <img src={settings.appearance.ghanaLogo} style={{ width: '100%', objectFit: 'contain' }} alt="" />}
           </div>
-          
-          <div className="relative z-10 flex flex-col h-full bg-transparent">
-            <header className="flex justify-between items-center mb-2 border-b-2 border-black pb-2 shrink-0 bg-transparent">
-                <div className="w-[70px]">
-                    {settings.appearance?.ghanaLogo && (
-                        <img src={settings.appearance.ghanaLogo} alt="Ghana" style={{ width: '56px', height: 'auto', objectFit: 'contain' }} />
-                    )}
-                </div>
-                <div className="flex-1 text-center">
-                    <h1 className="font-bold tracking-tight uppercase leading-none text-[#000000]" style={{ fontSize: `${finalFontSize * 1.5}px` }}>{settings.general?.assemblyName || 'KWAHU EAST DISTRICT ASSEMBLY'}</h1>
-                    <p className="text-[10px] font-bold uppercase tracking-widest my-1 text-[#000000]">LOCAL GOVERNANCE ACT, 2016 (ACT 936)</p>
-                    <p className="font-semibold leading-tight text-[0.9em] text-[#000000]">{settings.general?.postalAddress}</p>
-                    <p className="font-bold text-[0.85em] text-[#000000]">TEL: {settings.general?.contactPhone}</p>
-                    
-                    <div className={cn("mt-2 inline-block px-6 py-1 border-2 border-black font-bold tracking-widest uppercase", isDemandNotice ? "bg-[#e11d48] text-white" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 1.1}px` }}>
-                      {isDemandNotice ? (settings.appearance?.demandNoticeCaption || 'DEMAND NOTICE') : 'OFFICIAL BILLING NOTICE'}
-                    </div>
-                </div>
-                <div className="w-[70px] flex justify-end">
-                    {settings.appearance?.assemblyLogo && (
-                        <img src={settings.appearance.assemblyLogo} alt="Logo" style={{ width: '56px', height: 'auto', objectFit: 'contain' }} />
-                    )}
-                </div>
-            </header>
-
-            <div className="grid grid-cols-5 gap-1 mb-2 shrink-0">
-                <div className="col-span-3 text-left py-2 px-3 border-2 border-black bg-[#fafafa]">
-                    <span className="text-[0.6em] font-bold block text-[#666666] tracking-tighter uppercase mb-0.5">BILLED TO:</span>
-                    <span className="font-black tracking-tight leading-none text-[#000000]" style={{ fontSize: `${finalFontSize * 1.3}px` }}>{billedToName}</span>
-                    {suburbDisplay && (
-                        <span className="text-[1.1em] font-bold block mt-2 tracking-tight text-[#000000] uppercase">SUBURB: {suburbDisplay}</span>
-                    )}
-                </div>
-                <div className="col-span-2 flex flex-col gap-1">
-                    <div className="flex-1 flex flex-col justify-center border-2 border-black p-1 text-center bg-[#f5f5f5]">
-                        <span className="text-[0.6em] font-bold text-[#666666] uppercase leading-none">IDENTIFIER (ID/SN)</span>
-                        <span className="font-mono font-bold text-[1.0em] text-[#000000]">{formatValue('S/N') || formatValue('Property No')}</span>
-                    </div>
-                    <div className="flex-1 flex flex-col justify-center border-2 border-black p-1 text-center bg-[#f5f5f5]">
-                        <span className="text-[0.6em] font-bold text-[#666666] uppercase leading-none">DATE GENERATED</span>
-                        <span className="font-bold text-[1.0em] text-[#000000]">{new Date().toLocaleDateString('en-GB')}</span>
-                    </div>
-                </div>
+          <div style={{ flex: 1 }}>
+            <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>{settings.general?.assemblyName || 'DISTRICT ASSEMBLY'}</h1>
+            <p style={{ fontSize: '10px', fontWeight: 'bold', margin: '4px 0' }}>LOCAL GOVERNANCE ACT, 2016 (ACT 936)</p>
+            <p style={{ fontSize: '12px', margin: 0 }}>{settings.general?.postalAddress}</p>
+            <p style={{ fontSize: '12px', fontWeight: 'bold' }}>TEL: {settings.general?.contactPhone}</p>
+            <div style={{ 
+              marginTop: '10px', 
+              display: 'inline-block', 
+              padding: '4px 20px', 
+              backgroundColor: isDemandNotice ? '#dc2626' : '#000000', 
+              color: '#ffffff', 
+              fontWeight: 'bold',
+              fontSize: '14px'
+            }}>
+              {isDemandNotice ? (settings.appearance?.demandNoticeCaption || 'DEMAND NOTICE') : 'OFFICIAL BILLING NOTICE'}
             </div>
-            
-            <main className="border-2 border-black flex-grow flex flex-col overflow-hidden bg-white min-h-0">
-                {billType === 'property' ? (
-                  <>
-                    <div className="flex border-b-2 border-black shrink-0">
-                        <div className="w-[65%] border-r-2 border-black">
-                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-[#f8fafc] text-[0.7em] text-[#000000]">TOWN</div><div className="w-2/3 border-l border-black/10 p-1 font-bold text-[0.85em] text-[#000000]">{formatValue('Town')}</div></div>
-                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-[#f8fafc] text-[0.7em] text-[#000000]">PROPERTY NO</div><div className="w-2/3 border-l border-black/10 p-1 font-mono font-bold text-[0.85em] text-[#000000]">{formatValue('Property No')}</div></div>
-                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-[#f8fafc] text-[0.7em] text-[#000000]">TYPE</div><div className="w-2/3 border-l border-black/10 p-1 text-[0.85em] text-[#000000]">{formatValue('Property Type')}</div></div>
-                        </div>
-                        <div className="w-[35%] flex flex-col items-center justify-center bg-[#f1f5f9] font-bold">
-                             <span className="text-[0.7em] text-[#64748b] tracking-widest uppercase">AMOUNT OWED</span>
-                             <span className="text-[1.4em] leading-none text-[#000000]">(GH&#8373;)</span>
-                        </div>
-                    </div>
-                    <div className="flex flex-1 overflow-hidden min-h-0">
-                        <div className="w-[65%] border-r-2 border-black flex flex-col min-h-0">
-                            <div className="flex border-b border-black bg-[#f1f5f9] text-[0.7em] font-bold shrink-0">
-                                <div className="w-1/3 p-1 text-center border-r border-black/10">PARTICULARS</div>
-                                <div className="w-1/3 p-1 text-center border-r border-black/10">RV: {formatValue('Rateable Value')}</div>
-                                <div className="w-1/3 p-1 text-center">IMPOST: {formatValue('Rate Impost')}</div>
-                            </div>
-                            <div className="flex-grow overflow-hidden">
-                                <BillRow label="ANNUAL RATE CHARGED" value={formatToTwoDecimals(parseNumeric(getPropertyValue(data as any, 'Rateable Value')) * parseNumeric(getPropertyValue(data as any, 'Rate Impost')))} />
-                                <BillRow label="SANITATION LEVY" value={formatValue('Sanitation Charged')} />
-                                <BillRow label="CURRENT YEAR DUE" value={formatToTwoDecimals((parseNumeric(getPropertyValue(data as any, 'Rateable Value')) * parseNumeric(getPropertyValue(data as any, 'Rate Impost'))) + parseNumeric(getPropertyValue(data as any, 'Sanitation Charged')))} isBold />
-                                <BillRow label="PREVIOUS OUTSTANDING" value={formatValue('Previous Balance')} />
-                                <BillRow label="GROSS TOTAL DUE" value={formatToTwoDecimals((parseNumeric(getPropertyValue(data as any, 'Rateable Value')) * parseNumeric(getPropertyValue(data as any, 'Rate Impost'))) + parseNumeric(getPropertyValue(data as any, 'Sanitation Charged')) + parseNumeric(getPropertyValue(data as any, 'Previous Balance')))} isBold />
-                                <BillRow label="LESS TOTAL PAYMENTS" value={formatValue('Total Payment')} />
-                            </div>
-                            <div className="flex justify-between p-3 border-t-2 border-black items-center font-bold shrink-0" style={accentStyle}>
-                                <span className="text-[1.0em] uppercase tracking-tighter text-[#000000]">NET PAYABLE</span>
-                                <span className="text-right text-[#000000]" style={{ fontSize: `${finalFontSize * 1.5}px` }}>GH&#8373; {totalAmountPayable}</span>
-                            </div>
-                        </div>
-                        <div className="w-[35%] flex flex-col text-right font-bold bg-[#fafafa]">
-                            <div className="p-1 border-b border-black bg-[#f1f5f9] text-[0.7em] text-center shrink-0">VALUE (GH&#8373;)</div>
-                            <div className="flex-1 flex flex-col font-mono text-[1.0em] min-h-0">
-                                <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end">{formatToTwoDecimals(parseNumeric(getPropertyValue(data as any, 'Rateable Value')) * parseNumeric(getPropertyValue(data as any, 'Rate Impost')))}</div>
-                                <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end">{formatValue('Sanitation Charged')}</div>
-                                <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end font-bold">{formatToTwoDecimals((parseNumeric(getPropertyValue(data as any, 'Rateable Value')) * parseNumeric(getPropertyValue(data as any, 'Rate Impost'))) + parseNumeric(getPropertyValue(data as any, 'Sanitation Charged')))}</div>
-                                <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end">{formatValue('Previous Balance')}</div>
-                                <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end font-bold">{formatToTwoDecimals((parseNumeric(getPropertyValue(data as any, 'Rateable Value')) * parseNumeric(getPropertyValue(data as any, 'Rate Impost'))) + parseNumeric(getPropertyValue(data as any, 'Sanitation Charged')) + parseNumeric(getPropertyValue(data as any, 'Previous Balance')))}</div>
-                                <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end">{formatValue('Total Payment')}</div>
-                                <div className="p-2 border-t-2 border-black flex-1 flex items-center justify-end text-[1.3em] shrink-0 font-bold" style={accentStyle}>{totalAmountPayable}</div>
-                            </div>
-                        </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex flex-col flex-1 bg-white min-h-0">
-                    <div className="flex-1 p-3 space-y-2 overflow-hidden min-h-0">
-                        {billType === 'bop' ? (
-                            <>
-                                <BillRow label="PERMIT FEE (BUSINESS LICENSE)" value={formatValue('Permit Fee')} />
-                                <BillRow label="ARREARS BROUGHT FORWARD" value={formatValue('Arrears')} />
-                                <BillRow label="GROSS AMOUNT DUE" value={formatToTwoDecimals(parseNumeric(getPropertyValue(data as any, 'Permit Fee')) + parseNumeric(getPropertyValue(data as any, 'Arrears')))} isBold />
-                                <BillRow label="LESS PAYMENTS RECEIVED" value={formatValue('Payment')} />
-                            </>
-                        ) : (
-                            <>
-                                <BillRow label="PROPERTY RATE COMPONENT" value={formatValue('Property Rate') || formatValue('License Fee')} />
-                                <BillRow label="BUSINESS LICENSE COMPONENT" value={formatValue('Bop Amount')} />
-                                <BillRow label="ACCUMULATED ARREARS" value={formatValue('Arrears')} />
-                                <BillRow label="GROSS AMOUNT DUE" value={formatToTwoDecimals((parseNumeric(getPropertyValue(data as any, 'Property Rate')) || parseNumeric(getPropertyValue(data as any, 'License Fee'))) + parseNumeric(getPropertyValue(data as any, 'Bop Amount')) + parseNumeric(getPropertyValue(data as any, 'Arrears')))} isBold />
-                                <BillRow label="LESS PAYMENTS RECEIVED" value={formatValue('Payment')} />
-                            </>
-                        )}
-                    </div>
-                    <div className="flex justify-between p-6 border-t-2 border-black items-center font-bold shrink-0" style={accentStyle}>
-                        <span className="text-[1.4em] uppercase tracking-widest text-[#000000]">TOTAL AMOUNT PAYABLE</span>
-                        <span className="text-right text-[#000000]" style={{ fontSize: `${finalFontSize * 1.8}px` }}>GH&#8373; {totalAmountPayable}</span>
-                    </div>
-                  </div>
-                )}
-            </main>
-            
-            <footer className="mt-3 flex flex-col gap-2 shrink-0 bg-white">
-                <div className="flex items-end justify-between">
-                    <div className="flex-1 text-left">
-                        <span className="text-[0.65em] font-bold text-[#64748b] tracking-tighter uppercase block mb-1">Secure Tracking Identifier</span>
-                        {barcodeValue && <BarcodeComponent value={barcodeValue} isCompact={isCompact} />}
-                        <span className="text-[0.6em] font-mono opacity-70 block mt-1 text-[#000000]">{barcodeValue}</span>
-                    </div>
-                    <div className="w-[200px] text-center">
-                        <div className="h-12 flex items-center justify-center">
-                            {settings.appearance?.signature && (
-                                <img src={settings.appearance.signature} alt="Signature" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
-                            )}
-                        </div>
-                        <p className="border-t border-black font-bold uppercase text-[0.75em] pt-1 text-[#000000]">COORDINATING DIRECTOR</p>
-                    </div>
-                </div>
-                <div className={cn("font-bold text-center p-1.5 border-2 border-black tracking-tight uppercase leading-tight shrink-0", isDemandNotice ? "bg-[#e11d48] text-white" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 0.95}px` }}>
-                    {isDemandNotice 
-                      ? 'FINAL WARNING: LEGAL ACTION WILL BE TAKEN IF NOT PAID WITHIN 14 DAYS.'
-                      : (settings.appearance?.billWarningText || 'PAY AT ONCE OR FACE LEGAL ACTION')}
-                </div>
-            </footer>
+          </div>
+          <div style={{ width: '60px' }}>
+            {settings.appearance?.assemblyLogo && <img src={settings.appearance.assemblyLogo} style={{ width: '100%', objectFit: 'contain' }} alt="" />}
+          </div>
+        </header>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '10px', marginBottom: '15px' }}>
+          <div style={{ border: '2px solid #000000', padding: '10px', backgroundColor: '#f9fafb' }}>
+            <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#4b5563', display: 'block' }}>BILLED TO:</span>
+            <span style={{ fontSize: '16px', fontWeight: '900', display: 'block' }}>{owner}</span>
+            <span style={{ fontSize: '12px', fontWeight: 'bold', marginTop: '5px', display: 'block' }}>SUBURB: {String(getPropertyValue(data, 'Suburb') || '').toUpperCase()}</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ border: '2px solid #000000', padding: '4px', textAlign: 'center' }}>
+              <span style={{ fontSize: '9px', fontWeight: 'bold', display: 'block' }}>IDENTIFIER</span>
+              <span style={{ fontSize: '12px', fontWeight: 'bold', fontFamily: 'monospace' }}>{identifier}</span>
+            </div>
+            <div style={{ border: '2px solid #000000', padding: '4px', textAlign: 'center' }}>
+              <span style={{ fontSize: '9px', fontWeight: 'bold', display: 'block' }}>BILL DATE</span>
+              <span style={{ fontSize: '12px', fontWeight: 'bold' }}>{new Date().toLocaleDateString('en-GB')}</span>
+            </div>
           </div>
         </div>
-      </div>
-    );
-  }
-);
-PrintableContentBase.displayName = 'PrintableContentBase';
 
-export const PrintableContent = memo(PrintableContentBase);
+        <div style={{ flexGrow: 1 }}>
+          {billType === 'property' ? (
+            <>
+              <div style={styles.row}><span>ANNUAL RATE CHARGED</span><span>{formatCurrency(parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost')))}</span></div>
+              <div style={styles.row}><span>SANITATION LEVY</span><span>{formatCurrency(getPropertyValue(data, 'Sanitation Charged'))}</span></div>
+              <div style={{ ...styles.row, ...styles.boldRow }}><span>CURRENT YEAR DUE</span><span>{formatCurrency((parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost'))) + parseNumeric(getPropertyValue(data, 'Sanitation Charged')))}</span></div>
+              <div style={styles.row}><span>PREVIOUS OUTSTANDING</span><span>{formatCurrency(getPropertyValue(data, 'Previous Balance'))}</span></div>
+              <div style={{ ...styles.row, ...styles.boldRow }}><span>GROSS TOTAL DUE</span><span>{formatCurrency((parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost'))) + parseNumeric(getPropertyValue(data, 'Sanitation Charged')) + parseNumeric(getPropertyValue(data, 'Previous Balance')))}</span></div>
+              <div style={styles.row}><span>LESS TOTAL PAYMENTS</span><span>{formatCurrency(getPropertyValue(data, 'Total Payment'))}</span></div>
+            </>
+          ) : (
+            <>
+              <div style={styles.row}><span>FIXED LICENSE FEE</span><span>{formatCurrency(getPropertyValue(data, 'Permit Fee') || getPropertyValue(data, 'Property Rate') || getPropertyValue(data, 'License Fee'))}</span></div>
+              {billType === 'license' && <div style={styles.row}><span>BOP COMPONENT</span><span>{formatCurrency(getPropertyValue(data, 'Bop Amount'))}</span></div>}
+              <div style={styles.row}><span>ARREARS BROUGHT FORWARD</span><span>{formatCurrency(getPropertyValue(data, 'Arrears'))}</span></div>
+              <div style={styles.row}><span>LESS PAYMENTS RECEIVED</span><span>{formatCurrency(getPropertyValue(data, 'Payment'))}</span></div>
+            </>
+          )}
+        </div>
+
+        <div style={{ ...styles.totalSection, backgroundColor: isDemandNotice ? '#fee2e2' : (settings.appearance?.accentColor || '#f1f5f9') }}>
+          <span style={{ fontSize: '16px', fontWeight: 'bold' }}>NET PAYABLE (GH₵)</span>
+          <span style={{ fontSize: '24px', fontWeight: '900' }}>{formatCurrency(totalAmountDue)}</span>
+        </div>
+
+        <footer style={styles.footer}>
+          <div style={{ flex: 1 }}>
+            <span style={{ fontSize: '10px', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>SECURE TRACKING</span>
+            <Barcode value={`${identifier}|${totalAmountDue.toFixed(2)}`} />
+          </div>
+          <div style={{ width: '200px', textAlign: 'center' }}>
+            <div style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {settings.appearance?.signature && <img src={settings.appearance.signature} style={{ maxHeight: '100%', objectFit: 'contain' }} alt="" />}
+            </div>
+            <p style={{ borderTop: '1px solid #000000', fontSize: '10px', fontWeight: 'bold', paddingTop: '4px', margin: 0 }}>COORDINATING DIRECTOR</p>
+          </div>
+        </footer>
+
+        <div style={{ 
+          marginTop: '15px', 
+          backgroundColor: isDemandNotice ? '#dc2626' : '#000000', 
+          color: '#ffffff', 
+          textAlign: 'center', 
+          padding: '6px', 
+          fontWeight: 'bold', 
+          fontSize: '11px',
+          textTransform: 'uppercase'
+        }}>
+          {isDemandNotice ? 'FINAL WARNING: LEGAL ACTION WILL BE TAKEN IF NOT PAID WITHIN 14 DAYS.' : (settings.appearance?.billWarningText || 'PAY AT ONCE OR FACE LEGAL ACTION')}
+        </div>
+      </div>
+    </div>
+  );
+});
+PrintableContent.displayName = 'PrintableContent';
 
 export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
-  const [settings, setSettings] = useState<{general?: GeneralSettings, appearance?: AppearanceSettings}>({});
   const componentRef = useRef<HTMLDivElement>(null);
   const [isDemandNotice, setIsDemandNotice] = useState(false);
+  const [settings, setSettings] = useState<any>({});
 
   useEffect(() => {
     if (isOpen) {
       setSettings({
-          general: store.settings.generalSettings || {},
-          appearance: store.settings.appearanceSettings || {},
+        general: store.settings.generalSettings || {},
+        appearance: store.settings.appearanceSettings || {},
       });
-      setIsDemandNotice(false);
     }
   }, [isOpen]);
 
@@ -379,58 +284,32 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[950px] p-0 overflow-hidden border-0">
-        <div className="flex h-[90vh]">
-          <div className="w-[280px] border-r bg-muted/30 p-6 space-y-6 no-print">
-            <h3 className="text-lg font-bold flex items-center gap-2 font-headline">
-                <ShieldCheck className="h-5 w-5 text-primary" />
-                Advanced Billing
-            </h3>
-            <div className="space-y-4">
-               <div className="flex items-center justify-between space-x-2 border p-4 rounded-lg bg-background shadow-sm">
-                  <div className="flex flex-col space-y-0.5">
-                    <Label htmlFor="demand-notice-toggle" className="font-bold">Demand Notice</Label>
-                    <span className="text-[10px] text-destructive uppercase font-bold">Final Warning Mode</span>
-                  </div>
-                  <Switch 
-                    id="demand-notice-toggle" 
-                    checked={isDemandNotice} 
-                    onCheckedChange={setIsDemandNotice} 
-                  />
-               </div>
-               <p className="text-xs text-muted-foreground px-1">
-                 Toggle Demand Notice to apply red enforcement styling and legal warning text to the document.
-               </p>
+        <div className="flex h-[85vh]">
+          <div className="w-[280px] border-r bg-muted/20 p-6 space-y-6">
+            <h3 className="font-bold flex items-center gap-2"><ShieldCheck className="h-5 w-5" /> Enforcement</h3>
+            <div className="flex items-center justify-between p-4 border rounded-lg bg-white">
+              <Label htmlFor="dlg-demand">Demand Notice</Label>
+              <Switch id="dlg-demand" checked={isDemandNotice} onCheckedChange={setIsDemandNotice} />
             </div>
           </div>
-
-          <div className="flex-1 flex flex-col bg-slate-100 overflow-hidden">
-            <div className="flex-1 overflow-y-auto p-8 flex justify-center">
-                 {!settings.general ? (
-                    <div className="flex flex-col items-center justify-center w-[210mm] h-[297mm] bg-white rounded-lg shadow-xl">
-                        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                        <p className="mt-4 font-medium">Preparing Document...</p>
-                    </div>
-                 ) : (
-                    <div className="shadow-2xl bg-white" style={{ width: '210mm', minHeight: '297mm' }}>
-                        <PrintableContent 
-                            ref={componentRef} 
-                            data={bill.propertySnapshot} 
-                            billType={bill.billType} 
-                            settings={settings}
-                            isDemandNotice={isDemandNotice}
-                        />
-                    </div>
-                 )}
+          <div className="flex-1 bg-slate-200 overflow-auto p-10 flex justify-center">
+            <div style={{ transform: 'scale(0.8)', transformOrigin: 'top center' }}>
+              <PrintableContent 
+                ref={componentRef} 
+                data={bill.propertySnapshot} 
+                billType={bill.billType} 
+                settings={settings}
+                isDemandNotice={isDemandNotice}
+              />
             </div>
-            <DialogFooter className="p-4 bg-white sm:justify-end border-t gap-2 no-print">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>Close Preview</Button>
-              <Button onClick={handlePrint} className={cn("shadow-lg px-10 font-bold", isDemandNotice ? "bg-red-600 hover:bg-red-700" : "bg-primary")}>
-                <Printer className="mr-2 h-4 w-4" />
-                {isDemandNotice ? 'Print Demand Notice' : 'Print Official Bill'}
-              </Button>
-            </DialogFooter>
           </div>
         </div>
+        <DialogFooter className="p-4 bg-white border-t">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+          <Button onClick={handlePrint} className={isDemandNotice ? "bg-red-600" : ""}>
+            <Printer className="mr-2 h-4 w-4" /> Print
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
