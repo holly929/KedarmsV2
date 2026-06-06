@@ -76,9 +76,9 @@ const BarcodeComponent = memo(({ value, isCompact }: { value: string; isCompact:
 BarcodeComponent.displayName = 'BarcodeComponent';
 
 const BillRow = ({ label, value, isBold = false, style = {} }: { label: string; value: string | number; isBold?: boolean; style?: React.CSSProperties }) => (
-  <div className={cn("flex justify-between p-0.5 border-b border-black/10 items-center", isBold ? 'font-bold' : '')} style={style}>
-    <span className="text-[0.75em] uppercase tracking-tighter">{label}</span>
-    <span className="text-right font-mono text-[0.85em]">{value}</span>
+  <div className={cn("flex justify-between p-0.5 border-b border-black/20 items-center", isBold ? 'font-bold' : '')} style={style}>
+    <span className="text-[0.75em] uppercase tracking-tighter text-[#000000]">{label}</span>
+    <span className="text-right font-mono text-[0.85em] text-[#000000]">{value}</span>
   </div>
 );
 
@@ -116,8 +116,8 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
     const baseStyle = useMemo(() => ({
         fontSize: `${finalFontSize}px`,
         lineHeight: `${finalFontSize * 1.2}px`,
-        color: 'black',
-        backgroundColor: 'white',
+        color: '#000000',
+        backgroundColor: '#ffffff',
         WebkitPrintColorAdjust: 'exact',
         printColorAdjust: 'exact',
         width: isCompact ? '100%' : '210mm',
@@ -207,17 +207,16 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
       <div 
         ref={ref} 
         className={cn(
-          "printable-content text-black bg-white box-border relative overflow-hidden", 
+          "printable-content text-[#000000] bg-[#ffffff] box-border relative overflow-hidden", 
           fontClass, 
           isCompact ? 'p-1' : 'p-3'
         )} 
         style={baseStyle}
       >
         <div className="border-[3px] border-double border-black p-2 relative h-full flex flex-col bg-white box-border">
-          <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
+          <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.05] pointer-events-none">
               {settings.appearance?.ghanaLogo && (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={settings.appearance.ghanaLogo} alt="Watermark" width={180} height={180} style={{objectFit: 'contain'}} />
+                  <img src={settings.appearance.ghanaLogo} alt="Watermark" style={{objectFit: 'contain', width: '180px', height: '180px'}} />
               )}
           </div>
           
@@ -225,17 +224,16 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
             <header className="flex justify-between items-center mb-1 border-b-2 border-black pb-1 shrink-0">
                 <div className="w-[60px] flex justify-start">
                     {settings.appearance?.ghanaLogo && (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img src={settings.appearance.ghanaLogo} alt="Ghana" className="object-contain h-auto" style={{ width: '45px' }} />
+                        <img src={settings.appearance.ghanaLogo} alt="Ghana" style={{ width: '45px', height: 'auto', objectFit: 'contain' }} />
                     )}
                 </div>
                 <div className="flex-1 text-center px-1">
-                    <h1 className="font-extrabold tracking-tight uppercase leading-tight" style={{ fontSize: `${finalFontSize * 1.3}px` }}>{settings.general?.assemblyName || 'KWAHU EAST DISTRICT ASSEMBLY'}</h1>
-                    <p className="text-[9px] font-bold uppercase tracking-tight mb-0.5">LOCAL GOVERNANCE ACT, 2016 (ACT 936)</p>
-                    <p className="font-semibold leading-tight text-[0.8em]">{settings.general?.postalAddress}</p>
-                    <p className="font-semibold text-[0.75em]">TEL: {settings.general?.contactPhone}</p>
+                    <h1 className="font-extrabold tracking-tight uppercase leading-tight text-[#000000]" style={{ fontSize: `${finalFontSize * 1.3}px` }}>{settings.general?.assemblyName || 'KWAHU EAST DISTRICT ASSEMBLY'}</h1>
+                    <p className="text-[9px] font-bold uppercase tracking-tight mb-0.5 text-[#000000]">LOCAL GOVERNANCE ACT, 2016 (ACT 936)</p>
+                    <p className="font-semibold leading-tight text-[0.8em] text-[#000000]">{settings.general?.postalAddress}</p>
+                    <p className="font-semibold text-[0.75em] text-[#000000]">TEL: {settings.general?.contactPhone}</p>
                     
-                    <div className={cn("mt-1 inline-block px-3 py-1 border-2 border-black font-black tracking-widest uppercase", isDemandNotice ? "bg-red-600 text-white border-red-700" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 1.0}px` }}>
+                    <div className={cn("mt-1 inline-block px-3 py-1 border-2 border-black font-black tracking-widest uppercase", isDemandNotice ? "bg-[#e11d48] text-white" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 1.0}px` }}>
                       {isDemandNotice 
                         ? (settings.appearance?.demandNoticeCaption || 'DEMAND NOTICE') 
                         : 'PROPERTY RATE & B.O.P BILL'}
@@ -243,17 +241,16 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                 </div>
                 <div className="w-[60px] flex justify-end">
                     {settings.appearance?.assemblyLogo && (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img src={settings.appearance.assemblyLogo} alt="Logo" className="object-contain h-auto" style={{ width: '45px' }} />
+                        <img src={settings.appearance.assemblyLogo} alt="Logo" style={{ width: '45px', height: 'auto', objectFit: 'contain' }} />
                     )}
                 </div>
             </header>
 
-            <div className="text-center py-1 mb-1 border border-black bg-black/[0.02] shrink-0">
-                <span className="text-[0.5em] font-bold block text-muted-foreground tracking-widest uppercase">BILLED TO:</span>
-                <span className="font-black tracking-tight leading-none" style={{ fontSize: `${finalFontSize * 1.25}px` }}>{billedToName}</span>
+            <div className="text-center py-1 mb-1 border border-black bg-[#fafafa] shrink-0">
+                <span className="text-[0.5em] font-bold block text-[#666666] tracking-widest uppercase">BILLED TO:</span>
+                <span className="font-black tracking-tight leading-none text-[#000000]" style={{ fontSize: `${finalFontSize * 1.25}px` }}>{billedToName}</span>
                 {suburbHeaderDisplay && (
-                  <span className="text-[1.1em] font-black block mt-1 tracking-wider text-black border-t border-black/10 pt-1 uppercase">SUBURB: {suburbHeaderDisplay}</span>
+                  <span className="text-[1.1em] font-black block mt-1 tracking-wider text-[#000000] border-t border-black/10 pt-1 uppercase">SUBURB: {suburbHeaderDisplay}</span>
                 )}
             </div>
             
@@ -262,25 +259,25 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                   <>
                     <div className="flex border-b-2 border-black shrink-0">
                         <div className="w-[65%] border-r-2 border-black">
-                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-black/[0.02] text-[0.75em]">OWNER NAME</div><div className="w-2/3 border-l border-black/10 p-1 font-bold truncate text-[0.85em]">{formatValue('Owner Name')}</div></div>
-                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-black/[0.02] text-[0.75em]">PHONE NO</div><div className="w-2/3 border-l border-black/10 p-1 text-[0.85em]">{formatValue('Phone Number')}</div></div>
-                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-black/[0.02] text-[0.75em]">TOWN</div><div className="w-2/3 border-l border-black/10 p-1 text-[0.85em]">{formatValue('Town')}</div></div>
-                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-black/[0.02] text-[0.75em]">PROPERTY NO</div><div className="w-2/3 border-l border-black/10 p-1 font-mono font-bold text-[0.85em]">{formatValue('Property No')}</div></div>
+                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-[#f0f0f0] text-[0.75em] text-[#000000]">OWNER NAME</div><div className="w-2/3 border-l border-black/10 p-1 font-bold truncate text-[0.85em] text-[#000000]">{formatValue('Owner Name')}</div></div>
+                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-[#f0f0f0] text-[0.75em] text-[#000000]">PHONE NO</div><div className="w-2/3 border-l border-black/10 p-1 text-[0.85em] text-[#000000]">{formatValue('Phone Number')}</div></div>
+                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-[#f0f0f0] text-[0.75em] text-[#000000]">TOWN</div><div className="w-2/3 border-l border-black/10 p-1 text-[0.85em] text-[#000000]">{formatValue('Town')}</div></div>
+                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-[#f0f0f0] text-[0.75em] text-[#000000]">PROPERTY NO</div><div className="w-2/3 border-l border-black/10 p-1 font-mono font-bold text-[0.85em] text-[#000000]">{formatValue('Property No')}</div></div>
                         </div>
                         <div className="w-[35%] flex flex-col">
-                            <div className="flex border-b border-black/10 h-1/2"><div className="w-1/2 font-bold p-1 bg-black/[0.02] text-[0.75em]">TYPE</div><div className="w-1/2 border-l border-black/10 p-1 text-center font-bold text-[0.75em]">{formatValue('Property Type')}</div></div>
-                            <div className="flex-1 flex flex-col items-center justify-center bg-black/5">
-                                <span className="font-bold text-[0.6em] uppercase tracking-tighter">Amount Due</span>
-                                <span className="font-black text-[1.1em]">(GH&#8373;)</span>
+                            <div className="flex border-b border-black/10 h-1/2"><div className="w-1/2 font-bold p-1 bg-[#f0f0f0] text-[0.75em] text-[#000000]">TYPE</div><div className="w-1/2 border-l border-black/10 p-1 text-center font-bold text-[0.75em] text-[#000000]">{formatValue('Property Type')}</div></div>
+                            <div className="flex-1 flex flex-col items-center justify-center bg-[#f5f5f5]">
+                                <span className="font-bold text-[0.6em] uppercase tracking-tighter text-[#000000]">Amount Due</span>
+                                <span className="font-black text-[1.1em] text-[#000000]">(GH&#8373;)</span>
                             </div>
                         </div>
                     </div>
                     <div className="flex flex-1 overflow-hidden min-h-0">
                         <div className="w-[65%] border-r-2 border-black flex flex-col min-h-0">
-                            <div className="flex border-b border-black bg-black/[0.02] text-[0.65em] font-bold shrink-0">
-                                <div className="w-1/3 p-1 text-center">PARTICULARS</div>
-                                <div className="w-1/3 border-x border-black/10 p-1 text-center">RV: {formatValue('Rateable Value')}</div>
-                                <div className="w-1/3 p-1 text-center">IMPOST: {formatValue('Rate Impost')}</div>
+                            <div className="flex border-b border-black bg-[#f0f0f0] text-[0.65em] font-bold shrink-0">
+                                <div className="w-1/3 p-1 text-center text-[#000000]">PARTICULARS</div>
+                                <div className="w-1/3 border-x border-black/10 p-1 text-center text-[#000000]">RV: {formatValue('Rateable Value')}</div>
+                                <div className="w-1/3 p-1 text-center text-[#000000]">IMPOST: {formatValue('Rate Impost')}</div>
                             </div>
                             <div className="flex-grow overflow-hidden">
                                 <BillRow label="AMOUNT CHARGED" value={formatToTwoDecimals(getNumericValue('Rateable Value') * getNumericValue('Rate Impost'))} />
@@ -291,20 +288,20 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                                 <BillRow label="LESS PAYMENTS" value={formatValue('Total Payment')} />
                             </div>
                             <div className="flex justify-between p-2 border-t-2 border-black items-center font-black shrink-0" style={accentStyle}>
-                                <span className="text-[0.9em] uppercase tracking-tighter">TOTAL PAYABLE</span>
-                                <span className="text-right" style={{ fontSize: `${finalFontSize * 1.2}px` }}>GH&#8373; {totalAmountPayable}</span>
+                                <span className="text-[0.9em] uppercase tracking-tighter text-[#000000]">TOTAL PAYABLE</span>
+                                <span className="text-right text-[#000000]" style={{ fontSize: `${finalFontSize * 1.2}px` }}>GH&#8373; {totalAmountPayable}</span>
                             </div>
                         </div>
                         <div className="w-[35%] flex flex-col text-right font-bold min-h-0">
-                            <div className="p-1 border-b border-black bg-black/5 text-[0.6em] text-center shrink-0">VALUE BREAKDOWN</div>
+                            <div className="p-1 border-b border-black bg-[#f5f5f5] text-[0.6em] text-center shrink-0 text-[#000000]">VALUE BREAKDOWN</div>
                             <div className="flex-1 flex flex-col min-h-0">
-                                <div className="p-1 border-b border-black/10 flex-1 flex items-center justify-end font-mono text-[0.9em]">{formatToTwoDecimals(getNumericValue('Rateable Value') * getNumericValue('Rate Impost'))}</div>
-                                <div className="p-1 border-b border-black/10 flex-1 flex items-center justify-end font-mono text-[0.9em]">{formatValue('Sanitation Charged')}</div>
-                                <div className="p-1 border-b border-black/10 flex-1 flex items-center justify-end font-mono text-[0.9em]">{formatToTwoDecimals((getNumericValue('Rateable Value') * getNumericValue('Rate Impost')) + getNumericValue('Sanitation Charged'))}</div>
-                                <div className="p-1 border-b border-black/10 flex-1 flex items-center justify-end font-mono text-[0.9em]">{formatValue('Previous Balance')}</div>
-                                <div className="p-1 border-b border-black/10 flex-1 flex items-center justify-end font-mono text-[0.9em]">{formatToTwoDecimals((getNumericValue('Rateable Value') * getNumericValue('Rate Impost')) + getNumericValue('Sanitation Charged') + getNumericValue('Previous Balance'))}</div>
-                                <div className="p-1 border-b border-black/10 flex-1 flex items-center justify-end font-mono text-[0.9em]">{formatValue('Total Payment')}</div>
-                                <div className="p-2 border-t-2 border-black flex-1 flex items-center justify-end font-mono text-[1.1em] shrink-0" style={accentStyle}>{totalAmountPayable}</div>
+                                <div className="p-1 border-b border-black/10 flex-1 flex items-center justify-end font-mono text-[0.9em] text-[#000000]">{formatToTwoDecimals(getNumericValue('Rateable Value') * getNumericValue('Rate Impost'))}</div>
+                                <div className="p-1 border-b border-black/10 flex-1 flex items-center justify-end font-mono text-[0.9em] text-[#000000]">{formatValue('Sanitation Charged')}</div>
+                                <div className="p-1 border-b border-black/10 flex-1 flex items-center justify-end font-mono text-[0.9em] text-[#000000]">{formatToTwoDecimals((getNumericValue('Rateable Value') * getNumericValue('Rate Impost')) + getNumericValue('Sanitation Charged'))}</div>
+                                <div className="p-1 border-b border-black/10 flex-1 flex items-center justify-end font-mono text-[0.9em] text-[#000000]">{formatValue('Previous Balance')}</div>
+                                <div className="p-1 border-b border-black/10 flex-1 flex items-center justify-end font-mono text-[0.9em] text-[#000000]">{formatToTwoDecimals((getNumericValue('Rateable Value') * getNumericValue('Rate Impost')) + getNumericValue('Sanitation Charged') + getNumericValue('Previous Balance'))}</div>
+                                <div className="p-1 border-b border-black/10 flex-1 flex items-center justify-end font-mono text-[0.9em] text-[#000000]">{formatValue('Total Payment')}</div>
+                                <div className="p-2 border-t-2 border-black flex-1 flex items-center justify-end font-mono text-[1.1em] shrink-0 text-[#000000]" style={accentStyle}>{totalAmountPayable}</div>
                             </div>
                         </div>
                     </div>
@@ -312,8 +309,8 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                 ) : (
                   <div className="flex flex-col flex-1 overflow-hidden min-h-0">
                     <div className="grid grid-cols-2 border-b-2 border-black shrink-0">
-                        <div className="p-2 border-r border-black/10"><span className="font-bold text-[0.65em] block text-muted-foreground uppercase">NAME/BUSINESS</span><span className="font-bold text-[0.95em]">{billedToName}</span></div>
-                        <div className="p-2"><span className="font-bold text-[0.65em] block text-muted-foreground uppercase">ID / SN</span><span className="font-mono font-bold text-[0.95em]">{formatValue('S/N') || formatValue('Property No')}</span></div>
+                        <div className="p-2 border-r border-black/10"><span className="font-bold text-[0.65em] block text-[#666666] uppercase">NAME/BUSINESS</span><span className="font-bold text-[0.95em] text-[#000000]">{billedToName}</span></div>
+                        <div className="p-2"><span className="font-bold text-[0.65em] block text-[#666666] uppercase">ID / SN</span><span className="font-mono font-bold text-[0.95em] text-[#000000]">{formatValue('S/N') || formatValue('Property No')}</span></div>
                     </div>
                     <div className="flex-1 overflow-hidden">
                         {billType === 'bop' ? (
@@ -334,8 +331,8 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                         )}
                     </div>
                     <div className="flex justify-between p-3 border-t-2 border-black items-center font-black shrink-0" style={accentStyle}>
-                        <span className="text-[1.1em] uppercase tracking-widest">TOTAL AMOUNT PAYABLE</span>
-                        <span className="text-right" style={{ fontSize: `${finalFontSize * 1.3}px` }}>GH&#8373; {totalAmountPayable}</span>
+                        <span className="text-[1.1em] uppercase tracking-widest text-[#000000]">TOTAL AMOUNT PAYABLE</span>
+                        <span className="text-right text-[#000000]" style={{ fontSize: `${finalFontSize * 1.3}px` }}>GH&#8373; {totalAmountPayable}</span>
                     </div>
                   </div>
                 )}
@@ -344,21 +341,20 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
             <footer className="mt-2 pt-1 flex flex-col gap-2 shrink-0 bg-white">
                 <div className="flex items-end justify-between gap-4">
                     <div className="flex-1 flex flex-col items-start">
-                        <span className="text-[0.6em] font-bold text-muted-foreground tracking-tighter uppercase mb-1">Secure Transaction Identifier</span>
+                        <span className="text-[0.6em] font-bold text-[#666666] tracking-tighter uppercase mb-1">Secure Transaction Identifier</span>
                         {barcodeValue && <BarcodeComponent value={barcodeValue} isCompact={isCompact} />}
-                        <span className="text-[0.5em] font-mono opacity-50 truncate max-w-[200px]">{barcodeValue}</span>
+                        <span className="text-[0.5em] font-mono opacity-50 truncate max-w-[200px] text-[#000000]">{barcodeValue}</span>
                     </div>
                     <div className="w-[160px] text-center">
                         <div className="mx-auto flex items-center justify-center h-10">
                             {settings.appearance?.signature && (
-                                /* eslint-disable-next-line @next/next/no-img-element */
                                 <img src={settings.appearance.signature} alt="Signature" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
                             )}
                         </div>
-                        <p className="border-t border-black font-bold uppercase text-[0.65em] pt-1">COORDINATING DIRECTOR</p>
+                        <p className="border-t border-black font-bold uppercase text-[0.65em] pt-1 text-[#000000]">COORDINATING DIRECTOR</p>
                     </div>
                 </div>
-                <div className={cn("font-black text-center p-1 border-2 border-black tracking-tighter uppercase leading-tight shrink-0", isDemandNotice ? "bg-red-600 text-white border-red-700" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 0.9}px` }}>
+                <div className={cn("font-black text-center p-1 border-2 border-black tracking-tighter uppercase leading-tight shrink-0", isDemandNotice ? "bg-[#e11d48] text-white" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 0.9}px` }}>
                     {isDemandNotice 
                       ? 'FINAL WARNING: LEGAL ACTION WILL BE TAKEN IF NOT PAID WITHIN 14 DAYS.'
                       : (settings.appearance?.billWarningText || 'PAY AT ONCE OR FACE LEGAL ACTION')}
@@ -416,9 +412,6 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
                     onCheckedChange={setIsDemandNotice} 
                   />
                </div>
-            </div>
-            <div className="p-4 bg-primary/5 rounded-lg border border-primary/10">
-                <p className="text-xs text-muted-foreground italic">Printing will automatically record these bills in the transaction history.</p>
             </div>
           </div>
 

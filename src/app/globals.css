@@ -25,12 +25,6 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 217.2 91.2% 59.8%;
     --radius: 0.75rem;
-
-    --chart-1: 217.2 91.2% 59.8%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 85% 60%;
-    --chart-5: 340 90% 65%;
   }
 
   .dark {
@@ -53,22 +47,12 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 217.2 91.2% 59.8%;
-
-    --chart-1: 217.2 91.2% 59.8%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 85% 60%;
-    --chart-5: 340 90% 65%;
   }
 }
  
 @layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground; }
 }
 
 @media print {
@@ -81,38 +65,29 @@
     display: none !important;
   }
 
+  /* Nuclear Print Reset: Force browser to disregard theme variables */
   html, body {
     height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
-    background: white !important;
-    color: black !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* Force elements to be visible and correctly colored during print */
-  .printable-area {
-    position: static !important;
-    width: 210mm !important;
+  /* Force display for hidden components being printed */
+  .printable-notice, 
+  .printable-content,
+  .print-page-break {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
-    background: white !important;
-    color: black !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  .print-page-break {
+    background-color: #ffffff !important;
+    color: #000000 !important;
     page-break-after: always !important;
     break-after: page !important;
-    display: block !important;
-    height: 297mm !important;
-    width: 210mm !important;
-    box-sizing: border-box !important;
-    position: relative !important;
   }
 
   img {
@@ -120,4 +95,9 @@
     print-color-adjust: exact !important;
     display: block !important;
   }
+}
+
+.print-page-break {
+    page-break-after: always;
+    break-after: page;
 }

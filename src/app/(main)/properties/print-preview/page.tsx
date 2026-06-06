@@ -26,13 +26,13 @@ type AppearanceSettings = { assemblyLogo?: string; ghanaLogo?: string; signature
 
 const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], settings: { general: GeneralSettings, appearance: AppearanceSettings }, billsPerPage: number, isCompact: boolean, isDemandNotice: boolean }>(({ properties, settings, billsPerPage, isCompact, isDemandNotice }, ref) => {
     
-    const sheetStyle = { backgroundColor: 'white', minHeight: '297mm' };
+    const sheetStyle = { backgroundColor: '#ffffff', minHeight: '297mm' };
 
     if (billsPerPage === 4) {
         const chunks: Property[][] = [];
         for (let i = 0; i < properties.length; i += 4) chunks.push(properties.slice(i, i + 4));
         return (
-            <div ref={ref} style={sheetStyle} className="bg-white text-black">
+            <div ref={ref} style={sheetStyle} className="bg-[#ffffff] text-[#000000]">
                 {chunks.map((chunk, index) => (
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white grid grid-cols-2 grid-rows-2 box-border overflow-hidden">
                         {chunk.map(p => (
@@ -51,7 +51,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
         const chunks: Property[][] = [];
         for (let i = 0; i < properties.length; i += 2) chunks.push(properties.slice(i, i + 2));
         return (
-            <div ref={ref} style={sheetStyle} className="bg-white text-black">
+            <div ref={ref} style={sheetStyle} className="bg-[#ffffff] text-[#000000]">
                 {chunks.map((chunk, index) => (
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex flex-col box-border overflow-hidden">
                         {chunk.map((p, ci) => (
@@ -68,7 +68,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
         );
     }
     return (
-        <div ref={ref} style={sheetStyle} className="bg-white text-black">
+        <div ref={ref} style={sheetStyle} className="bg-[#ffffff] text-[#000000]">
             {properties.map(p => (
                 <div key={p.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white overflow-hidden p-2 break-inside-avoid">
                     <PrintableContent data={p} billType="property" settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
@@ -176,7 +176,7 @@ export default function BulkPrintPage() {
             <div className="space-y-8 w-full flex flex-col items-center">
                 <div className="text-center space-y-2 mb-4">
                     <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
-                    <p className="text-muted-foreground font-medium">Ready to Print. Documents are rendered below for verification.</p>
+                    <p className="text-muted-foreground font-medium">Ready to Print. Documents are rendered in the buffer below.</p>
                 </div>
                 <div className="scale-[0.4] sm:scale-[0.5] md:scale-[0.6] lg:scale-[0.7] origin-top bg-muted/20 p-8 rounded-2xl shadow-inner border-2 border-dashed">
                      <BillSheet properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
@@ -185,9 +185,9 @@ export default function BulkPrintPage() {
          )}
       </main>
       
-      {/* PAINT-THROUGH FIXED POSITIONING (Ensures Visibility for Print Capture) */}
-      <div className="fixed top-0 left-0 -z-50 pointer-events-none printable-area bg-white opacity-100 print:static print:z-auto" style={{ width: '210mm' }}>
-        <div ref={componentRef} className="bg-white">
+      {/* HIGH-ACCURACY OFF-CANVAS RENDERER (Ensures styles/barcodes paint fully before capture) */}
+      <div className="absolute left-[-9999px] top-0 pointer-events-none opacity-100 bg-[#ffffff] text-[#000000]" style={{ width: '210mm' }}>
+        <div ref={componentRef} className="bg-[#ffffff]">
             <BillSheet properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
         </div>
       </div>
