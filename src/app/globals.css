@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -65,7 +64,6 @@
     display: none !important;
   }
 
-  /* Nuclear Print Reset: Force browser to disregard theme variables */
   html, body {
     height: auto !important;
     margin: 0 !important;
@@ -77,17 +75,18 @@
     print-color-adjust: exact !important;
   }
 
-  /* Force display for hidden components being printed */
-  .printable-notice, 
-  .printable-content,
-  .print-page-break {
+  .printable-area {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
     background-color: #ffffff !important;
     color: #000000 !important;
+  }
+
+  .print-page-break {
     page-break-after: always !important;
     break-after: page !important;
+    display: block !important;
   }
 
   img {

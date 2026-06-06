@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useMemo, useCallback, forwardRef, memo } from 'react';
@@ -7,7 +6,7 @@ import JsBarcode from 'jsbarcode';
 import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import type { Property, Bop, License, Bill } from '@/lib/types';
-import { Printer, Loader2, FileWarning } from 'lucide-react';
+import { Printer, Loader2, FileWarning, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getPropertyValue } from '@/lib/property-utils';
 import { store } from '@/lib/store';
@@ -76,7 +75,7 @@ const BarcodeComponent = memo(({ value, isCompact }: { value: string; isCompact:
 BarcodeComponent.displayName = 'BarcodeComponent';
 
 const BillRow = ({ label, value, isBold = false, style = {} }: { label: string; value: string | number; isBold?: boolean; style?: React.CSSProperties }) => (
-  <div className={cn("flex justify-between p-0.5 border-b border-black/20 items-center", isBold ? 'font-bold' : '')} style={style}>
+  <div className={cn("flex justify-between p-0.5 border-b border-black/10 items-center", isBold ? 'font-bold' : '')} style={style}>
     <span className="text-[0.75em] uppercase tracking-tighter text-[#000000]">{label}</span>
     <span className="text-right font-mono text-[0.85em] text-[#000000]">{value}</span>
   </div>
@@ -126,27 +125,20 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
     } as React.CSSProperties), [finalFontSize, isCompact]);
 
     const accentStyle = useMemo(() => ({
-        backgroundColor: isDemandNotice ? '#FEE2E2' : (accentColor || '#F1F5F9'),
+        backgroundColor: isDemandNotice ? '#fee2e2' : (accentColor || '#f8fafc'),
         WebkitPrintColorAdjust: 'exact',
         printColorAdjust: 'exact'
     } as React.CSSProperties), [accentColor, isDemandNotice]);
     
-    const getNumericValue = useCallback((key: string): number => {
-        if (!data) return 0;
-        return parseNumeric(getPropertyValue(data as any, key));
-    }, [data]);
-
     const formatValue = useCallback((valueKey: string) => {
         if (!data) return '...';
         const val = getPropertyValue(data as any, valueKey);
         const strVal = val !== null && val !== undefined ? String(val).trim() : '';
         
         const isPlaceholder = /^[0. \-]+$/.test(strVal) || strVal === '';
-
         const identityKeys = ['owner', 'name', 'town', 'suburb', 'property no', 's/n', 'sn', 'hotel', 'guest house', 'entity', 'business'];
-        const isIdentityField = identityKeys.some(k => valueKey.toLowerCase().includes(k));
-
-        if (isIdentityField && (isPlaceholder || strVal === '0')) return '...';
+        
+        if (identityKeys.some(k => valueKey.toLowerCase().includes(k)) && (isPlaceholder || strVal === '0')) return '...';
         
         const numericKeys = ['license fee', 'bop amount', 'arrears', 'payment', 'rateable value', 'rate impost', 'total payment', 'permit fee', 'sanitation charged', 'previous balance', 'amount due', 'property rate'];
         if (numericKeys.some(k => valueKey.toLowerCase().includes(k))) {
@@ -159,25 +151,25 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
     
     const totalAmountPayableNum = useMemo(() => {
         if (!data) return 0;
-        const importedTotal = getNumericValue('Amount Due');
+        const importedTotal = parseNumeric(getPropertyValue(data as any, 'Amount Due'));
         if (importedTotal !== 0) return importedTotal;
 
         let calculated = 0;
         if (billType === 'property') {
-            const rv = getNumericValue('Rateable Value');
-            const ri = getNumericValue('Rate Impost');
-            const sc = getNumericValue('Sanitation Charged');
-            const pb = getNumericValue('Previous Balance');
-            const tp = getNumericValue('Total Payment');
+            const rv = parseNumeric(getPropertyValue(data as any, 'Rateable Value'));
+            const ri = parseNumeric(getPropertyValue(data as any, 'Rate Impost'));
+            const sc = parseNumeric(getPropertyValue(data as any, 'Sanitation Charged'));
+            const pb = parseNumeric(getPropertyValue(data as any, 'Previous Balance'));
+            const tp = parseNumeric(getPropertyValue(data as any, 'Total Payment'));
             calculated = (rv * ri) + sc + pb - tp;
         } else if (billType === 'bop') {
-            calculated = (getNumericValue('Permit Fee') + getNumericValue('Arrears')) - getNumericValue('Payment');
+            calculated = (parseNumeric(getPropertyValue(data as any, 'Permit Fee')) + parseNumeric(getPropertyValue(data as any, 'Arrears'))) - parseNumeric(getPropertyValue(data as any, 'Payment'));
         } else {
-            const lf = getNumericValue('Property Rate') || getNumericValue('License Fee');
-            calculated = (lf + getNumericValue('Bop Amount') + getNumericValue('Arrears')) - getNumericValue('Payment');
+            const lf = parseNumeric(getPropertyValue(data as any, 'Property Rate')) || parseNumeric(getPropertyValue(data as any, 'License Fee'));
+            calculated = (lf + parseNumeric(getPropertyValue(data as any, 'Bop Amount')) + parseNumeric(getPropertyValue(data as any, 'Arrears'))) - parseNumeric(getPropertyValue(data as any, 'Payment'));
         }
         return calculated;
-    }, [data, billType, getNumericValue]);
+    }, [data, billType]);
 
     const totalAmountPayable = useMemo(() => formatToTwoDecimals(totalAmountPayableNum), [totalAmountPayableNum]);
 
@@ -185,15 +177,12 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
         if (!data) return '...';
         const nameVal = getPropertyValue(data as any, 'Owner Name') || getPropertyValue(data as any, 'Business Name') || getPropertyValue(data as any, 'Name of Hotel/Guest House') || '...';
         const strVal = String(nameVal).trim();
-        const isPlaceholder = /^[0. \-]+$/.test(strVal);
-        return (isPlaceholder || strVal === '' || strVal === '0') ? '...' : strVal.toUpperCase();
+        return (strVal === '' || strVal === '0') ? '...' : strVal.toUpperCase();
     }, [data]);
 
-    const suburbHeaderDisplay = useMemo(() => {
-      if (!data) return '';
-      const subVal = String(getPropertyValue(data as any, 'Suburb') || '').trim();
-      const isPlaceholder = /^[0. \-]+$/.test(subVal);
-      return (isPlaceholder || subVal === '' || subVal === '0') ? '' : subVal.toUpperCase();
+    const suburbDisplay = useMemo(() => {
+        const val = String(getPropertyValue(data as any, 'Suburb') || '').trim();
+        return (val === '' || val === '0') ? '' : val.toUpperCase();
     }, [data]);
 
     const barcodeValue = useMemo(() => {
@@ -204,157 +193,155 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
     }, [data, totalAmountPayable]);
 
     return (
-      <div 
-        ref={ref} 
-        className={cn(
-          "printable-content text-[#000000] bg-[#ffffff] box-border relative overflow-hidden", 
-          fontClass, 
-          isCompact ? 'p-1' : 'p-3'
-        )} 
-        style={baseStyle}
-      >
+      <div ref={ref} className={cn("printable-content text-[#000000] bg-[#ffffff] box-border relative overflow-hidden", fontClass, isCompact ? 'p-1' : 'p-3')} style={baseStyle}>
         <div className="border-[3px] border-double border-black p-2 relative h-full flex flex-col bg-white box-border">
-          <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.05] pointer-events-none">
+          <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.04] pointer-events-none">
               {settings.appearance?.ghanaLogo && (
-                  <img src={settings.appearance.ghanaLogo} alt="Watermark" style={{objectFit: 'contain', width: '180px', height: '180px'}} />
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={settings.appearance.ghanaLogo} alt="Watermark" style={{objectFit: 'contain', width: '250px', height: '250px'}} />
               )}
           </div>
           
           <div className="relative z-10 flex flex-col h-full bg-transparent">
             <header className="flex justify-between items-center mb-1 border-b-2 border-black pb-1 shrink-0">
-                <div className="w-[60px] flex justify-start">
+                <div className="w-[60px]">
                     {settings.appearance?.ghanaLogo && (
-                        <img src={settings.appearance.ghanaLogo} alt="Ghana" style={{ width: '45px', height: 'auto', objectFit: 'contain' }} />
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={settings.appearance.ghanaLogo} alt="Ghana" style={{ width: '48px', height: 'auto', objectFit: 'contain' }} />
                     )}
                 </div>
-                <div className="flex-1 text-center px-1">
-                    <h1 className="font-extrabold tracking-tight uppercase leading-tight text-[#000000]" style={{ fontSize: `${finalFontSize * 1.3}px` }}>{settings.general?.assemblyName || 'KWAHU EAST DISTRICT ASSEMBLY'}</h1>
-                    <p className="text-[9px] font-bold uppercase tracking-tight mb-0.5 text-[#000000]">LOCAL GOVERNANCE ACT, 2016 (ACT 936)</p>
-                    <p className="font-semibold leading-tight text-[0.8em] text-[#000000]">{settings.general?.postalAddress}</p>
-                    <p className="font-semibold text-[0.75em] text-[#000000]">TEL: {settings.general?.contactPhone}</p>
+                <div className="flex-1 text-center">
+                    <h1 className="font-black tracking-tight uppercase leading-none text-[#000000]" style={{ fontSize: `${finalFontSize * 1.4}px` }}>{settings.general?.assemblyName || 'KWAHU EAST DISTRICT ASSEMBLY'}</h1>
+                    <p className="text-[9px] font-bold uppercase tracking-widest my-0.5 text-[#000000]">LOCAL GOVERNANCE ACT, 2016 (ACT 936)</p>
+                    <p className="font-semibold leading-tight text-[0.85em] text-[#000000]">{settings.general?.postalAddress}</p>
+                    <p className="font-bold text-[0.8em] text-[#000000]">TEL: {settings.general?.contactPhone}</p>
                     
-                    <div className={cn("mt-1 inline-block px-3 py-1 border-2 border-black font-black tracking-widest uppercase", isDemandNotice ? "bg-[#e11d48] text-white" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 1.0}px` }}>
-                      {isDemandNotice 
-                        ? (settings.appearance?.demandNoticeCaption || 'DEMAND NOTICE') 
-                        : 'PROPERTY RATE & B.O.P BILL'}
+                    <div className={cn("mt-1 inline-block px-4 py-0.5 border-2 border-black font-black tracking-widest uppercase", isDemandNotice ? "bg-[#e11d48] text-white" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 1.1}px` }}>
+                      {isDemandNotice ? (settings.appearance?.demandNoticeCaption || 'DEMAND NOTICE') : 'OFFICIAL BILLING NOTICE'}
                     </div>
                 </div>
                 <div className="w-[60px] flex justify-end">
                     {settings.appearance?.assemblyLogo && (
-                        <img src={settings.appearance.assemblyLogo} alt="Logo" style={{ width: '45px', height: 'auto', objectFit: 'contain' }} />
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={settings.appearance.assemblyLogo} alt="Logo" style={{ width: '48px', height: 'auto', objectFit: 'contain' }} />
                     )}
                 </div>
             </header>
 
-            <div className="text-center py-1 mb-1 border border-black bg-[#fafafa] shrink-0">
-                <span className="text-[0.5em] font-bold block text-[#666666] tracking-widest uppercase">BILLED TO:</span>
-                <span className="font-black tracking-tight leading-none text-[#000000]" style={{ fontSize: `${finalFontSize * 1.25}px` }}>{billedToName}</span>
-                {suburbHeaderDisplay && (
-                  <span className="text-[1.1em] font-black block mt-1 tracking-wider text-[#000000] border-t border-black/10 pt-1 uppercase">SUBURB: {suburbHeaderDisplay}</span>
-                )}
+            <div className="grid grid-cols-5 gap-1 mb-1 shrink-0">
+                <div className="col-span-3 text-left py-1 px-2 border-2 border-black bg-[#fafafa]">
+                    <span className="text-[0.6em] font-bold block text-[#666666] tracking-tighter uppercase">BILLED TO:</span>
+                    <span className="font-black tracking-tight leading-none text-[#000000]" style={{ fontSize: `${finalFontSize * 1.25}px` }}>{billedToName}</span>
+                    {suburbDisplay && (
+                        <span className="text-[1.0em] font-black block mt-1 tracking-tight text-[#000000] uppercase">SUBURB: {suburbDisplay}</span>
+                    )}
+                </div>
+                <div className="col-span-2 flex flex-col gap-1">
+                    <div className="flex-1 flex flex-col justify-center border-2 border-black p-1 text-center bg-[#f0f0f0]">
+                        <span className="text-[0.55em] font-bold text-[#666666] uppercase leading-none">IDENTIFIER (ID/SN)</span>
+                        <span className="font-mono font-bold text-[0.9em] text-[#000000]">{formatValue('S/N') || formatValue('Property No')}</span>
+                    </div>
+                    <div className="flex-1 flex flex-col justify-center border-2 border-black p-1 text-center bg-[#f0f0f0]">
+                        <span className="text-[0.55em] font-bold text-[#666666] uppercase leading-none">DATE GENERATED</span>
+                        <span className="font-bold text-[0.85em] text-[#000000]">{new Date().toLocaleDateString('en-GB')}</span>
+                    </div>
+                </div>
             </div>
             
-            <main className="border-2 border-black flex-grow flex flex-col overflow-hidden min-h-0 bg-white">
+            <main className="border-2 border-black flex-grow flex flex-col overflow-hidden bg-white">
                 {billType === 'property' ? (
                   <>
                     <div className="flex border-b-2 border-black shrink-0">
                         <div className="w-[65%] border-r-2 border-black">
-                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-[#f0f0f0] text-[0.75em] text-[#000000]">OWNER NAME</div><div className="w-2/3 border-l border-black/10 p-1 font-bold truncate text-[0.85em] text-[#000000]">{formatValue('Owner Name')}</div></div>
-                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-[#f0f0f0] text-[0.75em] text-[#000000]">PHONE NO</div><div className="w-2/3 border-l border-black/10 p-1 text-[0.85em] text-[#000000]">{formatValue('Phone Number')}</div></div>
-                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-[#f0f0f0] text-[0.75em] text-[#000000]">TOWN</div><div className="w-2/3 border-l border-black/10 p-1 text-[0.85em] text-[#000000]">{formatValue('Town')}</div></div>
-                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-[#f0f0f0] text-[0.75em] text-[#000000]">PROPERTY NO</div><div className="w-2/3 border-l border-black/10 p-1 font-mono font-bold text-[0.85em] text-[#000000]">{formatValue('Property No')}</div></div>
+                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-[#f8fafc] text-[0.7em] text-[#000000]">TOWN</div><div className="w-2/3 border-l border-black/10 p-1 font-bold text-[0.8em] text-[#000000]">{formatValue('Town')}</div></div>
+                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-[#f8fafc] text-[0.7em] text-[#000000]">PROPERTY NO</div><div className="w-2/3 border-l border-black/10 p-1 font-mono font-bold text-[0.8em] text-[#000000]">{formatValue('Property No')}</div></div>
+                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-[#f8fafc] text-[0.7em] text-[#000000]">TYPE</div><div className="w-2/3 border-l border-black/10 p-1 text-[0.8em] text-[#000000]">{formatValue('Property Type')}</div></div>
                         </div>
-                        <div className="w-[35%] flex flex-col">
-                            <div className="flex border-b border-black/10 h-1/2"><div className="w-1/2 font-bold p-1 bg-[#f0f0f0] text-[0.75em] text-[#000000]">TYPE</div><div className="w-1/2 border-l border-black/10 p-1 text-center font-bold text-[0.75em] text-[#000000]">{formatValue('Property Type')}</div></div>
-                            <div className="flex-1 flex flex-col items-center justify-center bg-[#f5f5f5]">
-                                <span className="font-bold text-[0.6em] uppercase tracking-tighter text-[#000000]">Amount Due</span>
-                                <span className="font-black text-[1.1em] text-[#000000]">(GH&#8373;)</span>
-                            </div>
+                        <div className="w-[35%] flex flex-col items-center justify-center bg-[#f1f5f9] font-black">
+                             <span className="text-[0.6em] text-[#64748b] tracking-widest uppercase">AMOUNT OWED</span>
+                             <span className="text-[1.2em] leading-none text-[#000000]">(GH&#8373;)</span>
                         </div>
                     </div>
-                    <div className="flex flex-1 overflow-hidden min-h-0">
-                        <div className="w-[65%] border-r-2 border-black flex flex-col min-h-0">
-                            <div className="flex border-b border-black bg-[#f0f0f0] text-[0.65em] font-bold shrink-0">
-                                <div className="w-1/3 p-1 text-center text-[#000000]">PARTICULARS</div>
-                                <div className="w-1/3 border-x border-black/10 p-1 text-center text-[#000000]">RV: {formatValue('Rateable Value')}</div>
-                                <div className="w-1/3 p-1 text-center text-[#000000]">IMPOST: {formatValue('Rate Impost')}</div>
+                    <div className="flex flex-1 overflow-hidden">
+                        <div className="w-[65%] border-r-2 border-black flex flex-col">
+                            <div className="flex border-b border-black bg-[#f1f5f9] text-[0.65em] font-black shrink-0">
+                                <div className="w-1/3 p-1 text-center border-r border-black/10">PARTICULARS</div>
+                                <div className="w-1/3 p-1 text-center border-r border-black/10">RV: {formatValue('Rateable Value')}</div>
+                                <div className="w-1/3 p-1 text-center">IMPOST: {formatValue('Rate Impost')}</div>
                             </div>
-                            <div className="flex-grow overflow-hidden">
-                                <BillRow label="AMOUNT CHARGED" value={formatToTwoDecimals(getNumericValue('Rateable Value') * getNumericValue('Rate Impost'))} />
-                                <BillRow label="SANITATION FEE" value={formatValue('Sanitation Charged')} />
-                                <BillRow label="CURRENT YEAR TOTAL" value={formatToTwoDecimals((getNumericValue('Rateable Value') * getNumericValue('Rate Impost')) + getNumericValue('Sanitation Charged'))} isBold />
-                                <BillRow label="PREVIOUS BALANCE" value={formatValue('Previous Balance')} />
-                                <BillRow label="GROSS OUTSTANDING" value={formatToTwoDecimals((getNumericValue('Rateable Value') * getNumericValue('Rate Impost')) + getNumericValue('Sanitation Charged') + getNumericValue('Previous Balance'))} isBold />
-                                <BillRow label="LESS PAYMENTS" value={formatValue('Total Payment')} />
+                            <div className="flex-grow">
+                                <BillRow label="ANNUAL RATE CHARGED" value={formatToTwoDecimals(parseNumeric(getPropertyValue(data as any, 'Rateable Value')) * parseNumeric(getPropertyValue(data as any, 'Rate Impost')))} />
+                                <BillRow label="SANITATION LEVY" value={formatValue('Sanitation Charged')} />
+                                <BillRow label="CURRENT YEAR DUE" value={formatToTwoDecimals((parseNumeric(getPropertyValue(data as any, 'Rateable Value')) * parseNumeric(getPropertyValue(data as any, 'Rate Impost'))) + parseNumeric(getPropertyValue(data as any, 'Sanitation Charged')))} isBold />
+                                <BillRow label="PREVIOUS OUTSTANDING" value={formatValue('Previous Balance')} />
+                                <BillRow label="GROSS TOTAL DUE" value={formatToTwoDecimals((parseNumeric(getPropertyValue(data as any, 'Rateable Value')) * parseNumeric(getPropertyValue(data as any, 'Rate Impost'))) + parseNumeric(getPropertyValue(data as any, 'Sanitation Charged')) + parseNumeric(getPropertyValue(data as any, 'Previous Balance')))} isBold />
+                                <BillRow label="LESS TOTAL PAYMENTS" value={formatValue('Total Payment')} />
                             </div>
                             <div className="flex justify-between p-2 border-t-2 border-black items-center font-black shrink-0" style={accentStyle}>
-                                <span className="text-[0.9em] uppercase tracking-tighter text-[#000000]">TOTAL PAYABLE</span>
-                                <span className="text-right text-[#000000]" style={{ fontSize: `${finalFontSize * 1.2}px` }}>GH&#8373; {totalAmountPayable}</span>
+                                <span className="text-[0.9em] uppercase tracking-tighter text-[#000000]">NET PAYABLE</span>
+                                <span className="text-right text-[#000000]" style={{ fontSize: `${finalFontSize * 1.3}px` }}>GH&#8373; {totalAmountPayable}</span>
                             </div>
                         </div>
-                        <div className="w-[35%] flex flex-col text-right font-bold min-h-0">
-                            <div className="p-1 border-b border-black bg-[#f5f5f5] text-[0.6em] text-center shrink-0 text-[#000000]">VALUE BREAKDOWN</div>
-                            <div className="flex-1 flex flex-col min-h-0">
-                                <div className="p-1 border-b border-black/10 flex-1 flex items-center justify-end font-mono text-[0.9em] text-[#000000]">{formatToTwoDecimals(getNumericValue('Rateable Value') * getNumericValue('Rate Impost'))}</div>
-                                <div className="p-1 border-b border-black/10 flex-1 flex items-center justify-end font-mono text-[0.9em] text-[#000000]">{formatValue('Sanitation Charged')}</div>
-                                <div className="p-1 border-b border-black/10 flex-1 flex items-center justify-end font-mono text-[0.9em] text-[#000000]">{formatToTwoDecimals((getNumericValue('Rateable Value') * getNumericValue('Rate Impost')) + getNumericValue('Sanitation Charged'))}</div>
-                                <div className="p-1 border-b border-black/10 flex-1 flex items-center justify-end font-mono text-[0.9em] text-[#000000]">{formatValue('Previous Balance')}</div>
-                                <div className="p-1 border-b border-black/10 flex-1 flex items-center justify-end font-mono text-[0.9em] text-[#000000]">{formatToTwoDecimals((getNumericValue('Rateable Value') * getNumericValue('Rate Impost')) + getNumericValue('Sanitation Charged') + getNumericValue('Previous Balance'))}</div>
-                                <div className="p-1 border-b border-black/10 flex-1 flex items-center justify-end font-mono text-[0.9em] text-[#000000]">{formatValue('Total Payment')}</div>
-                                <div className="p-2 border-t-2 border-black flex-1 flex items-center justify-end font-mono text-[1.1em] shrink-0 text-[#000000]" style={accentStyle}>{totalAmountPayable}</div>
+                        <div className="w-[35%] flex flex-col text-right font-bold bg-[#fafafa]">
+                            <div className="p-1 border-b border-black bg-[#f1f5f9] text-[0.6em] text-center shrink-0">VALUE (GH&#8373;)</div>
+                            <div className="flex-1 flex flex-col font-mono text-[0.9em]">
+                                <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end">{formatToTwoDecimals(parseNumeric(getPropertyValue(data as any, 'Rateable Value')) * parseNumeric(getPropertyValue(data as any, 'Rate Impost')))}</div>
+                                <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end">{formatValue('Sanitation Charged')}</div>
+                                <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end font-black">{formatToTwoDecimals((parseNumeric(getPropertyValue(data as any, 'Rateable Value')) * parseNumeric(getPropertyValue(data as any, 'Rate Impost'))) + parseNumeric(getPropertyValue(data as any, 'Sanitation Charged')))}</div>
+                                <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end">{formatValue('Previous Balance')}</div>
+                                <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end font-black">{formatToTwoDecimals((parseNumeric(getPropertyValue(data as any, 'Rateable Value')) * parseNumeric(getPropertyValue(data as any, 'Rate Impost'))) + parseNumeric(getPropertyValue(data as any, 'Sanitation Charged')) + parseNumeric(getPropertyValue(data as any, 'Previous Balance')))}</div>
+                                <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end">{formatValue('Total Payment')}</div>
+                                <div className="p-2 border-t-2 border-black flex-1 flex items-center justify-end text-[1.1em] shrink-0 font-black" style={accentStyle}>{totalAmountPayable}</div>
                             </div>
                         </div>
                     </div>
                   </>
                 ) : (
-                  <div className="flex flex-col flex-1 overflow-hidden min-h-0">
-                    <div className="grid grid-cols-2 border-b-2 border-black shrink-0">
-                        <div className="p-2 border-r border-black/10"><span className="font-bold text-[0.65em] block text-[#666666] uppercase">NAME/BUSINESS</span><span className="font-bold text-[0.95em] text-[#000000]">{billedToName}</span></div>
-                        <div className="p-2"><span className="font-bold text-[0.65em] block text-[#666666] uppercase">ID / SN</span><span className="font-mono font-bold text-[0.95em] text-[#000000]">{formatValue('S/N') || formatValue('Property No')}</span></div>
-                    </div>
-                    <div className="flex-1 overflow-hidden">
+                  <div className="flex flex-col flex-1 bg-white">
+                    <div className="flex-1 p-2 space-y-1">
                         {billType === 'bop' ? (
                             <>
-                                <BillRow label="PERMIT FEE (LICENSE)" value={formatValue('Permit Fee')} />
-                                <BillRow label="ARREARS BF" value={formatValue('Arrears')} />
-                                <BillRow label="TOTAL DUE" value={formatToTwoDecimals(getNumericValue('Permit Fee') + getNumericValue('Arrears'))} isBold />
-                                <BillRow label="LESS PAYMENT" value={formatValue('Payment')} />
+                                <BillRow label="PERMIT FEE (BUSINESS LICENSE)" value={formatValue('Permit Fee')} />
+                                <BillRow label="ARREARS BROUGHT FORWARD" value={formatValue('Arrears')} />
+                                <BillRow label="GROSS AMOUNT DUE" value={formatToTwoDecimals(parseNumeric(getPropertyValue(data as any, 'Permit Fee')) + parseNumeric(getPropertyValue(data as any, 'Arrears')))} isBold />
+                                <BillRow label="LESS PAYMENTS RECEIVED" value={formatValue('Payment')} />
                             </>
                         ) : (
                             <>
-                                <BillRow label="PROPERTY RATE" value={formatValue('Property Rate') || formatValue('License Fee')} />
-                                <BillRow label="BOP COMPONENT" value={formatValue('Bop Amount')} />
-                                <BillRow label="ARREARS BF" value={formatValue('Arrears')} />
-                                <BillRow label="TOTAL DUE" value={formatToTwoDecimals((getNumericValue('Property Rate') || getNumericValue('License Fee')) + getNumericValue('Bop Amount') + getNumericValue('Arrears'))} isBold />
-                                <BillRow label="LESS PAYMENT" value={formatValue('Payment')} />
+                                <BillRow label="PROPERTY RATE COMPONENT" value={formatValue('Property Rate') || formatValue('License Fee')} />
+                                <BillRow label="BUSINESS LICENSE COMPONENT" value={formatValue('Bop Amount')} />
+                                <BillRow label="ACCUMULATED ARREARS" value={formatValue('Arrears')} />
+                                <BillRow label="GROSS AMOUNT DUE" value={formatToTwoDecimals((parseNumeric(getPropertyValue(data as any, 'Property Rate')) || parseNumeric(getPropertyValue(data as any, 'License Fee'))) + parseNumeric(getPropertyValue(data as any, 'Bop Amount')) + parseNumeric(getPropertyValue(data as any, 'Arrears')))} isBold />
+                                <BillRow label="LESS PAYMENTS RECEIVED" value={formatValue('Payment')} />
                             </>
                         )}
                     </div>
-                    <div className="flex justify-between p-3 border-t-2 border-black items-center font-black shrink-0" style={accentStyle}>
-                        <span className="text-[1.1em] uppercase tracking-widest text-[#000000]">TOTAL AMOUNT PAYABLE</span>
-                        <span className="text-right text-[#000000]" style={{ fontSize: `${finalFontSize * 1.3}px` }}>GH&#8373; {totalAmountPayable}</span>
+                    <div className="flex justify-between p-4 border-t-2 border-black items-center font-black shrink-0" style={accentStyle}>
+                        <span className="text-[1.2em] uppercase tracking-widest text-[#000000]">TOTAL AMOUNT PAYABLE</span>
+                        <span className="text-right text-[#000000]" style={{ fontSize: `${finalFontSize * 1.5}px` }}>GH&#8373; {totalAmountPayable}</span>
                     </div>
                   </div>
                 )}
             </main>
             
-            <footer className="mt-2 pt-1 flex flex-col gap-2 shrink-0 bg-white">
-                <div className="flex items-end justify-between gap-4">
-                    <div className="flex-1 flex flex-col items-start">
-                        <span className="text-[0.6em] font-bold text-[#666666] tracking-tighter uppercase mb-1">Secure Transaction Identifier</span>
+            <footer className="mt-2 flex flex-col gap-2 shrink-0 bg-white">
+                <div className="flex items-end justify-between">
+                    <div className="flex-1 text-left">
+                        <span className="text-[0.6em] font-bold text-[#64748b] tracking-tighter uppercase block mb-1">Secure Tracking Identifier</span>
                         {barcodeValue && <BarcodeComponent value={barcodeValue} isCompact={isCompact} />}
-                        <span className="text-[0.5em] font-mono opacity-50 truncate max-w-[200px] text-[#000000]">{barcodeValue}</span>
+                        <span className="text-[0.55em] font-mono opacity-60 block mt-0.5 text-[#000000]">{barcodeValue}</span>
                     </div>
-                    <div className="w-[160px] text-center">
-                        <div className="mx-auto flex items-center justify-center h-10">
+                    <div className="w-[180px] text-center">
+                        <div className="h-10 flex items-center justify-center">
                             {settings.appearance?.signature && (
+                                /* eslint-disable-next-line @next/next/no-img-element */
                                 <img src={settings.appearance.signature} alt="Signature" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
                             )}
                         </div>
-                        <p className="border-t border-black font-bold uppercase text-[0.65em] pt-1 text-[#000000]">COORDINATING DIRECTOR</p>
+                        <p className="border-t border-black font-black uppercase text-[0.7em] pt-0.5 text-[#000000]">COORDINATING DIRECTOR</p>
                     </div>
                 </div>
-                <div className={cn("font-black text-center p-1 border-2 border-black tracking-tighter uppercase leading-tight shrink-0", isDemandNotice ? "bg-[#e11d48] text-white" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 0.9}px` }}>
+                <div className={cn("font-black text-center p-1 border-2 border-black tracking-tight uppercase leading-tight shrink-0", isDemandNotice ? "bg-[#e11d48] text-white" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 0.95}px` }}>
                     {isDemandNotice 
                       ? 'FINAL WARNING: LEGAL ACTION WILL BE TAKEN IF NOT PAID WITHIN 14 DAYS.'
                       : (settings.appearance?.billWarningText || 'PAY AT ONCE OR FACE LEGAL ACTION')}
@@ -397,14 +384,14 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
         <div className="flex h-[90vh]">
           <div className="w-[280px] border-r bg-muted/30 p-6 space-y-6 no-print">
             <h3 className="text-lg font-bold flex items-center gap-2 font-headline">
-                <FileWarning className="h-5 w-5 text-primary" />
-                Bill Designer
+                <ShieldCheck className="h-5 w-5 text-primary" />
+                Advanced Billing
             </h3>
             <div className="space-y-4">
-               <div className="flex items-center justify-between space-x-2 border p-3 rounded-lg bg-background">
+               <div className="flex items-center justify-between space-x-2 border p-4 rounded-lg bg-background shadow-sm">
                   <div className="flex flex-col space-y-0.5">
-                    <Label htmlFor="demand-notice-toggle">Demand Notice</Label>
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Enforcement mode</span>
+                    <Label htmlFor="demand-notice-toggle" className="font-bold">Demand Notice</Label>
+                    <span className="text-[10px] text-destructive uppercase font-black">Final Warning Mode</span>
                   </div>
                   <Switch 
                     id="demand-notice-toggle" 
@@ -412,15 +399,18 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
                     onCheckedChange={setIsDemandNotice} 
                   />
                </div>
+               <p className="text-xs text-muted-foreground px-1">
+                 Toggle Demand Notice to apply red enforcement styling and legal warning text to the document.
+               </p>
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col bg-slate-900/10 overflow-hidden">
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 flex justify-center">
+          <div className="flex-1 flex flex-col bg-slate-100 overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-8 flex justify-center">
                  {!settings.general ? (
                     <div className="flex flex-col items-center justify-center w-[210mm] h-[297mm] bg-white rounded-lg shadow-xl">
                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                        <p className="mt-4 font-medium">Preparing High-Res Preview...</p>
+                        <p className="mt-4 font-medium">Preparing Document...</p>
                     </div>
                  ) : (
                     <div className="shadow-2xl bg-white" style={{ width: '210mm', minHeight: '297mm' }}>
@@ -435,10 +425,10 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
                  )}
             </div>
             <DialogFooter className="p-4 bg-white sm:justify-end border-t gap-2 no-print">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button onClick={handlePrint} className={cn("shadow-lg px-8", isDemandNotice ? "bg-red-600 hover:bg-red-700" : "")}>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Close Preview</Button>
+              <Button onClick={handlePrint} className={cn("shadow-lg px-10 font-bold", isDemandNotice ? "bg-red-600 hover:bg-red-700" : "bg-primary")}>
                 <Printer className="mr-2 h-4 w-4" />
-                Print {isDemandNotice ? 'Demand Notice' : 'Official Bill'}
+                {isDemandNotice ? 'Print Demand Notice' : 'Print Official Bill'}
               </Button>
             </DialogFooter>
           </div>

@@ -1,11 +1,10 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useReactToPrint } from 'react-to-print';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, Printer, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, Printer, CheckCircle, ShieldCheck } from 'lucide-react';
 
 import type { Property } from '@/lib/types';
 import { PrintableContent } from '@/components/bill-dialog';
@@ -130,14 +129,14 @@ export default function BulkPrintPage() {
         billType: 'property' as const,
       }));
       await addBills(newBills);
-      toast({ title: 'Bills Recorded' });
+      toast({ title: 'Batch Recorded' });
     }
   });
 
   useEffect(() => {
     if (allProperties.length > 0 && isClient) {
         setIsPreparing(true); setRenderedProperties([]); setProgress(0);
-        let current = 0; const chunk = 40;
+        let current = 0; const chunk = 50;
         const render = () => {
             if (current >= allProperties.length) { setIsPreparing(false); return; }
             const next = Math.min(current + chunk, allProperties.length);
@@ -152,41 +151,62 @@ export default function BulkPrintPage() {
   if (!isClient) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <header className="no-print bg-card border-b p-4 flex justify-between sticky top-0 z-50">
+    <div className="flex flex-col min-h-screen bg-slate-50">
+      <header className="no-print bg-white border-b p-4 flex justify-between sticky top-0 z-50 shadow-sm">
         <div className="flex items-center gap-4">
-            <Button asChild variant="outline" size="sm"><Link href="/billing"><ArrowLeft className="h-4 w-4 mr-2" />Back</Link></Button>
-            <h1 className="text-xl font-semibold">Batch Print ({allProperties.length})</h1>
+            <Button asChild variant="ghost" size="sm"><Link href="/billing"><ArrowLeft className="h-4 w-4 mr-2" />Back</Link></Button>
+            <div className="flex flex-col">
+                <h1 className="text-lg font-bold leading-none">Property Batch Print</h1>
+                <span className="text-xs text-muted-foreground">{allProperties.length} documents loaded</span>
+            </div>
         </div>
         <div className="flex items-center gap-4">
-            <div className="flex items-center space-x-2 border px-3 py-1 rounded-md bg-red-50 dark:bg-red-950/20">
+            <div className="flex items-center space-x-2 border-2 px-3 py-1.5 rounded-md bg-red-50 border-red-100">
                 <Checkbox id="demand-mode" checked={isDemandNotice} onCheckedChange={(checked) => setIsDemandNotice(Boolean(checked))} />
-                <Label htmlFor="demand-mode" className="whitespace-nowrap text-red-700 dark:text-red-400 font-bold">Demand Notice</Label>
+                <Label htmlFor="demand-mode" className="whitespace-nowrap text-red-700 font-black text-xs uppercase">Demand Notice</Label>
             </div>
-            <Select value={String(billsPerPage)} onValueChange={v => setBillsPerPage(Number(v))}><SelectTrigger className="w-[80px]"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="1">1</SelectItem><SelectItem value="2">2</SelectItem><SelectItem value="4">4</SelectItem></SelectContent></Select>
-            <Button onClick={() => handlePrint()} disabled={isPreparing} className={cn(isDemandNotice ? "bg-red-600 hover:bg-red-700" : "")}>
-                <Printer className="mr-2 h-4 w-4" />Print
+            <div className="flex items-center gap-2">
+                <Label className="text-[10px] font-bold uppercase text-muted-foreground">Layout</Label>
+                <Select value={String(billsPerPage)} onValueChange={v => setBillsPerPage(Number(v))}><SelectTrigger className="w-[100px] h-9"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="1">1 Per Page</SelectItem><SelectItem value="2">2 Per Page</SelectItem><SelectItem value="4">4 Per Page</SelectItem></SelectContent></Select>
+            </div>
+            <Button onClick={() => handlePrint()} disabled={isPreparing} className={cn("h-9 px-8 font-bold", isDemandNotice ? "bg-red-600 hover:bg-red-700" : "bg-primary")}>
+                <Printer className="mr-2 h-4 w-4" />Print Batch
             </Button>
         </div>
       </header>
-      <main className="flex-grow flex flex-col items-center p-4 md:p-8 overflow-y-auto no-print">
+
+      <main className="flex-grow flex flex-col items-center p-8 no-print">
          {isPreparing ? (
-            <div className="w-full max-w-md mt-10"><Progress value={(progress / allProperties.length) * 100} /><p className="mt-2 text-center">Preparing {progress} / {allProperties.length}</p></div>
-         ) : (
-            <div className="space-y-8 w-full flex flex-col items-center">
-                <div className="text-center space-y-2 mb-4">
-                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
-                    <p className="text-muted-foreground font-medium">Ready to Print. Documents are rendered in the buffer below.</p>
+            <div className="w-full max-w-md mt-20 text-center space-y-4">
+                <Loader2 className="h-10 w-10 animate-spin mx-auto text-primary" />
+                <div className="space-y-1">
+                    <p className="font-bold">Building High-Fidelity Buffer...</p>
+                    <Progress value={(progress / allProperties.length) * 100} className="h-2" />
+                    <p className="text-xs text-muted-foreground">{progress} of {allProperties.length} rendered</p>
                 </div>
-                <div className="scale-[0.4] sm:scale-[0.5] md:scale-[0.6] lg:scale-[0.7] origin-top bg-muted/20 p-8 rounded-2xl shadow-inner border-2 border-dashed">
+            </div>
+         ) : (
+            <div className="space-y-12 w-full flex flex-col items-center">
+                <div className="text-center space-y-2">
+                    <div className="bg-green-100 text-green-700 rounded-full h-12 w-12 flex items-center justify-center mx-auto shadow-sm">
+                        <CheckCircle className="h-7 w-7" />
+                    </div>
+                    <h2 className="text-2xl font-black tracking-tight">Documents Ready</h2>
+                    <p className="text-muted-foreground max-w-sm mx-auto">Verify the layout below. The content is painted in a high-fidelity buffer to ensure perfect print quality.</p>
+                </div>
+                
+                <div className="scale-[0.5] md:scale-[0.6] lg:scale-[0.7] origin-top bg-white p-12 rounded-3xl shadow-2xl border-4 border-slate-200">
+                     <div className="flex items-center gap-2 mb-6 text-slate-400 font-bold uppercase tracking-widest text-xs border-b pb-4">
+                        <ShieldCheck className="h-5 w-5" />
+                        Live Preview Stream (A4 Standard)
+                     </div>
                      <BillSheet properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
                 </div>
             </div>
          )}
       </main>
       
-      {/* HIGH-ACCURACY OFF-CANVAS RENDERER (Ensures styles/barcodes paint fully before capture) */}
-      <div className="absolute left-[-9999px] top-0 pointer-events-none opacity-100 bg-[#ffffff] text-[#000000]" style={{ width: '210mm' }}>
+      <div className="absolute left-[-9999px] top-0 pointer-events-none opacity-100 bg-[#ffffff] text-[#000000] printable-area" style={{ width: '210mm' }}>
         <div ref={componentRef} className="bg-[#ffffff]">
             <BillSheet properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
         </div>
