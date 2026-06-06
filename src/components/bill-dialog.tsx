@@ -153,6 +153,19 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
   const identifier = getPropertyValue(data, 'Property No') || getPropertyValue(data, 'S/N') || getPropertyValue(data, 'SN') || 'N/A';
   const owner = (getPropertyValue(data, 'Owner Name') || getPropertyValue(data, 'Business Name') || getPropertyValue(data, 'Name of Hotel/Guest House') || 'N/A').toUpperCase();
 
+  const isUnassessed = billType === 'property' && String(getPropertyValue(data, 'Property Type')).toLowerCase().includes('unassessed');
+  
+  const headerCaption = useMemo(() => {
+    // 1. Prioritize user custom setting from System Settings
+    if (settings.appearance?.demandNoticeCaption) return settings.appearance.demandNoticeCaption;
+    
+    // 2. If property is unassessed, use the special requested label
+    if (isUnassessed) return 'PROPERTY RATE DEMAND NOTICE(UNASSESSED)';
+    
+    // 3. Fallback to mode defaults
+    return isDemandNotice ? 'DEMAND NOTICE' : 'OFFICIAL BILLING NOTICE';
+  }, [settings.appearance?.demandNoticeCaption, isUnassessed, isDemandNotice]);
+
   return (
     <div ref={ref} style={styles.container}>
       <div style={styles.innerBorder}>
@@ -176,9 +189,10 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
               backgroundColor: isDemandNotice ? '#dc2626' : '#000000', 
               color: '#ffffff', 
               fontWeight: 'bold',
-              fontSize: '14px'
+              fontSize: '14px',
+              textTransform: 'uppercase'
             }}>
-              {isDemandNotice ? (settings.appearance?.demandNoticeCaption || 'DEMAND NOTICE') : 'OFFICIAL BILLING NOTICE'}
+              {headerCaption}
             </div>
           </div>
           <div style={{ width: '60px' }}>
@@ -259,6 +273,12 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
   );
 });
 PrintableContent.displayName = 'PrintableContent';
+
+export interface BillDialogProps {
+  bill: Bill | null;
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+}
 
 export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
   const componentRef = useRef<HTMLDivElement>(null);
