@@ -6,7 +6,7 @@ import JsBarcode from 'jsbarcode';
 import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import type { Property, Bop, License, Bill } from '@/lib/types';
-import { Printer, Loader2, FileWarning, ShieldCheck } from 'lucide-react';
+import { Printer, Loader2, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getPropertyValue } from '@/lib/property-utils';
 import { store } from '@/lib/store';
@@ -75,8 +75,8 @@ const BarcodeComponent = memo(({ value, isCompact }: { value: string; isCompact:
 });
 BarcodeComponent.displayName = 'BarcodeComponent';
 
-const BillRow = ({ label, value, isBold = false, style = {} }: { label: string; value: string | number; isBold?: boolean; style?: React.CSSProperties }) => (
-  <div className={cn("flex justify-between p-0.5 border-b border-black/10 items-center", isBold ? 'font-bold' : '')} style={style}>
+const BillRow = ({ label, value, isBold = false }: { label: string; value: string | number; isBold?: boolean }) => (
+  <div className={cn("flex justify-between p-1 border-b border-black/10 items-center", isBold ? 'font-bold' : '')} style={{ color: '#000000' }}>
     <span className="text-[0.75em] uppercase tracking-tighter text-[#000000]">{label}</span>
     <span className="text-right font-mono text-[0.85em] text-[#000000]">{value}</span>
   </div>
@@ -123,11 +123,11 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
         width: isCompact ? '100%' : '210mm',
         height: isCompact ? '100%' : '297mm',
         minHeight: isCompact ? '100%' : '297mm',
-        boxSizing: 'border-box'
-    } as React.CSSProperties), [finalFontSize, isCompact]);
+        boxSizing: 'border-box' as const
+    }), [finalFontSize, isCompact]);
 
     const accentStyle = useMemo(() => ({
-        backgroundColor: isDemandNotice ? '#fee2e2' : (accentColor || '#f8fafc'),
+        backgroundColor: isDemandNotice ? '#fee2e2' : (accentColor || '#f1f5f9'),
         WebkitPrintColorAdjust: 'exact',
         printColorAdjust: 'exact',
         color: '#000000'
@@ -194,54 +194,54 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
     }, [data, totalAmountPayable]);
 
     return (
-      <div ref={ref} className={cn("printable-content bg-[#ffffff] box-border relative overflow-hidden", fontClass, isCompact ? 'p-1' : 'p-3')} style={baseStyle}>
-        <div className="border-[3px] border-double border-black p-2 relative h-full flex flex-col bg-white box-border">
-          <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.04] pointer-events-none">
+      <div ref={ref} className={cn("printable-content bg-[#ffffff] box-border relative overflow-hidden", fontClass, isCompact ? 'p-1' : 'p-4')} style={baseStyle}>
+        <div className="border-[4px] border-double border-black p-2 relative h-full flex flex-col bg-white box-border">
+          <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.05] pointer-events-none">
               {settings.appearance?.ghanaLogo && (
-                  <img src={settings.appearance.ghanaLogo} alt="Watermark" style={{objectFit: 'contain', width: '250px', height: '250px'}} />
+                  <img src={settings.appearance.ghanaLogo} alt="Watermark" style={{objectFit: 'contain', width: '280px', height: '280px'}} />
               )}
           </div>
           
           <div className="relative z-10 flex flex-col h-full bg-transparent">
-            <header className="flex justify-between items-center mb-1 border-b-2 border-black pb-1 shrink-0 bg-transparent">
-                <div className="w-[60px]">
+            <header className="flex justify-between items-center mb-2 border-b-2 border-black pb-2 shrink-0 bg-transparent">
+                <div className="w-[70px]">
                     {settings.appearance?.ghanaLogo && (
-                        <img src={settings.appearance.ghanaLogo} alt="Ghana" style={{ width: '48px', height: 'auto', objectFit: 'contain' }} />
+                        <img src={settings.appearance.ghanaLogo} alt="Ghana" style={{ width: '56px', height: 'auto', objectFit: 'contain' }} />
                     )}
                 </div>
                 <div className="flex-1 text-center">
-                    <h1 className="font-bold tracking-tight uppercase leading-none text-[#000000]" style={{ fontSize: `${finalFontSize * 1.4}px` }}>{settings.general?.assemblyName || 'KWAHU EAST DISTRICT ASSEMBLY'}</h1>
-                    <p className="text-[9px] font-bold uppercase tracking-widest my-0.5 text-[#000000]">LOCAL GOVERNANCE ACT, 2016 (ACT 936)</p>
-                    <p className="font-semibold leading-tight text-[0.85em] text-[#000000]">{settings.general?.postalAddress}</p>
-                    <p className="font-bold text-[0.8em] text-[#000000]">TEL: {settings.general?.contactPhone}</p>
+                    <h1 className="font-bold tracking-tight uppercase leading-none text-[#000000]" style={{ fontSize: `${finalFontSize * 1.5}px` }}>{settings.general?.assemblyName || 'KWAHU EAST DISTRICT ASSEMBLY'}</h1>
+                    <p className="text-[10px] font-bold uppercase tracking-widest my-1 text-[#000000]">LOCAL GOVERNANCE ACT, 2016 (ACT 936)</p>
+                    <p className="font-semibold leading-tight text-[0.9em] text-[#000000]">{settings.general?.postalAddress}</p>
+                    <p className="font-bold text-[0.85em] text-[#000000]">TEL: {settings.general?.contactPhone}</p>
                     
-                    <div className={cn("mt-1 inline-block px-4 py-0.5 border-2 border-black font-bold tracking-widest uppercase", isDemandNotice ? "bg-[#e11d48] text-white" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 1.1}px` }}>
+                    <div className={cn("mt-2 inline-block px-6 py-1 border-2 border-black font-bold tracking-widest uppercase", isDemandNotice ? "bg-[#e11d48] text-white" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 1.1}px` }}>
                       {isDemandNotice ? (settings.appearance?.demandNoticeCaption || 'DEMAND NOTICE') : 'OFFICIAL BILLING NOTICE'}
                     </div>
                 </div>
-                <div className="w-[60px] flex justify-end">
+                <div className="w-[70px] flex justify-end">
                     {settings.appearance?.assemblyLogo && (
-                        <img src={settings.appearance.assemblyLogo} alt="Logo" style={{ width: '48px', height: 'auto', objectFit: 'contain' }} />
+                        <img src={settings.appearance.assemblyLogo} alt="Logo" style={{ width: '56px', height: 'auto', objectFit: 'contain' }} />
                     )}
                 </div>
             </header>
 
-            <div className="grid grid-cols-5 gap-1 mb-1 shrink-0">
-                <div className="col-span-3 text-left py-1 px-2 border-2 border-black bg-[#fafafa]">
-                    <span className="text-[0.6em] font-bold block text-[#666666] tracking-tighter uppercase">BILLED TO:</span>
-                    <span className="font-bold tracking-tight leading-none text-[#000000]" style={{ fontSize: `${finalFontSize * 1.25}px` }}>{billedToName}</span>
+            <div className="grid grid-cols-5 gap-1 mb-2 shrink-0">
+                <div className="col-span-3 text-left py-2 px-3 border-2 border-black bg-[#fafafa]">
+                    <span className="text-[0.6em] font-bold block text-[#666666] tracking-tighter uppercase mb-0.5">BILLED TO:</span>
+                    <span className="font-black tracking-tight leading-none text-[#000000]" style={{ fontSize: `${finalFontSize * 1.3}px` }}>{billedToName}</span>
                     {suburbDisplay && (
-                        <span className="text-[1.0em] font-bold block mt-1 tracking-tight text-[#000000] uppercase">SUBURB: {suburbDisplay}</span>
+                        <span className="text-[1.1em] font-bold block mt-2 tracking-tight text-[#000000] uppercase">SUBURB: {suburbDisplay}</span>
                     )}
                 </div>
                 <div className="col-span-2 flex flex-col gap-1">
-                    <div className="flex-1 flex flex-col justify-center border-2 border-black p-1 text-center bg-[#f0f0f0]">
-                        <span className="text-[0.55em] font-bold text-[#666666] uppercase leading-none">IDENTIFIER (ID/SN)</span>
-                        <span className="font-mono font-bold text-[0.9em] text-[#000000]">{formatValue('S/N') || formatValue('Property No')}</span>
+                    <div className="flex-1 flex flex-col justify-center border-2 border-black p-1 text-center bg-[#f5f5f5]">
+                        <span className="text-[0.6em] font-bold text-[#666666] uppercase leading-none">IDENTIFIER (ID/SN)</span>
+                        <span className="font-mono font-bold text-[1.0em] text-[#000000]">{formatValue('S/N') || formatValue('Property No')}</span>
                     </div>
-                    <div className="flex-1 flex flex-col justify-center border-2 border-black p-1 text-center bg-[#f0f0f0]">
-                        <span className="text-[0.55em] font-bold text-[#666666] uppercase leading-none">DATE GENERATED</span>
-                        <span className="font-bold text-[0.85em] text-[#000000]">{new Date().toLocaleDateString('en-GB')}</span>
+                    <div className="flex-1 flex flex-col justify-center border-2 border-black p-1 text-center bg-[#f5f5f5]">
+                        <span className="text-[0.6em] font-bold text-[#666666] uppercase leading-none">DATE GENERATED</span>
+                        <span className="font-bold text-[1.0em] text-[#000000]">{new Date().toLocaleDateString('en-GB')}</span>
                     </div>
                 </div>
             </div>
@@ -251,18 +251,18 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                   <>
                     <div className="flex border-b-2 border-black shrink-0">
                         <div className="w-[65%] border-r-2 border-black">
-                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-[#f8fafc] text-[0.7em] text-[#000000]">TOWN</div><div className="w-2/3 border-l border-black/10 p-1 font-bold text-[0.8em] text-[#000000]">{formatValue('Town')}</div></div>
-                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-[#f8fafc] text-[0.7em] text-[#000000]">PROPERTY NO</div><div className="w-2/3 border-l border-black/10 p-1 font-mono font-bold text-[0.8em] text-[#000000]">{formatValue('Property No')}</div></div>
-                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-[#f8fafc] text-[0.7em] text-[#000000]">TYPE</div><div className="w-2/3 border-l border-black/10 p-1 text-[0.8em] text-[#000000]">{formatValue('Property Type')}</div></div>
+                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-[#f8fafc] text-[0.7em] text-[#000000]">TOWN</div><div className="w-2/3 border-l border-black/10 p-1 font-bold text-[0.85em] text-[#000000]">{formatValue('Town')}</div></div>
+                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-[#f8fafc] text-[0.7em] text-[#000000]">PROPERTY NO</div><div className="w-2/3 border-l border-black/10 p-1 font-mono font-bold text-[0.85em] text-[#000000]">{formatValue('Property No')}</div></div>
+                            <div className="flex border-b border-black/10"><div className="w-1/3 font-bold p-1 bg-[#f8fafc] text-[0.7em] text-[#000000]">TYPE</div><div className="w-2/3 border-l border-black/10 p-1 text-[0.85em] text-[#000000]">{formatValue('Property Type')}</div></div>
                         </div>
                         <div className="w-[35%] flex flex-col items-center justify-center bg-[#f1f5f9] font-bold">
-                             <span className="text-[0.6em] text-[#64748b] tracking-widest uppercase">AMOUNT OWED</span>
-                             <span className="text-[1.2em] leading-none text-[#000000]">(GH&#8373;)</span>
+                             <span className="text-[0.7em] text-[#64748b] tracking-widest uppercase">AMOUNT OWED</span>
+                             <span className="text-[1.4em] leading-none text-[#000000]">(GH&#8373;)</span>
                         </div>
                     </div>
                     <div className="flex flex-1 overflow-hidden min-h-0">
                         <div className="w-[65%] border-r-2 border-black flex flex-col min-h-0">
-                            <div className="flex border-b border-black bg-[#f1f5f9] text-[0.65em] font-bold shrink-0">
+                            <div className="flex border-b border-black bg-[#f1f5f9] text-[0.7em] font-bold shrink-0">
                                 <div className="w-1/3 p-1 text-center border-r border-black/10">PARTICULARS</div>
                                 <div className="w-1/3 p-1 text-center border-r border-black/10">RV: {formatValue('Rateable Value')}</div>
                                 <div className="w-1/3 p-1 text-center">IMPOST: {formatValue('Rate Impost')}</div>
@@ -275,28 +275,28 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                                 <BillRow label="GROSS TOTAL DUE" value={formatToTwoDecimals((parseNumeric(getPropertyValue(data as any, 'Rateable Value')) * parseNumeric(getPropertyValue(data as any, 'Rate Impost'))) + parseNumeric(getPropertyValue(data as any, 'Sanitation Charged')) + parseNumeric(getPropertyValue(data as any, 'Previous Balance')))} isBold />
                                 <BillRow label="LESS TOTAL PAYMENTS" value={formatValue('Total Payment')} />
                             </div>
-                            <div className="flex justify-between p-2 border-t-2 border-black items-center font-bold shrink-0" style={accentStyle}>
-                                <span className="text-[0.9em] uppercase tracking-tighter text-[#000000]">NET PAYABLE</span>
-                                <span className="text-right text-[#000000]" style={{ fontSize: `${finalFontSize * 1.3}px` }}>GH&#8373; {totalAmountPayable}</span>
+                            <div className="flex justify-between p-3 border-t-2 border-black items-center font-bold shrink-0" style={accentStyle}>
+                                <span className="text-[1.0em] uppercase tracking-tighter text-[#000000]">NET PAYABLE</span>
+                                <span className="text-right text-[#000000]" style={{ fontSize: `${finalFontSize * 1.5}px` }}>GH&#8373; {totalAmountPayable}</span>
                             </div>
                         </div>
                         <div className="w-[35%] flex flex-col text-right font-bold bg-[#fafafa]">
-                            <div className="p-1 border-b border-black bg-[#f1f5f9] text-[0.6em] text-center shrink-0">VALUE (GH&#8373;)</div>
-                            <div className="flex-1 flex flex-col font-mono text-[0.9em] min-h-0">
+                            <div className="p-1 border-b border-black bg-[#f1f5f9] text-[0.7em] text-center shrink-0">VALUE (GH&#8373;)</div>
+                            <div className="flex-1 flex flex-col font-mono text-[1.0em] min-h-0">
                                 <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end">{formatToTwoDecimals(parseNumeric(getPropertyValue(data as any, 'Rateable Value')) * parseNumeric(getPropertyValue(data as any, 'Rate Impost')))}</div>
                                 <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end">{formatValue('Sanitation Charged')}</div>
                                 <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end font-bold">{formatToTwoDecimals((parseNumeric(getPropertyValue(data as any, 'Rateable Value')) * parseNumeric(getPropertyValue(data as any, 'Rate Impost'))) + parseNumeric(getPropertyValue(data as any, 'Sanitation Charged')))}</div>
                                 <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end">{formatValue('Previous Balance')}</div>
                                 <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end font-bold">{formatToTwoDecimals((parseNumeric(getPropertyValue(data as any, 'Rateable Value')) * parseNumeric(getPropertyValue(data as any, 'Rate Impost'))) + parseNumeric(getPropertyValue(data as any, 'Sanitation Charged')) + parseNumeric(getPropertyValue(data as any, 'Previous Balance')))}</div>
                                 <div className="p-1 border-b border-black/5 flex-1 flex items-center justify-end">{formatValue('Total Payment')}</div>
-                                <div className="p-2 border-t-2 border-black flex-1 flex items-center justify-end text-[1.1em] shrink-0 font-bold" style={accentStyle}>{totalAmountPayable}</div>
+                                <div className="p-2 border-t-2 border-black flex-1 flex items-center justify-end text-[1.3em] shrink-0 font-bold" style={accentStyle}>{totalAmountPayable}</div>
                             </div>
                         </div>
                     </div>
                   </>
                 ) : (
                   <div className="flex flex-col flex-1 bg-white min-h-0">
-                    <div className="flex-1 p-2 space-y-1 overflow-hidden min-h-0">
+                    <div className="flex-1 p-3 space-y-2 overflow-hidden min-h-0">
                         {billType === 'bop' ? (
                             <>
                                 <BillRow label="PERMIT FEE (BUSINESS LICENSE)" value={formatValue('Permit Fee')} />
@@ -314,31 +314,31 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                             </>
                         )}
                     </div>
-                    <div className="flex justify-between p-4 border-t-2 border-black items-center font-bold shrink-0" style={accentStyle}>
-                        <span className="text-[1.2em] uppercase tracking-widest text-[#000000]">TOTAL AMOUNT PAYABLE</span>
-                        <span className="text-right text-[#000000]" style={{ fontSize: `${finalFontSize * 1.5} px` }}>GH&#8373; {totalAmountPayable}</span>
+                    <div className="flex justify-between p-6 border-t-2 border-black items-center font-bold shrink-0" style={accentStyle}>
+                        <span className="text-[1.4em] uppercase tracking-widest text-[#000000]">TOTAL AMOUNT PAYABLE</span>
+                        <span className="text-right text-[#000000]" style={{ fontSize: `${finalFontSize * 1.8}px` }}>GH&#8373; {totalAmountPayable}</span>
                     </div>
                   </div>
                 )}
             </main>
             
-            <footer className="mt-2 flex flex-col gap-2 shrink-0 bg-white">
+            <footer className="mt-3 flex flex-col gap-2 shrink-0 bg-white">
                 <div className="flex items-end justify-between">
                     <div className="flex-1 text-left">
-                        <span className="text-[0.6em] font-bold text-[#64748b] tracking-tighter uppercase block mb-1">Secure Tracking Identifier</span>
+                        <span className="text-[0.65em] font-bold text-[#64748b] tracking-tighter uppercase block mb-1">Secure Tracking Identifier</span>
                         {barcodeValue && <BarcodeComponent value={barcodeValue} isCompact={isCompact} />}
-                        <span className="text-[0.55em] font-mono opacity-60 block mt-0.5 text-[#000000]">{barcodeValue}</span>
+                        <span className="text-[0.6em] font-mono opacity-70 block mt-1 text-[#000000]">{barcodeValue}</span>
                     </div>
-                    <div className="w-[180px] text-center">
-                        <div className="h-10 flex items-center justify-center">
+                    <div className="w-[200px] text-center">
+                        <div className="h-12 flex items-center justify-center">
                             {settings.appearance?.signature && (
                                 <img src={settings.appearance.signature} alt="Signature" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
                             )}
                         </div>
-                        <p className="border-t border-black font-bold uppercase text-[0.7em] pt-0.5 text-[#000000]">COORDINATING DIRECTOR</p>
+                        <p className="border-t border-black font-bold uppercase text-[0.75em] pt-1 text-[#000000]">COORDINATING DIRECTOR</p>
                     </div>
                 </div>
-                <div className={cn("font-bold text-center p-1 border-2 border-black tracking-tight uppercase leading-tight shrink-0", isDemandNotice ? "bg-[#e11d48] text-white" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 0.95}px` }}>
+                <div className={cn("font-bold text-center p-1.5 border-2 border-black tracking-tight uppercase leading-tight shrink-0", isDemandNotice ? "bg-[#e11d48] text-white" : "bg-black text-white")} style={{ fontSize: `${finalFontSize * 0.95}px` }}>
                     {isDemandNotice 
                       ? 'FINAL WARNING: LEGAL ACTION WILL BE TAKEN IF NOT PAID WITHIN 14 DAYS.'
                       : (settings.appearance?.billWarningText || 'PAY AT ONCE OR FACE LEGAL ACTION')}

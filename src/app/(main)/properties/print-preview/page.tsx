@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useReactToPrint } from 'react-to-print';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, Printer, CheckCircle, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Loader2, Printer, CheckCircle, ShieldCheck, FileWarning } from 'lucide-react';
 
 import type { Property } from '@/lib/types';
 import { PrintableContent } from '@/components/bill-dialog';
@@ -25,13 +25,13 @@ type AppearanceSettings = { assemblyLogo?: string; ghanaLogo?: string; signature
 
 const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], settings: { general: GeneralSettings, appearance: AppearanceSettings }, billsPerPage: number, isCompact: boolean, isDemandNotice: boolean }>(({ properties, settings, billsPerPage, isCompact, isDemandNotice }, ref) => {
     
-    const sheetStyle = { backgroundColor: '#ffffff', minHeight: '297mm' };
+    const sheetStyle = { backgroundColor: '#ffffff', minHeight: '297mm', color: '#000000' };
 
     if (billsPerPage === 4) {
         const chunks: Property[][] = [];
         for (let i = 0; i < properties.length; i += 4) chunks.push(properties.slice(i, i + 4));
         return (
-            <div ref={ref} style={sheetStyle} className="bg-[#ffffff] text-[#000000]">
+            <div ref={ref} style={sheetStyle} className="bg-white text-black">
                 {chunks.map((chunk, index) => (
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white grid grid-cols-2 grid-rows-2 box-border overflow-hidden">
                         {chunk.map(p => (
@@ -50,7 +50,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
         const chunks: Property[][] = [];
         for (let i = 0; i < properties.length; i += 2) chunks.push(properties.slice(i, i + 2));
         return (
-            <div ref={ref} style={sheetStyle} className="bg-[#ffffff] text-[#000000]">
+            <div ref={ref} style={sheetStyle} className="bg-white text-black">
                 {chunks.map((chunk, index) => (
                     <div key={index} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white flex flex-col box-border overflow-hidden">
                         {chunk.map((p, ci) => (
@@ -67,7 +67,7 @@ const BillSheet = React.forwardRef<HTMLDivElement, { properties: Property[], set
         );
     }
     return (
-        <div ref={ref} style={sheetStyle} className="bg-[#ffffff] text-[#000000]">
+        <div ref={ref} style={sheetStyle} className="bg-white text-black">
             {properties.map(p => (
                 <div key={p.id} className="print-page-break w-[210mm] h-[297mm] mx-auto bg-white overflow-hidden p-2 break-inside-avoid">
                     <PrintableContent data={p} billType="property" settings={settings} isCompact={isCompact} isDemandNotice={isDemandNotice} />
@@ -224,8 +224,9 @@ export default function BulkPrintPage() {
          )}
       </main>
       
-      <div className="fixed top-0 left-[-9999px] -z-50 pointer-events-none opacity-100 bg-[#ffffff] text-[#000000] printable-area" style={{ width: '210mm' }}>
-        <div ref={componentRef} className="bg-[#ffffff]">
+      {/* HIGH-FIDELITY PAINTING BUFFER - VISIBLE BUT OFF-SCREEN */}
+      <div className="fixed top-0 left-[-9999px] z-[-50] opacity-100 bg-white pointer-events-none" style={{ width: '210mm' }}>
+        <div ref={componentRef} className="bg-white">
             <BillSheet properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
         </div>
       </div>
