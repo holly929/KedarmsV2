@@ -198,7 +198,6 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
         <div className="border-[3px] border-double border-black p-2 relative h-full flex flex-col bg-white box-border">
           <div className="absolute inset-0 z-0 flex items-center justify-center opacity-[0.04] pointer-events-none">
               {settings.appearance?.ghanaLogo && (
-                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img src={settings.appearance.ghanaLogo} alt="Watermark" style={{objectFit: 'contain', width: '250px', height: '250px'}} />
               )}
           </div>
@@ -207,7 +206,6 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
             <header className="flex justify-between items-center mb-1 border-b-2 border-black pb-1 shrink-0">
                 <div className="w-[60px]">
                     {settings.appearance?.ghanaLogo && (
-                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={settings.appearance.ghanaLogo} alt="Ghana" style={{ width: '48px', height: 'auto', objectFit: 'contain' }} />
                     )}
                 </div>
@@ -223,7 +221,6 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                 </div>
                 <div className="w-[60px] flex justify-end">
                     {settings.appearance?.assemblyLogo && (
-                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img src={settings.appearance.assemblyLogo} alt="Logo" style={{ width: '48px', height: 'auto', objectFit: 'contain' }} />
                     )}
                 </div>
@@ -319,7 +316,7 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                     </div>
                     <div className="flex justify-between p-4 border-t-2 border-black items-center font-bold shrink-0" style={accentStyle}>
                         <span className="text-[1.2em] uppercase tracking-widest text-[#000000]">TOTAL AMOUNT PAYABLE</span>
-                        <span className="text-right text-[#000000]" style={{ fontSize: `${finalFontSize * 1.5}px` }}>GH&#8373; {totalAmountPayable}</span>
+                        <span className="text-right text-[#000000]" style={{ fontSize: `${finalFontSize * 1.5} px` }}>GH&#8373; {totalAmountPayable}</span>
                     </div>
                   </div>
                 )}
@@ -335,7 +332,6 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                     <div className="w-[180px] text-center">
                         <div className="h-10 flex items-center justify-center">
                             {settings.appearance?.signature && (
-                                /* eslint-disable-next-line @next/next/no-img-element */
                                 <img src={settings.appearance.signature} alt="Signature" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
                             )}
                         </div>

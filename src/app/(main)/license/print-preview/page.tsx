@@ -119,6 +119,7 @@ export default function BulkPrintPage() {
 
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
+    removeAfterPrint: true,
     onAfterPrint: async () => {
       const newBills = renderedLicenses.map(l => ({
         propertyId: l.id,
@@ -206,7 +207,7 @@ export default function BulkPrintPage() {
          )}
       </main>
       
-      <div className="absolute left-[-9999px] top-0 pointer-events-none opacity-100 bg-[#ffffff] text-[#000000] printable-area" style={{ width: '210mm' }}>
+      <div className="fixed top-0 left-[-9999px] -z-50 pointer-events-none opacity-100 bg-[#ffffff] text-[#000000] printable-area" style={{ width: '210mm' }}>
         <div ref={componentRef} className="bg-[#ffffff]">
             <BillSheet licenses={renderedLicenses} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
         </div>

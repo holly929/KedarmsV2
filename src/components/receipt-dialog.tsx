@@ -23,6 +23,7 @@ export function ReceiptDialog({ isOpen, onOpenChange, payment, item }: ReceiptDi
 
   const handlePrint = useReactToPrint({
     content: () => receiptRef.current,
+    removeAfterPrint: true,
   });
 
   const itemName = getPropertyValue(item, 'Owner Name') || 
@@ -59,8 +60,8 @@ export function ReceiptDialog({ isOpen, onOpenChange, payment, item }: ReceiptDi
             </div>
         </div>
 
-        {/* HIDDEN PRINT CONTENT */}
-        <div className="hidden">
+        {/* HIGH-FIDELITY RENDER BUFFER FOR RECEIPT */}
+        <div className="fixed top-0 left-[-9999px] -z-50 pointer-events-none opacity-100 printable-area">
             <div ref={receiptRef} className="p-8 text-black bg-white w-[80mm] font-mono text-[10px] leading-tight">
                 <div className="text-center border-b pb-2 mb-4">
                     {appearance?.ghanaLogo && <img src={appearance.ghanaLogo} className="mx-auto h-12 mb-1 object-contain" alt="Ghana Logo" />}

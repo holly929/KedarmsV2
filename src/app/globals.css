@@ -60,10 +60,7 @@
     size: A4 portrait;
   }
 
-  .no-print {
-    display: none !important;
-  }
-
+  /* Universal Reset for Print Engine */
   html, body {
     height: auto !important;
     margin: 0 !important;
@@ -75,18 +72,19 @@
     print-color-adjust: exact !important;
   }
 
+  .no-print {
+    display: none !important;
+  }
+
+  /* FORCE VISIBILITY ON PAINTED BUFFER */
   .printable-area {
     display: block !important;
     visibility: visible !important;
+    position: static !important;
     opacity: 1 !important;
+    z-index: 100 !important;
     background-color: #ffffff !important;
     color: #000000 !important;
-  }
-
-  /* Force elements to be visible in the print iframe */
-  .printable-notice .hidden,
-  .printable-notice [class*="hidden"] {
-    display: block !important;
   }
 
   .print-page-break {

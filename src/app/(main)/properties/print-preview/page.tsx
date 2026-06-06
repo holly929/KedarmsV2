@@ -208,7 +208,7 @@ export default function BulkPrintPage() {
       </main>
       
       {/* HIGH-ACCURACY RENDER BUFFER (VISIBLE TO BROWSER BUT OFF-CANVAS) */}
-      <div className="absolute left-[-9999px] top-0 pointer-events-none opacity-100 bg-[#ffffff] text-[#000000] printable-area" style={{ width: '210mm' }}>
+      <div className="fixed top-0 left-[-9999px] -z-50 pointer-events-none opacity-100 bg-[#ffffff] text-[#000000] printable-area" style={{ width: '210mm' }}>
         <div ref={componentRef} className="bg-[#ffffff]">
             <BillSheet properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
         </div>

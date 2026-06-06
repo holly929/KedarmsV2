@@ -65,7 +65,6 @@ const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
         <header className="mb-4 pb-4">
             <div className="flex justify-between items-center text-center">
                 {settings.appearance?.ghanaLogo ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={settings.appearance.ghanaLogo} alt="Ghana Coat of Arms" style={{ objectFit: 'contain', width: '80px', height: 'auto' }} />
                 ) : <div className="w-[80px]"></div>}
                 <div className="flex flex-col items-center">
@@ -77,7 +76,6 @@ const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
                     </h2>
                 </div>
                 {settings.appearance?.assemblyLogo ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img src={settings.appearance.assemblyLogo} alt="Assembly Logo" style={{ objectFit: 'contain', width: '80px', height: 'auto' }} />
                 ) : <div className="w-[80px]"></div>}
             </div>
@@ -107,7 +105,6 @@ const PrintableSummaryBill = React.memo(React.forwardRef<HTMLDivElement, {
                  <div className="w-1/3 text-center">
                     <div className="mx-auto flex items-center justify-center h-16">
                         {settings.appearance?.signature && (
-                            /* eslint-disable-next-line @next/next/no-img-element */
                             <img src={settings.appearance.signature} alt="Signature" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
                         )}
                     </div>
@@ -158,6 +155,7 @@ export default function SummaryBillPrintPage() {
 
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
+    removeAfterPrint: true,
   });
   
   const sheetNames = Object.keys(workbook);
@@ -234,8 +232,7 @@ export default function SummaryBillPrintPage() {
          </div>
       </main>
 
-      {/* PAINT-THROUGH FIXED POSITIONING (Ensures Visibility for Print Capture) */}
-      <div className="fixed top-0 left-0 -z-50 pointer-events-none printable-area bg-white text-black opacity-100 print:static print:z-auto" style={{ width: '210mm' }}>
+      <div className="fixed top-0 left-[-9999px] -z-50 pointer-events-none printable-area bg-white text-black opacity-100 print:static print:z-auto" style={{ width: '210mm' }}>
           {sheetsToRender.length > 0 && (
             <div ref={componentRef} className="bg-white">
                 {sheetsToRender.map((sheet, index) => (
