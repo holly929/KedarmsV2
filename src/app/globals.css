@@ -83,6 +83,12 @@
     color: #000000 !important;
   }
 
+  /* Force elements to be visible in the print iframe */
+  .printable-notice .hidden,
+  .printable-notice [class*="hidden"] {
+    display: block !important;
+  }
+
   .print-page-break {
     page-break-after: always !important;
     break-after: page !important;

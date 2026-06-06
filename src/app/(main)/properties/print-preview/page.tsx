@@ -119,6 +119,7 @@ export default function BulkPrintPage() {
 
   const handlePrint = useReactToPrint({
     content: () => componentRef.current,
+    removeAfterPrint: true,
     onAfterPrint: async () => {
       const newBills = renderedProperties.map(p => ({
         propertyId: p.id,
@@ -163,7 +164,7 @@ export default function BulkPrintPage() {
         <div className="flex items-center gap-4">
             <div className="flex items-center space-x-2 border-2 px-3 py-1.5 rounded-md bg-red-50 border-red-100">
                 <Checkbox id="demand-mode" checked={isDemandNotice} onCheckedChange={(checked) => setIsDemandNotice(Boolean(checked))} />
-                <Label htmlFor="demand-mode" className="whitespace-nowrap text-red-700 font-black text-xs uppercase">Demand Notice</Label>
+                <Label htmlFor="demand-mode" className="whitespace-nowrap text-red-700 font-bold text-xs uppercase">Demand Notice</Label>
             </div>
             <div className="flex items-center gap-2">
                 <Label className="text-[10px] font-bold uppercase text-muted-foreground">Layout</Label>
@@ -191,7 +192,7 @@ export default function BulkPrintPage() {
                     <div className="bg-green-100 text-green-700 rounded-full h-12 w-12 flex items-center justify-center mx-auto shadow-sm">
                         <CheckCircle className="h-7 w-7" />
                     </div>
-                    <h2 className="text-2xl font-black tracking-tight">Documents Ready</h2>
+                    <h2 className="text-2xl font-bold tracking-tight">Documents Ready</h2>
                     <p className="text-muted-foreground max-w-sm mx-auto">Verify the layout below. The content is painted in a high-fidelity buffer to ensure perfect print quality.</p>
                 </div>
                 
@@ -206,6 +207,7 @@ export default function BulkPrintPage() {
          )}
       </main>
       
+      {/* HIGH-ACCURACY RENDER BUFFER (VISIBLE TO BROWSER BUT OFF-CANVAS) */}
       <div className="absolute left-[-9999px] top-0 pointer-events-none opacity-100 bg-[#ffffff] text-[#000000] printable-area" style={{ width: '210mm' }}>
         <div ref={componentRef} className="bg-[#ffffff]">
             <BillSheet properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
