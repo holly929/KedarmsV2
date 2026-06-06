@@ -389,6 +389,7 @@ export default function SettingsPage() {
                         <div className="w-[210mm] min-h-[297mm] mx-auto bg-white shadow-2xl">
                              <PrintableContent 
                                 data={DUMMY_PROPERTY as any}
+                                billType="property"
                                 settings={{
                                     general: generalValues,
                                     appearance: appearanceValues
