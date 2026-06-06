@@ -204,7 +204,10 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
           <div style={{ border: '2px solid #000000', padding: '10px', backgroundColor: '#f9fafb' }}>
             <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#4b5563', display: 'block' }}>BILLED TO:</span>
             <span style={{ fontSize: '16px', fontWeight: '900', display: 'block' }}>{owner}</span>
-            <span style={{ fontSize: '12px', fontWeight: 'bold', marginTop: '5px', display: 'block' }}>SUBURB: {String(getPropertyValue(data, 'Suburb') || '').toUpperCase()}</span>
+            <div style={{ marginTop: '5px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 'bold', display: 'block' }}>TOWN: {String(getPropertyValue(data, 'Town') || '').toUpperCase()}</span>
+              <span style={{ fontSize: '12px', fontWeight: 'bold', display: 'block' }}>SUBURB: {String(getPropertyValue(data, 'Suburb') || '').toUpperCase()}</span>
+            </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <div style={{ border: '2px solid #000000', padding: '4px', textAlign: 'center' }}>
