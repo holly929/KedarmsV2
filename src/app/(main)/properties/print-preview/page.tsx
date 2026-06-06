@@ -184,8 +184,8 @@ export default function BulkPrintPage() {
          )}
       </main>
       
-      {/* FIXED POSITIONING FOR RENDERING ENGINE (Prevents Blank Pages) */}
-      <div className="fixed top-0 left-0 -z-50 pointer-events-none printable-area bg-white opacity-100 print:static print:z-auto">
+      {/* PAINT-THROUGH FIXED POSITIONING (Ensures Visibility for Print Capture) */}
+      <div className="fixed top-0 left-0 -z-50 pointer-events-none printable-area bg-white opacity-100 print:static print:z-auto" style={{ width: '210mm' }}>
         <div ref={componentRef} className="bg-white">
             <BillSheet properties={renderedProperties} settings={settings} billsPerPage={billsPerPage} isCompact={isCompact || billsPerPage === 4} isDemandNotice={isDemandNotice} />
         </div>

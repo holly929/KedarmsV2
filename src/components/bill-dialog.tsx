@@ -351,7 +351,7 @@ const PrintableContentBase = forwardRef<HTMLDivElement, PrintableContentProps>(
                         <div className="mx-auto flex items-center justify-center h-10">
                             {settings.appearance?.signature && (
                                 /* eslint-disable-next-line @next/next/no-img-element */
-                                <img src={settings.appearance.signature} alt="Signature" className="max-h-full max-w-full object-contain" />
+                                <img src={settings.appearance.signature} alt="Signature" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
                             )}
                         </div>
                         <p className="border-t border-black font-bold uppercase text-[0.65em] pt-1">COORDINATING DIRECTOR</p>
