@@ -234,13 +234,8 @@ export default function SummaryBillPrintPage() {
          </div>
       </main>
 
-      {/* 
-          OFF-CANVAS RENDERING STRATEGY:
-          We use absolute positioning far to the left with opacity 1. 
-          This ensures the browser layout engine fully paints the content, 
-          styles, and barcode hooks before react-to-print captures them.
-      */}
-      <div className="absolute left-[-9999px] top-0 pointer-events-none bg-white text-black" style={{ width: '210mm' }}>
+      {/* PAINT-THROUGH FIXED POSITIONING (Ensures Visibility for Print Capture) */}
+      <div className="fixed top-0 left-0 -z-50 pointer-events-none printable-area bg-white text-black opacity-100 print:static print:z-auto" style={{ width: '210mm' }}>
           {sheetsToRender.length > 0 && (
             <div ref={componentRef} className="bg-white">
                 {sheetsToRender.map((sheet, index) => (
