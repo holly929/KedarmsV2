@@ -1,4 +1,4 @@
-
+/* eslint-disable react/no-unescaped-entities */
 'use client';
 
 import { useState, useEffect, useRef, useMemo, forwardRef, memo } from 'react';
@@ -161,13 +161,18 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
   }, [data, billType]);
 
   const headerCaption = useMemo(() => {
-    if (settings.appearance?.demandNoticeCaption) return settings.appearance.demandNoticeCaption;
+    if (settings?.appearance?.demandNoticeCaption) return settings.appearance.demandNoticeCaption;
     if (isUnassessed) return 'PROPERTY RATE DEMAND NOTICE(UNASSESSED)';
     return isDemandNotice ? 'DEMAND NOTICE' : 'OFFICIAL BILLING NOTICE';
-  }, [settings.appearance?.demandNoticeCaption, isUnassessed, isDemandNotice]);
+  }, [settings?.appearance?.demandNoticeCaption, isUnassessed, isDemandNotice]);
 
-  const identifier = data ? (getPropertyValue(data, 'Property No') || getPropertyValue(data, 'S/N') || getPropertyValue(data, 'SN') || 'N/A') : 'N/A';
-  const owner = data ? (getPropertyValue(data, 'Owner Name') || getPropertyValue(data, 'Business Name') || getPropertyValue(data, 'Name of Hotel/Guest House') || 'N/A').toUpperCase() : 'N/A';
+  // ALL HOOKS MUST BE CALLED ABOVE THIS RETURN
+  if (!data) {
+    return null;
+  }
+
+  const identifier = getPropertyValue(data, 'Property No') || getPropertyValue(data, 'S/N') || getPropertyValue(data, 'SN') || 'N/A';
+  const owner = (getPropertyValue(data, 'Owner Name') || getPropertyValue(data, 'Business Name') || getPropertyValue(data, 'Name of Hotel/Guest House') || 'N/A').toUpperCase();
 
   const town = String(getPropertyValue(data, 'Town') || '').toUpperCase();
   const suburb = String(getPropertyValue(data, 'Suburb') || '').toUpperCase();
@@ -176,12 +181,12 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
     <div ref={ref} style={styles.container}>
       <div style={styles.innerBorder}>
         {settings.appearance?.ghanaLogo && (
-          <Image src={settings.appearance.ghanaLogo} alt="" fill style={{ ...styles.watermark, objectFit: 'contain' }} unoptimized />
+          <img src={settings.appearance.ghanaLogo} alt="" style={{ ...styles.watermark, objectFit: 'contain' } as any} />
         )}
         
         <header style={styles.header}>
           <div style={{ width: '60px' }}>
-            {settings.appearance?.ghanaLogo && <Image src={settings.appearance.ghanaLogo} width={60} height={60} style={{ objectFit: 'contain' }} alt="Ghana Logo" unoptimized />}
+            {settings.appearance?.ghanaLogo && <img src={settings.appearance.ghanaLogo} width={60} height={60} style={{ objectFit: 'contain' }} alt="Ghana Logo" />}
           </div>
           <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, color: '#000000' }}>{settings.general?.assemblyName || 'DISTRICT ASSEMBLY'}</h1>
@@ -202,7 +207,7 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
             </div>
           </div>
           <div style={{ width: '60px' }}>
-            {settings.appearance?.assemblyLogo && <Image src={settings.appearance.assemblyLogo} width={60} height={60} style={{ objectFit: 'contain' }} alt="Assembly Logo" unoptimized />}
+            {settings.appearance?.assemblyLogo && <img src={settings.appearance.assemblyLogo} width={60} height={60} style={{ objectFit: 'contain' }} alt="Assembly Logo" />}
           </div>
         </header>
 
@@ -259,7 +264,7 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
           </div>
           <div style={{ width: '200px', textAlign: 'center' }}>
             <div style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {settings.appearance?.signature && <Image src={settings.appearance.signature} width={150} height={40} style={{ maxHeight: '100%', objectFit: 'contain' }} alt="Signature" unoptimized />}
+              {settings.appearance?.signature && <img src={settings.appearance.signature} width={150} height={40} style={{ maxHeight: '100%', objectFit: 'contain' }} alt="Signature" />}
             </div>
             <p style={{ borderTop: '1px solid #000000', fontSize: '10px', fontWeight: 'bold', paddingTop: '4px', margin: 0, color: '#000000' }}>COORDINATING DIRECTOR</p>
           </div>
