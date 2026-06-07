@@ -114,7 +114,7 @@ export default function NewBopPage() {
                     />
                     <FormField control={form.control} name="Owner Name" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Owner's Full Name</FormLabel>
+                          <FormLabel>Owner&apos;s Full Name</FormLabel>
                           <FormControl><Input placeholder="e.g. Yaw Mensah" {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
