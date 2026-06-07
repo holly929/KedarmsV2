@@ -210,7 +210,7 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
               {(selectedMethod === 'Mobile Money' || selectedMethod === 'Bank Transfer') && (
                 <div className="bg-primary/5 p-4 rounded-lg border border-primary/20 space-y-2">
                    <p className="text-xs font-semibold text-primary uppercase">Direct Checkout Enabled</p>
-                   <p className="text-xs text-muted-foreground italic">Clicking "Initiate Secure Payment" below will open the Paystack portal automatically.</p>
+                   <p className="text-xs text-muted-foreground italic">Clicking &quot;Initiate Secure Payment&quot; below will open the Paystack portal automatically.</p>
                 </div>
               )}
 

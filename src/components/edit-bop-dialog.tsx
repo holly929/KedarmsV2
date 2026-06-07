@@ -112,7 +112,7 @@ export function EditBopDialog({
         <DialogHeader>
           <DialogTitle>Edit BOP Record</DialogTitle>
           <DialogDescription>
-            Make changes to the business operating permit details below. Click save when you're done.
+            Make changes to the business operating permit details below. Click save when you&apos;re done.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -122,14 +122,14 @@ export function EditBopDialog({
                     <FormField control={form.control} name="Business Name" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Business Name</FormLabel>
-                          <FormControl><Input placeholder="e.g. Ama's Ventures" {...field} value={field.value ?? ''} /></FormControl>
+                          <FormControl><Input placeholder="e.g. Ama&apos;s Ventures" {...field} value={field.value ?? ''} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                     <FormField control={form.control} name="Owner Name" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Owner's Full Name</FormLabel>
+                          <FormLabel>Owner&apos;s Full Name</FormLabel>
                           <FormControl><Input placeholder="e.g. Ama Serwaa" {...field} value={field.value ?? ''} /></FormControl>
                           <FormMessage />
                         </FormItem>
