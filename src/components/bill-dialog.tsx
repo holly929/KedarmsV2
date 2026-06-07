@@ -165,11 +165,11 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
     return isDemandNotice ? 'DEMAND NOTICE' : 'OFFICIAL BILLING NOTICE';
   }, [settings?.appearance?.demandNoticeCaption, isUnassessed, isDemandNotice]);
 
-  // ALL HOOKS MUST BE CALLED ABOVE THIS RETURN
   if (!data) {
     return null;
   }
 
+  // ALL HOOKS MUST BE CALLED ABOVE THIS LINE
   const identifier = getPropertyValue(data, 'Property No') || getPropertyValue(data, 'S/N') || getPropertyValue(data, 'SN') || 'N/A';
   const owner = (getPropertyValue(data, 'Owner Name') || getPropertyValue(data, 'Business Name') || getPropertyValue(data, 'Name of Hotel/Guest House') || 'N/A').toUpperCase();
 
