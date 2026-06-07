@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useMemo, forwardRef, memo } from 'react';
@@ -64,6 +65,7 @@ const styles = {
     padding: '4px 0',
     borderBottom: '1px solid #e5e7eb',
     fontSize: '12px',
+    color: '#000000',
   },
   boldRow: {
     fontWeight: 'bold',
@@ -71,6 +73,7 @@ const styles = {
     borderTop: '1px solid #000000',
     borderBottom: '1px solid #000000',
     padding: '6px 4px',
+    color: '#000000',
   },
   totalSection: {
     marginTop: 'auto',
@@ -80,12 +83,14 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#f1f5f9',
+    color: '#000000',
   },
   footer: {
     marginTop: '20px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
+    color: '#000000',
   }
 };
 
@@ -156,15 +161,13 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
   const isUnassessed = billType === 'property' && String(getPropertyValue(data, 'Property Type')).toLowerCase().includes('unassessed');
   
   const headerCaption = useMemo(() => {
-    // 1. Prioritize user custom setting from System Settings
     if (settings.appearance?.demandNoticeCaption) return settings.appearance.demandNoticeCaption;
-    
-    // 2. If property is unassessed, use the special requested label
     if (isUnassessed) return 'PROPERTY RATE DEMAND NOTICE(UNASSESSED)';
-    
-    // 3. Fallback to mode defaults
     return isDemandNotice ? 'DEMAND NOTICE' : 'OFFICIAL BILLING NOTICE';
   }, [settings.appearance?.demandNoticeCaption, isUnassessed, isDemandNotice]);
+
+  const town = String(getPropertyValue(data, 'Town') || '').toUpperCase();
+  const suburb = String(getPropertyValue(data, 'Suburb') || '').toUpperCase();
 
   return (
     <div ref={ref} style={styles.container}>
@@ -178,10 +181,10 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
             {settings.appearance?.ghanaLogo && <img src={settings.appearance.ghanaLogo} style={{ width: '100%', objectFit: 'contain' }} alt="" />}
           </div>
           <div style={{ flex: 1 }}>
-            <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>{settings.general?.assemblyName || 'DISTRICT ASSEMBLY'}</h1>
-            <p style={{ fontSize: '10px', fontWeight: 'bold', margin: '4px 0' }}>LOCAL GOVERNANCE ACT, 2016 (ACT 936)</p>
-            <p style={{ fontSize: '12px', margin: 0 }}>{settings.general?.postalAddress}</p>
-            <p style={{ fontSize: '12px', fontWeight: 'bold' }}>TEL: {settings.general?.contactPhone}</p>
+            <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, color: '#000000' }}>{settings.general?.assemblyName || 'DISTRICT ASSEMBLY'}</h1>
+            <p style={{ fontSize: '10px', fontWeight: 'bold', margin: '4px 0', color: '#000000' }}>LOCAL GOVERNANCE ACT, 2016 (ACT 936)</p>
+            <p style={{ fontSize: '12px', margin: 0, color: '#000000' }}>{settings.general?.postalAddress}</p>
+            <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#000000' }}>TEL: {settings.general?.contactPhone}</p>
             <div style={{ 
               marginTop: '10px', 
               display: 'inline-block', 
@@ -203,20 +206,20 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
         <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '10px', marginBottom: '15px' }}>
           <div style={{ border: '2px solid #000000', padding: '10px', backgroundColor: '#f9fafb' }}>
             <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#4b5563', display: 'block' }}>BILLED TO:</span>
-            <span style={{ fontSize: '16px', fontWeight: '900', display: 'block' }}>{owner}</span>
+            <span style={{ fontSize: '16px', fontWeight: '900', display: 'block', color: '#000000' }}>{owner}</span>
             <div style={{ marginTop: '5px' }}>
-              <span style={{ fontSize: '12px', fontWeight: 'bold', display: 'block' }}>TOWN: {String(getPropertyValue(data, 'Town') || '').toUpperCase()}</span>
-              <span style={{ fontSize: '12px', fontWeight: 'bold', display: 'block' }}>SUBURB: {String(getPropertyValue(data, 'Suburb') || '').toUpperCase()}</span>
+              <span style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', color: '#000000' }}>TOWN: {town}</span>
+              <span style={{ fontSize: '12px', fontWeight: 'bold', display: 'block', color: '#000000' }}>SUBURB: {suburb}</span>
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <div style={{ border: '2px solid #000000', padding: '4px', textAlign: 'center' }}>
-              <span style={{ fontSize: '9px', fontWeight: 'bold', display: 'block' }}>IDENTIFIER</span>
-              <span style={{ fontSize: '12px', fontWeight: 'bold', fontFamily: 'monospace' }}>{identifier}</span>
+              <span style={{ fontSize: '9px', fontWeight: 'bold', display: 'block', color: '#000000' }}>IDENTIFIER</span>
+              <span style={{ fontSize: '12px', fontWeight: 'bold', fontFamily: 'monospace', color: '#000000' }}>{identifier}</span>
             </div>
             <div style={{ border: '2px solid #000000', padding: '4px', textAlign: 'center' }}>
-              <span style={{ fontSize: '9px', fontWeight: 'bold', display: 'block' }}>BILL DATE</span>
-              <span style={{ fontSize: '12px', fontWeight: 'bold' }}>{new Date().toLocaleDateString('en-GB')}</span>
+              <span style={{ fontSize: '9px', fontWeight: 'bold', display: 'block', color: '#000000' }}>BILL DATE</span>
+              <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#000000' }}>{new Date().toLocaleDateString('en-GB')}</span>
             </div>
           </div>
         </div>
@@ -242,20 +245,20 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
         </div>
 
         <div style={{ ...styles.totalSection, backgroundColor: isDemandNotice ? '#fee2e2' : (settings.appearance?.accentColor || '#f1f5f9') }}>
-          <span style={{ fontSize: '16px', fontWeight: 'bold' }}>NET PAYABLE (GH₵)</span>
-          <span style={{ fontSize: '24px', fontWeight: '900' }}>{formatCurrency(totalAmountDue)}</span>
+          <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#000000' }}>NET PAYABLE (GH₵)</span>
+          <span style={{ fontSize: '24px', fontWeight: '900', color: '#000000' }}>{formatCurrency(totalAmountDue)}</span>
         </div>
 
         <footer style={styles.footer}>
           <div style={{ flex: 1 }}>
-            <span style={{ fontSize: '10px', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>SECURE TRACKING</span>
+            <span style={{ fontSize: '10px', fontWeight: 'bold', display: 'block', marginBottom: '5px', color: '#000000' }}>SECURE TRACKING</span>
             <Barcode value={`${identifier}|${totalAmountDue.toFixed(2)}`} />
           </div>
           <div style={{ width: '200px', textAlign: 'center' }}>
             <div style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {settings.appearance?.signature && <img src={settings.appearance.signature} style={{ maxHeight: '100%', objectFit: 'contain' }} alt="" />}
             </div>
-            <p style={{ borderTop: '1px solid #000000', fontSize: '10px', fontWeight: 'bold', paddingTop: '4px', margin: 0 }}>COORDINATING DIRECTOR</p>
+            <p style={{ borderTop: '1px solid #000000', fontSize: '10px', fontWeight: 'bold', paddingTop: '4px', margin: 0, color: '#000000' }}>COORDINATING DIRECTOR</p>
           </div>
         </footer>
 
