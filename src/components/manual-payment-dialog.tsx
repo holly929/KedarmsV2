@@ -19,7 +19,7 @@ import { getPropertyValue } from '@/lib/property-utils';
 import type { Payment, Property, Bop, License } from '@/lib/types';
 import { ReceiptDialog } from './receipt-dialog';
 import { sendManualPaymentSms } from '@/lib/sms-service';
-import { RefreshCcw, CreditCard, Banknote, Landmark } from 'lucide-react';
+import { RefreshCcw, Zap } from 'lucide-react';
 import { store } from '@/lib/store';
 
 const paymentSchema = z.object({
@@ -75,15 +75,16 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
     }
   }, [isOpen, form]);
 
-  const handleInitiateOnline = () => {
+  const handleInitiateOnline = (amount: number) => {
     if (!item) return;
-    const amount = form.getValues('amount');
-    if (amount <= 0) {
-      toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Enter an amount before paying online.' });
-      return;
-    }
     
-    localStorage.setItem('paymentBill', JSON.stringify({ type, data: item }));
+    // Store metadata for the online payment flow
+    localStorage.setItem('paymentBill', JSON.stringify({ 
+      type, 
+      data: item,
+      requestedAmount: amount 
+    }));
+    
     router.push(`/payment/${type}/${item.id}`);
     onOpenChange(false);
   };
@@ -91,12 +92,13 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
   const onSubmit = (values: z.infer<typeof paymentSchema>) => {
     if (!item || !user) return;
 
-    // AUTOMATIC PAYSTACK INITIATION for non-cash methods
+    // REDIRECT TO PAYSTACK for online methods
     if (values.method === 'Mobile Money' || values.method === 'Bank Transfer') {
-        handleInitiateOnline();
+        handleInitiateOnline(values.amount);
         return;
     }
 
+    // Manual Cash Handling
     const newPayment: Payment = {
       id: `man-${Date.now()}`,
       amount: values.amount,
@@ -110,11 +112,12 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
     const updatedPayments = [...existingPayments, newPayment];
     
     const amountField = type === 'property' ? 'Total Payment' : 'Payment';
-    const currentPaid = Number(getPropertyValue(item, amountField) || 0);
+    const currentPaid = parseNumeric(getPropertyValue(item, amountField));
     
     const updatedItem = { 
       ...item, 
       payments: updatedPayments,
+      // Use a type-safe assignment if possible, or ensure item is typed as any for this operation
       [amountField]: currentPaid + values.amount 
     };
 
@@ -153,9 +156,9 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="Cash">Cash (Manual)</SelectItem>
-                      <SelectItem value="Mobile Money">Mobile Money (MoMo Checkout)</SelectItem>
-                      <SelectItem value="Bank Transfer">Bank Transfer (Checkout)</SelectItem>
+                      <SelectItem value="Cash">Cash (Manual Recording)</SelectItem>
+                      <SelectItem value="Mobile Money">Mobile Money (Paystack Checkout)</SelectItem>
+                      <SelectItem value="Bank Transfer">Bank Transfer (Paystack Checkout)</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -182,7 +185,7 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
                 </FormItem>
               )} />
 
-              {selectedMethod === 'Cash' && (
+              {selectedMethod === 'Cash' ? (
                 <FormField control={form.control} name="reference" render={({ field }) => (
                     <FormItem>
                     <FormLabel>Receipt / Transaction Ref</FormLabel>
@@ -199,23 +202,26 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
                         <RefreshCcw className="h-4 w-4" />
                         </Button>
                     </div>
-                    <FormDescription>Official receipt or network transaction ID.</FormDescription>
+                    <FormDescription>Physical receipt or manual reference number.</FormDescription>
                     <FormMessage />
                     </FormItem>
                 )} />
-              )}
-
-              {(selectedMethod === 'Mobile Money' || selectedMethod === 'Bank Transfer') && (
-                <div className="bg-primary/5 p-4 rounded-lg border border-primary/20 space-y-2">
-                  <p className="text-xs font-semibold text-primary uppercase">Direct Checkout Enabled</p>
-                  <p className="text-xs text-muted-foreground italic">Clicking &quot;Initiate Secure Payment&quot; below will open the Paystack portal automatically.</p>
+              ) : (
+                <div className="bg-primary/5 p-4 rounded-lg border border-primary/20 space-y-2 animate-in zoom-in-95">
+                  <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase">
+                    <Zap className="h-3 w-3 fill-current" />
+                    Paystack Online Checkout
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Recording payment with <strong>{selectedMethod}</strong> will initiate a secure online transaction. You will be redirected to the payment gateway to complete the collection.
+                  </p>
                 </div>
               )}
 
               <DialogFooter className="pt-4 gap-2">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                <Button type="submit">
-                    {selectedMethod === 'Cash' ? 'Record & Print Receipt' : 'Initiate Secure Payment'}
+                <Button type="submit" className={selectedMethod !== 'Cash' ? "bg-primary hover:bg-primary/90" : ""}>
+                    {selectedMethod === 'Cash' ? 'Record Payment' : 'Initiate Secure Checkout'}
                 </Button>
               </DialogFooter>
             </form>

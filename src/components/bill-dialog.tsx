@@ -156,7 +156,8 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
 
   const isUnassessed = useMemo(() => {
     if (!data) return false;
-    return billType === 'property' && String(getPropertyValue(data, 'Property Type')).toLowerCase().includes('unassessed');
+    const propType = getPropertyValue(data, 'Property Type');
+    return billType === 'property' && propType && String(propType).toLowerCase().includes('unassessed');
   }, [data, billType]);
 
   const headerCaption = useMemo(() => {
@@ -165,27 +166,25 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
     return isDemandNotice ? 'DEMAND NOTICE' : 'OFFICIAL BILLING NOTICE';
   }, [settings?.appearance?.demandNoticeCaption, isUnassessed, isDemandNotice]);
 
-  // ALL HOOKS MUST BE CALLED ABOVE THIS LINE
-  const identifier = data ? (getPropertyValue(data, 'Property No') || getPropertyValue(data, 'S/N') || getPropertyValue(data, 'SN') || 'N/A') : 'N/A';
-  const owner = data ? (getPropertyValue(data, 'Owner Name') || getPropertyValue(data, 'Business Name') || getPropertyValue(data, 'Name of Hotel/Guest House') || 'N/A').toUpperCase() : 'N/A';
-
-  const town = data ? String(getPropertyValue(data, 'Town') || '').toUpperCase() : '';
-  const suburb = data ? String(getPropertyValue(data, 'Suburb') || '').toUpperCase() : '';
-
   if (!data) {
     return null;
   }
+
+  const identifier = getPropertyValue(data, 'Property No') || getPropertyValue(data, 'S/N') || getPropertyValue(data, 'SN') || 'N/A';
+  const owner = (getPropertyValue(data, 'Owner Name') || getPropertyValue(data, 'Business Name') || getPropertyValue(data, 'Name of Hotel/Guest House') || 'N/A').toUpperCase();
+  const town = String(getPropertyValue(data, 'Town') || '').toUpperCase();
+  const suburb = String(getPropertyValue(data, 'Suburb') || '').toUpperCase();
 
   return (
     <div ref={ref} style={styles.container}>
       <div style={styles.innerBorder}>
         {settings.appearance?.ghanaLogo && settings.appearance.ghanaLogo !== '' && (
-          <Image src={settings.appearance.ghanaLogo} alt="Ghana Logo Watermark" fill style={{ objectFit: 'contain', opacity: 0.05, zIndex: 0, pointerEvents: 'none' }} unoptimized />
+          <img src={settings.appearance.ghanaLogo} alt="Ghana Logo Watermark" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', objectFit: 'contain', opacity: 0.05, width: '300px', height: '300px', zIndex: 0, pointerEvents: 'none' }} />
         )}
         
         <header style={styles.header}>
           <div style={{ width: '60px', height: '60px', position: 'relative' }}>
-            {settings.appearance?.ghanaLogo && settings.appearance.ghanaLogo !== '' && <Image src={settings.appearance.ghanaLogo} fill style={{ objectFit: 'contain' }} alt="Ghana National Logo" unoptimized />}
+            {settings.appearance?.ghanaLogo && settings.appearance.ghanaLogo !== '' && <img src={settings.appearance.ghanaLogo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="Ghana National Logo" />}
           </div>
           <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, color: '#000000' }}>{settings.general?.assemblyName || 'DISTRICT ASSEMBLY'}</h1>
@@ -206,7 +205,7 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
             </div>
           </div>
           <div style={{ width: '60px', height: '60px', position: 'relative' }}>
-            {settings.appearance?.assemblyLogo && settings.appearance.assemblyLogo !== '' && <Image src={settings.appearance.assemblyLogo} fill style={{ objectFit: 'contain' }} alt="Assembly Logo" unoptimized />}
+            {settings.appearance?.assemblyLogo && settings.appearance.assemblyLogo !== '' && <img src={settings.appearance.assemblyLogo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="Assembly Logo" />}
           </div>
         </header>
 
@@ -259,11 +258,11 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
         <footer style={styles.footer}>
           <div style={{ flex: 1 }}>
             <span style={{ fontSize: '10px', fontWeight: 'bold', display: 'block', marginBottom: '5px', color: '#000000' }}>SECURE TRACKING</span>
-            {data && <Barcode value={`${identifier}|${totalAmountDue.toFixed(2)}`} />}
+            <Barcode value={`${identifier}|${totalAmountDue.toFixed(2)}`} />
           </div>
           <div style={{ width: '200px', textAlign: 'center' }}>
             <div style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {settings.appearance?.signature && settings.appearance.signature !== '' && <Image src={settings.appearance.signature} width={150} height={40} style={{ maxHeight: '100%', objectFit: 'contain' }} alt="Authorized Signature" unoptimized />}
+              {settings.appearance?.signature && settings.appearance.signature !== '' && <img src={settings.appearance.signature} style={{ maxHeight: '100%', width: '150px', objectFit: 'contain' }} alt="Authorized Signature" />}
             </div>
             <p style={{ borderTop: '1px solid #000000', fontSize: '10px', fontWeight: 'bold', paddingTop: '4px', margin: 0, color: '#000000' }}>COORDINATING DIRECTOR</p>
           </div>
@@ -298,6 +297,11 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
   const [isDemandNotice, setIsDemandNotice] = useState(false);
   const [settings, setSettings] = useState<any>({});
 
+  const handlePrint = useReactToPrint({
+    content: () => componentRef.current,
+    removeAfterPrint: true
+  });
+
   useEffect(() => {
     if (isOpen) {
       setSettings({
@@ -306,11 +310,6 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
       });
     }
   }, [isOpen]);
-
-  const handlePrint = useReactToPrint({
-    content: () => componentRef.current,
-    removeAfterPrint: true
-  });
 
   if (!bill || !isOpen) return null;
 

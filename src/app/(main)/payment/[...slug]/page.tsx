@@ -10,12 +10,11 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Loader2, CheckCircle, ShieldCheck, CreditCard, Wallet, Phone, Zap } from 'lucide-react';
-import type { PaymentBill, Property, Bop, Bill, Payment } from '@/lib/types';
+import type { PaymentBill, Property, Bop, License } from '@/lib/types';
 import { getPropertyValue } from '@/lib/property-utils';
 import { getBillStatus, getBopBillStatus, getLicenseBillStatus } from '@/lib/billing-utils';
 import { paymentMethodIcons } from '@/components/payment-method-icons';
 import { useToast } from '@/hooks/use-toast';
-import { store } from '@/lib/store';
 import { normalizePhoneNumber } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
@@ -36,7 +35,7 @@ const paymentMethods = {
 export default function PaymentPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const [bill, setBill] = useState<PaymentBill | null>(null);
+    const [bill, setBill] = useState<(PaymentBill & { requestedAmount?: number }) | null>(null);
     const [amountDue, setAmountDue] = useState(0);
     const [selectedMethod, setSelectedMethod] = useState('mtn');
     const [phone, setPhone] = useState('');
@@ -49,7 +48,7 @@ export default function PaymentPage() {
         const storedBillJson = localStorage.getItem('paymentBill');
         if (storedBillJson) {
             try {
-                const parsedBill: PaymentBill = JSON.parse(storedBillJson);
+                const parsedBill = JSON.parse(storedBillJson);
                 setBill(parsedBill);
                 
                 const existingPhone = getPropertyValue(parsedBill.data, 'Phone Number');
@@ -64,6 +63,12 @@ export default function PaymentPage() {
     
     useEffect(() => {
         if (bill) {
+            // If a specific amount was requested in the dialog, use it.
+            if (bill.requestedAmount && bill.requestedAmount > 0) {
+                setAmountDue(bill.requestedAmount);
+                return;
+            }
+
             let due = 0;
             if (bill.type === 'property') {
                 const p = bill.data as Property;
@@ -78,7 +83,7 @@ export default function PaymentPage() {
                 due = (Number(getPropertyValue(b, 'Permit Fee')) || 0) + (Number(getPropertyValue(b, 'Arrears')) || 0) - (Number(getPropertyValue(b, 'Payment')) || 0);
             } else {
                 const l = bill.data as any;
-                due = (Number(getPropertyValue(l, 'Property Rate')) || 0) + (Number(getPropertyValue(l, 'Bop Amount')) || 0) + (Number(getPropertyValue(l, 'Arrears')) || 0) - (Number(getPropertyValue(l, 'Payment')) || 0);
+                due = (Number(getPropertyValue(l, 'Property Rate')) || Number(getPropertyValue(l, 'License Fee')) || 0) + (Number(getPropertyValue(l, 'Bop Amount')) || 0) + (Number(getPropertyValue(l, 'Arrears')) || 0) - (Number(getPropertyValue(l, 'Payment')) || 0);
             }
             setAmountDue(due > 0 ? due : 0);
             
@@ -104,6 +109,7 @@ export default function PaymentPage() {
 
         setIsProcessing(true);
 
+        // Simulation of Paystack checkout process
         setTimeout(() => {
             const callbackUrl = `/payment/callback?status=success&reference=PAY-${Date.now()}&billId=${bill.data.id}&amount=${amountDue}&phone=${phone}`;
             router.push(callbackUrl);
@@ -151,8 +157,11 @@ export default function PaymentPage() {
                             </div>
                             <Separator />
                             <div className="pt-2">
-                                <label className="text-[10px] font-bold text-muted-foreground uppercase">Total Amount</label>
+                                <label className="text-[10px] font-bold text-muted-foreground uppercase">Payment Amount</label>
                                 <p className="text-3xl font-black text-primary">{formatCurrency(amountDue)}</p>
+                                {bill.requestedAmount && (
+                                    <p className="text-[10px] text-muted-foreground mt-1 italic">Partial payment requested from dashboard.</p>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
@@ -179,7 +188,7 @@ export default function PaymentPage() {
                         <CardDescription>Select your wallet and enter the recipient phone number.</CardDescription>
                     </CardHeader>
                     <CardContent className="pt-8 space-y-8">
-                        {isPaid || amountDue <= 0 ? (
+                        {isPaid || (amountDue <= 0 && !bill.requestedAmount) ? (
                             <div className="flex flex-col items-center justify-center text-center py-12 space-y-4">
                                 <CheckCircle className="h-20 w-20 text-green-500 animate-bounce" />
                                 <h3 className="text-2xl font-black text-green-600">Bill Already Settled</h3>
@@ -241,7 +250,7 @@ export default function PaymentPage() {
                             </>
                         )}
                     </CardContent>
-                    {!(isPaid || amountDue <= 0) && (
+                    {!(isPaid || (amountDue <= 0 && !bill.requestedAmount)) && (
                         <CardFooter className="flex-col items-stretch space-y-4 border-t p-8 bg-muted/5">
                             <Button 
                                 size="lg" 
