@@ -22,6 +22,14 @@ import { sendManualPaymentSms } from '@/lib/sms-service';
 import { RefreshCcw, Zap } from 'lucide-react';
 import { store } from '@/lib/store';
 
+const parseNumeric = (val: any): number => {
+  if (val === undefined || val === null) return 0;
+  if (typeof val === 'number') return val;
+  const cleaned = String(val).replace(/,/g, '').trim();
+  const num = Number(cleaned);
+  return isNaN(num) ? 0 : num;
+};
+
 const paymentSchema = z.object({
   amount: z.coerce.number().positive('Amount must be positive'),
   date: z.string().min(1, 'Date is required'),
@@ -78,7 +86,6 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
   const handleInitiateOnline = (amount: number) => {
     if (!item) return;
     
-    // Store metadata for the online payment flow
     localStorage.setItem('paymentBill', JSON.stringify({ 
       type, 
       data: item,
@@ -92,13 +99,11 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
   const onSubmit = (values: z.infer<typeof paymentSchema>) => {
     if (!item || !user) return;
 
-    // REDIRECT TO PAYSTACK for online methods
     if (values.method === 'Mobile Money' || values.method === 'Bank Transfer') {
         handleInitiateOnline(values.amount);
         return;
     }
 
-    // Manual Cash Handling
     const newPayment: Payment = {
       id: `man-${Date.now()}`,
       amount: values.amount,
@@ -112,14 +117,13 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
     const updatedPayments = [...existingPayments, newPayment];
     
     const amountField = type === 'property' ? 'Total Payment' : 'Payment';
-    const currentPaid = parseNumeric(getPropertyValue(item, amountField));
+    const currentPaid = parseNumeric(getPropertyValue(item as any, amountField));
     
     const updatedItem = { 
       ...item, 
       payments: updatedPayments,
-      // Use a type-safe assignment if possible, or ensure item is typed as any for this operation
-      [amountField]: currentPaid + values.amount 
-    };
+      [amountField]: currentPaid + values.amount
+    } as any;
 
     if (type === 'property') updateProperty(updatedItem as Property);
     else if (type === 'bop') updateBop(updatedItem as Bop);

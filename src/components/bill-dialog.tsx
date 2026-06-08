@@ -13,7 +13,6 @@ import { store } from '@/lib/store';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
-// PURE INLINE STYLES FOR PRINT RELIABILITY
 const styles = {
   container: {
     backgroundColor: '#ffffff',
@@ -36,18 +35,6 @@ const styles = {
     flexDirection: 'column' as const,
     position: 'relative' as const,
     flexGrow: 1,
-  },
-  watermark: {
-    position: 'absolute' as const,
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    opacity: 0.05,
-    width: '300px',
-    height: '300px',
-    objectFit: 'contain' as const,
-    pointerEvents: 'none' as const,
-    zIndex: 0,
   },
   header: {
     borderBottom: '2px solid #000000',
@@ -157,7 +144,8 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
   const isUnassessed = useMemo(() => {
     if (!data) return false;
     const propType = getPropertyValue(data, 'Property Type');
-    return billType === 'property' && propType && String(propType).toLowerCase().includes('unassessed');
+    if (!propType) return false;
+    return billType === 'property' && String(propType).toLowerCase().includes('unassessed');
   }, [data, billType]);
 
   const headerCaption = useMemo(() => {
