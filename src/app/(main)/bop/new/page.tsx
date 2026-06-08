@@ -60,7 +60,6 @@ export default function NewBopPage() {
 
     function onSubmit(data: z.infer<typeof bopFormSchema>) {
         try {
-            // Clean phone number for Arkesel compatibility
             const formattedPhone = normalizePhoneNumber(data['Phone Number']);
             
             const finalData = {
