@@ -4,6 +4,7 @@ import React, { useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 import { Printer, CheckCircle, FileText } from 'lucide-react';
 import type { Payment, Property, Bop, License } from '@/lib/types';
 import { store } from '@/lib/store';
@@ -64,7 +65,7 @@ export function ReceiptDialog({ isOpen, onOpenChange, payment, item }: ReceiptDi
         <div className="fixed top-0 left-[-9999px] -z-50 pointer-events-none opacity-100 printable-area">
             <div ref={receiptRef} className="p-8 text-black bg-white w-[80mm] font-mono text-[10px] leading-tight">
                 <div className="text-center border-b pb-2 mb-4">
-                    {appearance?.ghanaLogo && <img src={appearance.ghanaLogo} className="mx-auto h-12 mb-1 object-contain" alt="Ghana Logo" />}
+                    {appearance?.ghanaLogo && <Image src={appearance.ghanaLogo} width={48} height={48} className="mx-auto mb-1 object-contain" alt="Ghana Logo" unoptimized />}
                     <h1 className="font-bold text-xs uppercase">{settings?.assemblyName}</h1>
                     <p>{settings?.postalAddress}</p>
                     <p>TEL: {settings?.contactPhone}</p>

@@ -145,7 +145,7 @@ export function EditPropertyDialog({
                     />
                     <FormField control={form.control} name="Owner Name" render={({ field }) => (
                         <FormItem className="md:col-span-2">
-                          <FormLabel>Owner's Full Name</FormLabel>
+                          <FormLabel>Owner&apos;s Full Name</FormLabel>
                           <FormControl><Input {...field} value={field.value ?? ''} /></FormControl>
                           <FormMessage />
                         </FormItem>

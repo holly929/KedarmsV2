@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -300,14 +299,14 @@ export default function SettingsPage() {
                     <Separator />
                     <FormField control={appearanceForm.control} name="signature" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Authorized Director's Signature</FormLabel>
+                        <FormLabel>Authorized Director&apos;s Signature</FormLabel>
                         <FormControl>
                           <div className="space-y-2">
                             <Input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'signature')} />
                             {field.value && <img src={field.value} alt="Signature Preview" className="h-12 object-contain border rounded p-1 bg-muted/20" />}
                           </div>
                         </FormControl>
-                        <FormDescription>Will appear above "COORDINATING DIRECTOR" on the bill.</FormDescription>
+                        <FormDescription>Will appear above &quot;COORDINATING DIRECTOR&quot; on the bill.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )} />
@@ -351,7 +350,7 @@ export default function SettingsPage() {
                           <FormControl><Input type="color" {...field} className="h-10 w-20 p-1" /></FormControl>
                           <span className="text-sm font-mono text-muted-foreground uppercase">{field.value}</span>
                         </div>
-                        <FormDescription>Used to highlight the "Total Amount Payable" section on the bill.</FormDescription>
+                        <FormDescription>Used to highlight the &quot;Total Amount Payable&quot; section on the bill.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )} />
@@ -368,7 +367,7 @@ export default function SettingsPage() {
                       <FormItem>
                         <FormLabel className="flex items-center gap-2 text-red-600 font-bold"><FileWarning className="h-4 w-4" /> Demand Notice Header Caption</FormLabel>
                         <FormControl><Input {...field} placeholder="e.g. FINAL NOTICE OF NON-PAYMENT" /></FormControl>
-                        <FormDescription>Overwrites the default "DEMAND NOTICE" text on enforcement documents.</FormDescription>
+                        <FormDescription>Overwrites the default &quot;DEMAND NOTICE&quot; text on enforcement documents.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )} />

@@ -109,20 +109,18 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
     const existingPayments = item.payments || [];
     const updatedPayments = [...existingPayments, newPayment];
     
-    let updatedItem: any = { ...item, payments: updatedPayments };
-    if (type === 'property') {
-        const currentPaid = Number(getPropertyValue(item, 'Total Payment') || 0);
-        updatedItem['Total Payment'] = currentPaid + values.amount;
-        updateProperty(updatedItem);
-    } else if (type === 'bop') {
-        const currentPaid = Number(getPropertyValue(item, 'Payment') || 0);
-        updatedItem['Payment'] = currentPaid + values.amount;
-        updateBop(updatedItem);
-    } else {
-        const currentPaid = Number(getPropertyValue(item, 'Payment') || 0);
-        updatedItem['Payment'] = currentPaid + values.amount;
-        updateLicense(updatedItem);
-    }
+    const amountField = type === 'property' ? 'Total Payment' : 'Payment';
+    const currentPaid = Number(getPropertyValue(item, amountField) || 0);
+    
+    const updatedItem = { 
+      ...item, 
+      payments: updatedPayments,
+      [amountField]: currentPaid + values.amount 
+    };
+
+    if (type === 'property') updateProperty(updatedItem as Property);
+    else if (type === 'bop') updateBop(updatedItem as Bop);
+    else updateLicense(updatedItem as License);
 
     setLastPayment(newPayment);
     toast({ title: 'Payment Recorded', description: `${values.method} payment of GHS ${values.amount.toFixed(2)} recorded.` });
@@ -209,8 +207,8 @@ export function ManualPaymentDialog({ item, type, isOpen, onOpenChange }: Manual
 
               {(selectedMethod === 'Mobile Money' || selectedMethod === 'Bank Transfer') && (
                 <div className="bg-primary/5 p-4 rounded-lg border border-primary/20 space-y-2">
-                   <p className="text-xs font-semibold text-primary uppercase">Direct Checkout Enabled</p>
-                   <p className="text-xs text-muted-foreground italic">Clicking "Initiate Secure Payment" below will open the Paystack portal automatically.</p>
+                  <p className="text-xs font-semibold text-primary uppercase">Direct Checkout Enabled</p>
+                  <p className="text-xs text-muted-foreground italic">Clicking &quot;Initiate Secure Payment&quot; below will open the Paystack portal automatically.</p>
                 </div>
               )}
 

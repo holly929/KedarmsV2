@@ -51,7 +51,7 @@ function GoogleSheetIntegration({ settingKey, title, description, emptyStateText
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Having trouble editing?</AlertTitle>
               <AlertDescription>
-                To view and edit the sheet, you must be logged into the correct Google account in this browser. If the sheet doesn't load, try opening it in a new tab first, then refresh this page.
+                To view and edit the sheet, you must be logged into the correct Google account in this browser. If the sheet doesn&apos;t load, try opening it in a new tab first, then refresh this page.
               </AlertDescription>
             </Alert>
             <div className="aspect-video w-full rounded-lg border">
