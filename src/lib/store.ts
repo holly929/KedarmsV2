@@ -57,7 +57,7 @@ function getDefaultStore(): AppStore {
             'Property Type', 
             'Rateable Value', 
             'Rate Impost', 
-            'Sanitation Charged', 
+            'Basic Levy', 
             'Previous Balance', 
             'Total Payment', 
             'Amount Due'
@@ -159,16 +159,6 @@ export function saveStore() {
             window.localStorage.setItem(STORE_KEY, JSON.stringify(store));
         } catch (e) {
             console.error("Failed to save store to localStorage", e);
-        }
-    }
-}
-
-export function forceSaveStore(data: any) {
-    if (typeof window !== 'undefined') {
-        try {
-            window.localStorage.setItem(STORE_KEY, JSON.stringify(data));
-        } catch (e) {
-            console.error("Failed to force save store to localStorage", e);
         }
     }
 }

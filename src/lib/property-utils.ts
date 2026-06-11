@@ -11,7 +11,7 @@ const STANDARD_ALIASES: Record<string, string[]> = {
     'Property Type': ['Property Type', 'propertytype', 'Use', 'Category', 'Class'],
     'Rateable Value': ['Rateable Value', 'rateablevalue', 'Value', 'Assessed Value', 'Assessment'],
     'Rate Impost': ['Rate Impost', 'rateimpost', 'Impost', 'Rate', 'Multiplier'],
-    'Sanitation Charged': ['Sanitation Charged', 'Sanitation', 'sanitationcharged', 'Sanitation Fee', 'Waste', 'Refuse'],
+    'Basic Levy': ['Basic Levy', 'Sanitation Charged', 'Sanitation', 'sanitationcharged', 'Sanitation Fee', 'Waste', 'Refuse'],
     'Previous Balance': ['Previous Balance', 'Prev Balance', 'Arrears', 'previousbalance', 'Arrears BF', 'Balance BF', 'Debt', 'Old Balance'],
     'Total Payment': ['Total Payment', 'Amount Paid', 'Payment', 'totalpayment', 'Paid', 'Total Paid', 'Amt Paid'],
     'S/N': ['S/N', 'SN', 'Serial Number', 'Serial No', 'Index', 'No.', 'Serial', 'Number'],
@@ -24,14 +24,9 @@ const STANDARD_ALIASES: Record<string, string[]> = {
     'Amount Due': ['Amount Due', 'Total Amount Due', 'Amount Owed', 'Total Due', 'Current Balance', 'Total Payable', 'Grand Total', 'Balance', 'Net Due', 'Total', 'Amount Payable', 'Payable'],
 };
 
-/**
- * Gets a property value using a standardized key, searching through common aliases.
- * Optimized for performance by using direct access and normalized exact matches.
- */
 export const getPropertyValue = (data: Property | License | null, standardKey: string): any => {
     if (!data) return undefined;
 
-    // 1. Try direct access first (fastest)
     const directVal = data[standardKey];
     if (directVal !== undefined && directVal !== null && String(directVal).trim() !== '') {
         return directVal;
@@ -39,10 +34,8 @@ export const getPropertyValue = (data: Property | License | null, standardKey: s
 
     const keyAliases = STANDARD_ALIASES[standardKey] || [standardKey];
     const dataKeys = Object.keys(data);
-
     const normalize = (str: string) => (str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-    // 2. Try normalized exact match with aliases
     const normalizedAliases = keyAliases.map(normalize);
     for (const pKey of dataKeys) {
         const normalizedPKey = normalize(pKey);
@@ -54,7 +47,6 @@ export const getPropertyValue = (data: Property | License | null, standardKey: s
         }
     }
     
-    // 3. Try fuzzy substring matching (only for longer keys)
     for (const alias of keyAliases) {
         const normalizedAlias = normalize(alias);
         if (normalizedAlias.length < 3) continue;

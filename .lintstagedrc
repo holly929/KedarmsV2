@@ -1,0 +1,7 @@
+{
+  "src/**/*.{js,jsx,ts,tsx}": [
+    "eslint --fix",
+    "node src/app/(main)/bop/new/find-unescaped.js",
+    "prettier --write"
+  ]
+}

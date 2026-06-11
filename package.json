@@ -9,12 +9,6 @@
     "lint": "next lint",
     "prepare": "husky"
   },
-  "lint-staged": {
-    "src/**/*.{tsx,jsx}": [
-      "node src/app/(main)/bop/new/find-unescaped.js",
-      "eslint --fix"
-    ]
-  },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
     "@radix-ui/react-accordion": "^1.1.2",
@@ -65,7 +59,6 @@
     "eslint-config-next": "^14.2.35",
     "glob": "^11.0.0",
     "husky": "^9.1.7",
-    "lint-staged": "^16.4.0",
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3"
