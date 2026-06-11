@@ -3,10 +3,9 @@
 import { useState, useEffect, useRef, useMemo, forwardRef, memo } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import JsBarcode from 'jsbarcode';
-import Image from 'next/image';
 import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import type { Property, Bop, License, Bill } from '@/lib/types';
+import type { Bill } from '@/lib/types';
 import { Printer, ShieldCheck } from 'lucide-react';
 import { getPropertyValue } from '@/lib/property-utils';
 import { store } from '@/lib/store';
@@ -121,6 +120,7 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
   isCompact?: boolean;
 }>(function PrintableContent({ data, billType, settings, isDemandNotice }, ref) {
 
+  // React Hooks must be called before any conditional early returns
   const totalAmountDue = useMemo(() => {
     if (!data) return 0;
     const importedTotal = parseNumeric(getPropertyValue(data, 'Amount Due'));
@@ -129,7 +129,7 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
     if (billType === 'property') {
       const rv = parseNumeric(getPropertyValue(data, 'Rateable Value'));
       const ri = parseNumeric(getPropertyValue(data, 'Rate Impost'));
-      const sc = parseNumeric(getPropertyValue(data, 'Sanitation Charged'));
+      const sc = parseNumeric(getPropertyValue(data, 'Basic Levy'));
       const pb = parseNumeric(getPropertyValue(data, 'Previous Balance'));
       const tp = parseNumeric(getPropertyValue(data, 'Total Payment'));
       return (rv * ri) + sc + pb - tp;
@@ -149,7 +149,7 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
   }, [data, billType]);
 
   const headerCaption = useMemo(() => {
-    if (settings?.appearance?.demandNoticeCaption) return settings.appearance.demandNoticeCaption;
+    if (settings?.appearance?.demandNoticeCaption && isDemandNotice) return settings.appearance.demandNoticeCaption;
     if (isUnassessed) return 'PROPERTY RATE DEMAND NOTICE(UNASSESSED)';
     return isDemandNotice ? 'DEMAND NOTICE' : 'OFFICIAL BILLING NOTICE';
   }, [settings?.appearance?.demandNoticeCaption, isUnassessed, isDemandNotice]);
@@ -167,12 +167,12 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
     <div ref={ref} style={styles.container}>
       <div style={styles.innerBorder}>
         {settings.appearance?.ghanaLogo && settings.appearance.ghanaLogo !== '' && (
-          <img src={settings.appearance.ghanaLogo} alt="Ghana Logo Watermark" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', objectFit: 'contain', opacity: 0.05, width: '300px', height: '300px', zIndex: 0, pointerEvents: 'none' }} />
+          <img src={settings.appearance.ghanaLogo} alt="Watermark" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', objectFit: 'contain', opacity: 0.05, width: '300px', height: '300px', zIndex: 0, pointerEvents: 'none' }} />
         )}
         
         <header style={styles.header}>
           <div style={{ width: '60px', height: '60px', position: 'relative' }}>
-            {settings.appearance?.ghanaLogo && settings.appearance.ghanaLogo !== '' && <img src={settings.appearance.ghanaLogo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="Ghana National Logo" />}
+            {settings.appearance?.ghanaLogo && <img src={settings.appearance.ghanaLogo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="Ghana Logo" />}
           </div>
           <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, color: '#000000' }}>{settings.general?.assemblyName || 'DISTRICT ASSEMBLY'}</h1>
@@ -193,7 +193,7 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
             </div>
           </div>
           <div style={{ width: '60px', height: '60px', position: 'relative' }}>
-            {settings.appearance?.assemblyLogo && settings.appearance.assemblyLogo !== '' && <img src={settings.appearance.assemblyLogo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="Assembly Logo" />}
+            {settings.appearance?.assemblyLogo && <img src={settings.appearance.assemblyLogo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="Assembly Logo" />}
           </div>
         </header>
 
@@ -222,10 +222,10 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
           {billType === 'property' ? (
             <>
               <div style={styles.row}><span>ANNUAL RATE CHARGED</span><span>{formatCurrency(parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost')))}</span></div>
-              <div style={styles.row}><span>SANITATION LEVY</span><span>{formatCurrency(getPropertyValue(data, 'Sanitation Charged'))}</span></div>
-              <div style={{ ...styles.row, ...styles.boldRow }}><span>CURRENT YEAR DUE</span><span>{formatCurrency((parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost'))) + parseNumeric(getPropertyValue(data, 'Sanitation Charged')))}</span></div>
+              <div style={styles.row}><span>BASIC LEVY</span><span>{formatCurrency(getPropertyValue(data, 'Basic Levy'))}</span></div>
+              <div style={{ ...styles.row, ...styles.boldRow }}><span>CURRENT YEAR DUE</span><span>{formatCurrency((parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost'))) + parseNumeric(getPropertyValue(data, 'Basic Levy')))}</span></div>
               <div style={styles.row}><span>PREVIOUS OUTSTANDING</span><span>{formatCurrency(getPropertyValue(data, 'Previous Balance'))}</span></div>
-              <div style={{ ...styles.row, ...styles.boldRow }}><span>GROSS TOTAL DUE</span><span>{formatCurrency((parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost'))) + parseNumeric(getPropertyValue(data, 'Sanitation Charged')) + parseNumeric(getPropertyValue(data, 'Previous Balance')))}</span></div>
+              <div style={{ ...styles.row, ...styles.boldRow }}><span>GROSS TOTAL DUE</span><span>{formatCurrency((parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost'))) + parseNumeric(getPropertyValue(data, 'Basic Levy')) + parseNumeric(getPropertyValue(data, 'Previous Balance')))}</span></div>
               <div style={styles.row}><span>LESS TOTAL PAYMENTS</span><span>{formatCurrency(getPropertyValue(data, 'Total Payment'))}</span></div>
             </>
           ) : (
@@ -250,7 +250,7 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
           </div>
           <div style={{ width: '200px', textAlign: 'center' }}>
             <div style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {settings.appearance?.signature && settings.appearance.signature !== '' && <img src={settings.appearance.signature} style={{ maxHeight: '100%', width: '150px', objectFit: 'contain' }} alt="Authorized Signature" />}
+              {settings.appearance?.signature && <img src={settings.appearance.signature} style={{ maxHeight: '100%', width: '150px', objectFit: 'contain' }} alt="Signature" />}
             </div>
             <p style={{ borderTop: '1px solid #000000', fontSize: '10px', fontWeight: 'bold', paddingTop: '4px', margin: 0, color: '#000000' }}>COORDINATING DIRECTOR</p>
           </div>
