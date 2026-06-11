@@ -88,8 +88,6 @@ const DUMMY_PROPERTY = {
   'Property Type': 'Residential',
   'Rateable Value': 50000,
   'Rate Impost': 0.005,
-  'Sanitation Charged': 150,
-  'Previous Balance': 200,
   'Total Payment': 100,
 };
 

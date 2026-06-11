@@ -11,15 +11,14 @@ const STANDARD_ALIASES: Record<string, string[]> = {
     'Property Type': ['Property Type', 'propertytype', 'Use', 'Category', 'Class'],
     'Rateable Value': ['Rateable Value', 'rateablevalue', 'Value', 'Assessed Value', 'Assessment'],
     'Rate Impost': ['Rate Impost', 'rateimpost', 'Impost', 'Rate', 'Multiplier'],
-    'Basic Levy': ['Basic Levy'],
-    'Previous Balance': [],
+
     'Total Payment': ['Total Payment', 'Amount Paid', 'Payment', 'totalpayment', 'Paid', 'Total Paid', 'Amt Paid'],
     'S/N': ['S/N', 'SN', 'Serial Number', 'Serial No', 'Index', 'No.', 'Serial', 'Number'],
     'Name of Hotel/Guest House': ['Name of Hotel/Guest House', 'Hotel Name', 'Guest House Name', 'Hotel', 'Guest House', 'Business Name', 'Name', 'Establishment', 'Entity', 'Billed To', 'Company'],
     'Property Rate': ['Property Rate', 'License Fee', 'Rate', 'License', 'License Amount', 'Permit Fee', 'License Amt', 'Fee', 'Amount'],
     'License Fee': ['License Fee', 'Property Rate', 'Rate', 'License', 'License Amount', 'Permit Fee', 'License Amt', 'Fee'],
     'Bop Amount': ['Bop Amount', 'BOP', 'Bop Fee', 'BOP Amount', 'BOP Fee', 'Business Operating Permit'],
-    'Arrears': ['Arrears', 'Arrears BF', 'Prev Balance', 'Balance BF', 'Debt', 'Owed', 'Outstanding'],
+    'Arrears': ['Arrears', 'Arrears BF', 'Debt', 'Owed', 'Outstanding'],
     'Payment': ['Payment', 'Amount Paid', 'Paid', 'Total Payment', 'Amt Paid', 'Credit'],
     'Amount Due': ['Amount Due', 'Total Amount Due', 'Amount Owed', 'Total Due', 'Current Balance', 'Total Payable', 'Grand Total', 'Balance', 'Net Due', 'Total', 'Amount Payable', 'Payable'],
 };

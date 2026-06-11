@@ -68,8 +68,6 @@ const DEFAULT_SYSTEM_HEADERS = [
     'Property Type', 
     'Rateable Value', 
     'Rate Impost', 
-    'Sanitation Charged', 
-    'Previous Balance', 
     'Total Payment', 
     'Amount Due'
 ];

@@ -78,11 +78,9 @@ export default function DashboardPage() {
     properties.forEach(p => {
         const rateableValue = Number(getPropertyValue(p, 'Rateable Value')) || 0;
         const rateImpost = Number(getPropertyValue(p, 'Rate Impost')) || 0;
-        const sanitation = Number(getPropertyValue(p, 'Sanitation Charged')) || 0;
-        const previousBalance = Number(getPropertyValue(p, 'Previous Balance')) || 0;
         const payment = Number(getPropertyValue(p, 'Total Payment')) || 0;
         
-        const grandTotalDue = (rateableValue * rateImpost) + sanitation + previousBalance;
+        const grandTotalDue = (rateableValue * rateImpost);
         calculatedTotalRevenue += payment;
         
         const type = getPropertyValue(p, 'Property Type') || 'Other';
