@@ -48,8 +48,6 @@ const propertyFormSchema = z.object({
   'Property Type': z.string().default('Residential'),
   'Rateable Value': z.coerce.number().min(0).default(0),
   'Rate Impost': z.coerce.number().min(0).default(0),
-  'Sanitation Charged': z.coerce.number().min(0).default(0),
-  'Previous Balance': z.coerce.number().min(0).default(0),
   'Total Payment': z.coerce.number().min(0).default(0),
   'Amount Due': z.coerce.number().min(0).optional(),
 });
@@ -69,11 +67,9 @@ export function EditPropertyDialog({
   const calculatedPayable = React.useMemo(() => {
         const rateableValue = Number(watchedValues['Rateable Value']) || 0;
         const rateImpost = Number(watchedValues['Rate Impost']) || 0;
-        const sanitationCharged = Number(watchedValues['Sanitation Charged']) || 0;
-        const previousBalance = Number(watchedValues['Previous Balance']) || 0;
         const totalPayment = Number(watchedValues['Total Payment']) || 0;
 
-        const totalBill = (rateableValue * rateImpost) + sanitationCharged + previousBalance;
+        const totalBill = (rateableValue * rateImpost);
         return totalBill - totalPayment;
   }, [watchedValues]);
 
@@ -91,8 +87,6 @@ export function EditPropertyDialog({
         'Property Type': getPropertyValue(property, 'Property Type') || 'Residential',
         'Rateable Value': getPropertyValue(property, 'Rateable Value') || 0,
         'Rate Impost': getPropertyValue(property, 'Rate Impost') || 0,
-        'Sanitation Charged': getPropertyValue(property, 'Sanitation Charged') || 0,
-        'Previous Balance': getPropertyValue(property, 'Previous Balance') || 0,
         'Total Payment': getPropertyValue(property, 'Total Payment') || 0,
         'Amount Due': getPropertyValue(property, 'Amount Due'),
       };
@@ -245,20 +239,7 @@ export function EditPropertyDialog({
                                 <FormMessage />
                             </FormItem>
                         )} />
-                         <FormField control={form.control} name="Sanitation Charged" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Sanitation Charged (GHS)</FormLabel>
-                                <FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''}/></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-                         <FormField control={form.control} name="Previous Balance" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Previous Balance (GHS)</FormLabel>
-                                <FormControl><Input type="number" step="0.01" {...field} value={field.value ?? ''}/></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
+
                         <FormField control={form.control} name="Total Payment" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Total Payment (GHS)</FormLabel>

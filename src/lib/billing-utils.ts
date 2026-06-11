@@ -7,11 +7,9 @@ export type BillStatus = 'Paid' | 'Pending' | 'Overdue' | 'Unbilled';
 export function getBillStatus(property: Property): BillStatus {
   const rateableValue = Number(getPropertyValue(property, 'Rateable Value')) || 0;
   const rateImpost = Number(getPropertyValue(property, 'Rate Impost')) || 0;
-  const sanitationCharged = Number(getPropertyValue(property, 'Sanitation Charged')) || 0;
-  const previousBalance = Number(getPropertyValue(property, 'Previous Balance')) || 0;
   const totalPayment = Number(getPropertyValue(property, 'Total Payment')) || 0;
 
-  const grandTotalDue = (rateableValue * rateImpost) + sanitationCharged + previousBalance;
+  const grandTotalDue = (rateableValue * rateImpost);
 
   if (grandTotalDue <= 0) {
     return 'Unbilled';

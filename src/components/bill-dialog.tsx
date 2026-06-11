@@ -126,13 +126,11 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
     const importedTotal = parseNumeric(getPropertyValue(data, 'Amount Due'));
     if (importedTotal !== 0) return importedTotal;
 
-    if (billType === 'property') {
+          if (billType === 'property') {
       const rv = parseNumeric(getPropertyValue(data, 'Rateable Value'));
       const ri = parseNumeric(getPropertyValue(data, 'Rate Impost'));
-      const sc = parseNumeric(getPropertyValue(data, 'Basic Levy'));
-      const pb = parseNumeric(getPropertyValue(data, 'Previous Balance'));
       const tp = parseNumeric(getPropertyValue(data, 'Total Payment'));
-      return (rv * ri) + sc + pb - tp;
+      return (rv * ri) - tp;
     } else if (billType === 'bop') {
       return (parseNumeric(getPropertyValue(data, 'Permit Fee')) + parseNumeric(getPropertyValue(data, 'Arrears'))) - parseNumeric(getPropertyValue(data, 'Payment'));
     } else {
@@ -222,10 +220,8 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
           {billType === 'property' ? (
             <>
               <div style={styles.row}><span>ANNUAL RATE CHARGED</span><span>{formatCurrency(parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost')))}</span></div>
-              <div style={styles.row}><span>BASIC LEVY</span><span>{formatCurrency(getPropertyValue(data, 'Basic Levy'))}</span></div>
-              <div style={{ ...styles.row, ...styles.boldRow }}><span>CURRENT YEAR DUE</span><span>{formatCurrency((parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost'))) + parseNumeric(getPropertyValue(data, 'Basic Levy')))}</span></div>
-              <div style={styles.row}><span>PREVIOUS OUTSTANDING</span><span>{formatCurrency(getPropertyValue(data, 'Previous Balance'))}</span></div>
-              <div style={{ ...styles.row, ...styles.boldRow }}><span>GROSS TOTAL DUE</span><span>{formatCurrency((parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost'))) + parseNumeric(getPropertyValue(data, 'Basic Levy')) + parseNumeric(getPropertyValue(data, 'Previous Balance')))}</span></div>
+              <div style={{ ...styles.row, ...styles.boldRow }}><span>CURRENT YEAR DUE</span><span>{formatCurrency(parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost')))}</span></div>
+              <div style={{ ...styles.row, ...styles.boldRow }}><span>GROSS TOTAL DUE</span><span>{formatCurrency(parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost')))}</span></div>
               <div style={styles.row}><span>LESS TOTAL PAYMENTS</span><span>{formatCurrency(getPropertyValue(data, 'Total Payment'))}</span></div>
             </>
           ) : (

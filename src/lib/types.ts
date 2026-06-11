@@ -19,8 +19,6 @@ export type Property = {
   'Property Type'?: 'Residential' | 'Commercial' | 'Industrial' | string;
   'Rateable Value'?: number;
   'Rate Impost'?: number;
-  'Sanitation Charged'?: number;
-  'Previous Balance'?: number;
   'Total Payment'?: number;
   created_at?: string;
   payments?: Payment[];
