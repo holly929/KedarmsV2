@@ -80,17 +80,7 @@ const styles = {
   }
 };
 
-const parseNumeric = (val: any): number => {
-  if (val === undefined || val === null) return 0;
-  if (typeof val === 'number') return val;
-  const cleaned = String(val).replace(/,/g, '').replace(/[^0-9.-]/g, '');
-  const num = parseFloat(cleaned);
-  return isNaN(num) ? 0 : num;
-};
-
-const formatCurrency = (val: any): string => {
-  return parseNumeric(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-};
+import { parseNumeric, formatCurrency } from '@/lib/utils';
 
 const Barcode = memo(({ value }: { value: string }) => {
   const ref = useRef<SVGSVGElement | null>(null);

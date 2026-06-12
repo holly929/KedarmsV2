@@ -68,10 +68,12 @@ const DEFAULT_SYSTEM_HEADERS = [
     'Property Type', 
     'Rateable Value', 
     'Rate Impost', 
-    'Basic Levy',
+    'Basic Levy', 
     'Total Payment', 
     'Amount Due'
 ];
+
+import { parseNumeric, formatCurrency } from '@/lib/utils';
 
 const formatValue = (value: any, header: string) => {
     if (value === undefined || value === null || String(value).trim() === '') return '';
@@ -81,9 +83,9 @@ const formatValue = (value: any, header: string) => {
 
     if (isRateImpost) return String(value);
 
-    const num = typeof value === 'number' ? value : Number(String(value).replace(/,/g, '').replace(/[^0-9.-]/g, ''));
-    if (!isNaN(num) && isCurrencyHeader) {
-        return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (isCurrencyHeader) {
+        const num = parseNumeric(value);
+        return formatCurrency(num);
     }
     return String(value);
 }
@@ -168,20 +170,21 @@ export default function PropertiesPage() {
           }
           const nextIndex = Math.min(currentIndex + IMPORT_CHUNK_SIZE, dataRows.length);
           dataRows.slice(currentIndex, nextIndex).forEach((row, i) => {
-	            if (!row || row.every(c => c === null)) return;
-	            const rowData: any = { id: `imp-${Date.now()}-${currentIndex + i}` };
-	            validIndices.forEach(({ header, index }) => { 
-                    let value = row[index];
-                    // Standardize numeric fields
-                    const numericHeaders = ['rateable value', 'rate impost', 'basic levy', 'total payment', 'amount due', 'payment', 'arrears', 'permit fee', 'bop amount'];
-                    if (numericHeaders.some(nh => header.toLowerCase().includes(nh))) {
-                        const num = typeof value === 'number' ? value : Number(String(value || '0').replace(/,/g, '').replace(/[^0-9.-]/g, ''));
-                        value = isNaN(num) ? 0 : num;
-                    }
-                    rowData[header] = value; 
-                });
-	            allNewData.push(rowData);
-	          });
+            if (!row || row.every(c => c === null)) return;
+            const rowData: any = { id: `imp-${Date.now()}-${currentIndex + i}` };
+            validIndices.forEach(({ header, index }) => { 
+                let val = row[index];
+                const isCurrencyHeader = !['Property No', 'Account Number', 'Valuation List No.', 'Phone Number', 'S/N', 'SN', 'ID', 'Town', 'Suburb', 'Owner', 'Type'].some(k => header.toLowerCase().includes(k.toLowerCase()));
+                const isRateImpost = header.toLowerCase().includes('rate impost');
+                
+                if (isCurrencyHeader && !isRateImpost) {
+                    rowData[header] = parseNumeric(val);
+                } else {
+                    rowData[header] = val;
+                }
+            });
+            allNewData.push(rowData);
+          });
           setImportStatus(p => ({ ...p, processed: nextIndex }));
           currentIndex = nextIndex;
           setTimeout(processChunk, 0);
