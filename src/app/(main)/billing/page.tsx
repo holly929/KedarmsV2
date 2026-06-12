@@ -43,6 +43,7 @@ import type { Property, PropertyWithStatus, BillStatus } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getBillStatus } from '@/lib/billing-utils';
+import { parseNumeric, formatCurrency as centralizedFormatCurrency } from '@/lib/utils';
 import { usePropertyData } from '@/context/PropertyDataContext';
 import { useAuth } from '@/context/AuthContext';
 import { EditPropertyDialog } from '@/components/edit-property-dialog';
@@ -56,9 +57,8 @@ const formatValue = (value: any, header: string) => {
     if (value === undefined || value === null || String(value).trim() === '') return '0.00';
     const skipFormatting = ['Property No', 'Account Number', 'Valuation List No.', 'Phone Number', 'S/N', 'ID', 'Town', 'Suburb', 'Owner', 'Type'];
     const isCurrencyHeader = !skipFormatting.some(k => header.toLowerCase().includes(k.toLowerCase()));
-    const num = typeof value === 'number' ? value : Number(String(value).replace(/,/g, ''));
-    if (!isNaN(num) && isCurrencyHeader) {
-        return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (isCurrencyHeader) {
+        return centralizedFormatCurrency(value);
     }
     return String(value);
 }
