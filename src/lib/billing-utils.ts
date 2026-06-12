@@ -9,8 +9,18 @@ export function getBillStatus(property: Property): BillStatus {
   const rateImpost = Number(getPropertyValue(property, 'Rate Impost')) || 0;
   const basicLevy = Number(getPropertyValue(property, 'Basic Levy')) || 0;
   const totalPayment = Number(getPropertyValue(property, 'Total Payment')) || 0;
+  const importedAmountDue = getPropertyValue(property, 'Amount Due');
 
   const grandTotalDue = (rateableValue * rateImpost) + basicLevy;
+
+  // If we have an imported Amount Due and no component values, trust the Amount Due
+  if (importedAmountDue !== undefined && importedAmountDue !== null && grandTotalDue === 0) {
+      const amountDue = Number(importedAmountDue);
+      if (amountDue <= 0 && totalPayment > 0) return 'Paid';
+      if (amountDue > 0 && totalPayment > 0) return 'Pending';
+      if (amountDue > 0) return 'Overdue';
+      return 'Unbilled';
+  }
 
   if (grandTotalDue <= 0) {
     return 'Unbilled';
