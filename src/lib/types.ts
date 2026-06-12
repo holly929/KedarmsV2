@@ -18,7 +18,7 @@ export type Property = {
   'Account Number'?: string;
   'Property Type'?: 'Residential' | 'Commercial' | 'Industrial' | string;
   'Rateable Value'?: number;
-  'Rate Impost'?: number;
+  'Basic Levy'?: number;
   'Total Payment'?: number;
   created_at?: string;
   payments?: Payment[];

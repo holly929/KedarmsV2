@@ -55,10 +55,8 @@ function getDefaultStore(): AppStore {
             'Town', 
             'Suburb', 
             'Property Type', 
-            'Rateable Value', 
-            'Rate Impost', 
-            'Basic Levy', 
-            'Previous Balance', 
+	            'Rateable Value', 
+	            'Basic Levy',
             'Total Payment', 
             'Amount Due'
         ],

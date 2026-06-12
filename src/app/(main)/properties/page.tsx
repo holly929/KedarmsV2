@@ -67,9 +67,7 @@ const DEFAULT_SYSTEM_HEADERS = [
     'Suburb', 
     'Property Type', 
     'Rateable Value', 
-    'Rate Impost', 
-    'Sanitation Charged', 
-    'Previous Balance', 
+    'Basic Levy', 
     'Total Payment', 
     'Amount Due'
 ];
@@ -80,12 +78,11 @@ const formatValue = (value: any, header: string) => {
     if (value === undefined || value === null || String(value).trim() === '') return '';
     const skipFormatting = ['Property No', 'Account Number', 'Valuation List No.', 'Phone Number', 'S/N', 'SN', 'ID', 'Town', 'Suburb', 'Owner', 'Type'];
     const isCurrencyHeader = !skipFormatting.some(k => header.toLowerCase().includes(k.toLowerCase()));
-    const isRateImpost = header.toLowerCase().includes('rate impost');
-
-    if (isRateImpost) return String(value);
 
     if (isCurrencyHeader) {
         const num = parseNumeric(value);
+        // If it's a currency header and the value is 0, we still want to show it for Basic Levy
+        if (num === 0 && header.toLowerCase().includes('basic levy')) return '0.00';
         return formatCurrency(num);
     }
     return String(value);
@@ -175,10 +172,27 @@ export default function PropertiesPage() {
             const rowData: any = { id: `imp-${Date.now()}-${currentIndex + i}` };
             validIndices.forEach(({ header, index }) => { 
                 let val = row[index];
-                const isCurrencyHeader = !['Property No', 'Account Number', 'Valuation List No.', 'Phone Number', 'S/N', 'SN', 'ID', 'Town', 'Suburb', 'Owner', 'Type'].some(k => header.toLowerCase().includes(k.toLowerCase()));
-                const isRateImpost = header.toLowerCase().includes('rate impost');
+                const lowerHeader = header.toLowerCase();
                 
-                if (isCurrencyHeader && !isRateImpost) {
+                // Fields that should definitely be treated as currency/numeric
+                const currencyKeywords = [
+                    'value', 'levy', 'payment', 'paid', 'due', 'arrears', 'amount', 'balance', 'payable', 'total', 'rate'
+                ];
+                
+                // Fields that should definitely NOT be treated as currency
+                const skipKeywords = [
+                    'no', 'number', 'sn', 'id', 'town', 'suburb', 'owner', 'type', 'phone', 'contact', 'mobile', 'cell', 'account', 'valuation', 'address'
+                ];
+                
+                const isCurrency = currencyKeywords.some(k => lowerHeader.includes(k)) && 
+                                   !skipKeywords.some(k => lowerHeader.includes(k));
+                
+                const isRateImpost = lowerHeader.includes('rate impost') || lowerHeader === 'impost' || lowerHeader === 'rate';
+
+                if (isRateImpost) {
+                    // Rate impost is a small decimal, keep it as is but ensure it's a number
+                    rowData[header] = typeof val === 'number' ? val : parseFloat(String(val).replace(/,/g, '')) || 0;
+                } else if (isCurrency) {
                     rowData[header] = parseNumeric(val);
                 } else {
                     rowData[header] = val;

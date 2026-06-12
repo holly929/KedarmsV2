@@ -73,11 +73,14 @@ export default function PaymentPage() {
             if (bill.type === 'property') {
                 const p = bill.data as Property;
                 const rv = Number(getPropertyValue(p, 'Rateable Value')) || 0;
-                const ri = Number(getPropertyValue(p, 'Rate Impost')) || 0;
-                const sc = Number(getPropertyValue(p, 'Sanitation Charged')) || 0;
-                const pb = Number(getPropertyValue(p, 'Previous Balance')) || 0;
+                const ad = Number(getPropertyValue(p, 'Amount Due')) || 0;
+                const bl = Number(getPropertyValue(p, 'Basic Levy')) || 0;
                 const tp = Number(getPropertyValue(p, 'Total Payment')) || 0;
-                due = (rv * ri) + sc + pb - tp;
+                
+                // Formula: Amount Due + Basic Levy
+                // Fallback: Rateable Value + Basic Levy
+                const totalDue = ad !== 0 ? (ad + bl) : (rv + bl);
+                due = totalDue - tp;
             } else if (bill.type === 'bop') {
                 const b = bill.data as Bop;
                 due = (Number(getPropertyValue(b, 'Permit Fee')) || 0) + (Number(getPropertyValue(b, 'Arrears')) || 0) - (Number(getPropertyValue(b, 'Payment')) || 0);

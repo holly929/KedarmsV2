@@ -384,14 +384,16 @@ export default function LicensePage() {
           <CardContent className="space-y-2 text-sm pl-6 pr-6 pb-4">
             {headers.slice(1).map(header => {
               const value = getPropertyValue(row, header);
-              if (header.toLowerCase() === 'id' || value === undefined || value === null) return null;
+              if (header.toLowerCase() === 'id' || !value) return null;
               return (
                 <div key={header} className="flex justify-between items-center text-xs">
                   <span className="font-semibold text-muted-foreground">{header}</span>
                   <span className="text-right">
                     {typeof value === 'object' && value !== null
                       ? 'View Payments'
-                      : formatValue(value, header)}
+                      : (['license fee', 'bop amount', 'arrears', 'amount due', 'payment', 'property rate'].some(k => header.toLowerCase().includes(k)) 
+                          ? centralizedFormatCurrency(value) 
+                          : String(value))}
                   </span>
                 </div>
               );
@@ -413,182 +415,145 @@ export default function LicensePage() {
         onDragOver={handleDragEvents}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-      >
-        {(isDragging || importStatus.inProgress) && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm rounded-lg border-2 border-dashed border-primary">
-            {importStatus.inProgress ? (
-              <div className="flex flex-col items-center text-center p-4">
-                <Loader2 className="h-12 w-12 animate-spin text-primary mb-4"/>
-                <p className="text-lg font-medium text-foreground">Importing data...</p>
-                <p className="text-sm text-muted-foreground">Please wait while we process your file.</p>
-                <div className="w-full max-w-sm mt-4">
-                  <Progress value={importStatus.total > 0 ? (importStatus.processed / importStatus.total) * 100 : 0} />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {importStatus.processed} / {importStatus.total} records
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <>
-                <UploadCloud className="h-12 w-12 text-primary mb-4"/>
-                <p className="text-lg font-medium text-foreground">Drop your Excel file here</p>
-              </>
-            )}
-          </div>
-        )}
-        <Card>
-            <CardHeader>
-            <CardTitle className="font-headline">Manage License Data</CardTitle>
-            <CardDescription>
-                View, edit, or delete your {licenseData.length} imported license records.
-            </CardDescription>
-            <div className="flex flex-col sm:flex-row items-center gap-2 pt-4">
-                <Input
-                  placeholder="Filter data..."
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                  className="max-w-full sm:max-w-sm"
-                />
+    >
+        {isDragging && (
+            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-primary/10 backdrop-blur-[2px] border-2 border-dashed border-primary rounded-lg">
+                <UploadCloud className="h-12 w-12 text-primary animate-bounce" />
+                <p className="mt-2 text-lg font-semibold text-primary">Drop to Import License Records</p>
             </div>
-            </CardHeader>
-            <CardContent>
-            {isMobile ? renderMobileView() : renderDesktopView()}
-            </CardContent>
-            {totalPages > 1 && (
-              <CardFooter className="flex justify-between items-center border-t pt-4">
-                <span className="text-sm text-muted-foreground">
-                  Page {currentPage} of {totalPages} ({filteredData.length} total records)
-                </span>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                  >
-                    Next
-                  </Button>
-                </div>
-              </CardFooter>
-            )}
-        </Card>
+        )}
+        
+        {isMobile ? renderMobileView() : renderDesktopView()}
     </div>
-  )
-
-  const renderEmptyState = () => (
-     <div 
-        className="relative"
-        onDragEnter={handleDragEnter}
-        onDragOver={handleDragEvents}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        {(isDragging || importStatus.inProgress) && (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm rounded-lg border-2 border-dashed border-primary">
-            {importStatus.inProgress ? (
-                 <div className="flex flex-col items-center text-center p-4">
-                    <Loader2 className="h-12 w-12 animate-spin text-primary mb-4"/>
-                    <p className="text-lg font-medium text-foreground">Importing data...</p>
-                    <p className="text-sm text-muted-foreground">Please wait while we process your file.</p>
-                     <div className="w-full max-w-sm mt-4">
-                        <Progress value={importStatus.total > 0 ? (importStatus.processed / importStatus.total) * 100 : 0} />
-                        <p className="text-xs text-muted-foreground mt-1">
-                            {importStatus.processed} / {importStatus.total} records
-                        </p>
-                    </div>
-                </div>
-            ) : (
-                <>
-                <UploadCloud className="h-12 w-12 text-primary mb-4"/>
-                <p className="text-lg font-medium text-foreground">Drop your Excel file here</p>
-                </>
-            )}
-            </div>
-        )}
-        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center h-[calc(100vh-20rem)]">
-            <UploadCloud className="h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">Import Your License Data</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Drag and drop an Excel file here or use the import button to get started.
-            </p>
-        </div>
-     </div>
-  )
+  );
 
   return (
     <>
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileSelect}
-        style={{ display: 'none' }}
-        accept=".xlsx, .xls"
-        disabled={importStatus.inProgress}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileSelect} 
+        style={{ display: 'none' }} 
+        accept=".xlsx, .xls" 
       />
+      
       <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-3xl font-bold tracking-tight font-headline">License Data</h1>
+        <h1 className="text-3xl font-bold tracking-tight font-headline">License Management</h1>
         {!isViewer && 
-          <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
-              {licenseData.length > 0 && (
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete All
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
+          <div className="flex items-center gap-2">
+             <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="text-destructive border-destructive/20 hover:bg-destructive hover:text-white">
+                        <Trash2 className="mr-2 h-4 w-4" /> Clear All
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete all {licenseData.length} license records from the system.
+                            This will permanently delete all License records from the local database. This action cannot be undone.
                         </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleClearAll}>
-                            Yes, delete all
-                        </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+                        <AlertDialogAction onClick={handleClearAll} className="bg-destructive text-white">Delete All Records</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={importStatus.inProgress}>
+              {importStatus.inProgress ? (
+                <Loader2 className="animate-spin mr-2 h-4 w-4" />
+              ) : (
+                <FileUp className="mr-2 h-4 w-4" />
               )}
-              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={importStatus.inProgress}>
-                {importStatus.inProgress ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : <FileUp className="h-4 w-4 mr-2" />}
-                Import
-              </Button>
-              <Button size="sm" onClick={handleAddLicense}>
-                <PlusCircle className="h-4 w-4 mr-2" />
-                Add License Record
-              </Button>
+              Import
+            </Button>
+            <Button size="sm" onClick={handleAddLicense}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Add License
+            </Button>
           </div>
         }
       </div>
       
-      {loading ? (
-        <div className="flex h-full items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      ) : licenseData.length > 0 ? renderDataView() : renderEmptyState()}
+      {importStatus.inProgress && (
+        <Card className="mb-6 border-primary/20 bg-primary/5">
+            <CardContent className="pt-6">
+                <div className="space-y-2">
+                    <div className="flex justify-between text-sm font-medium">
+                        <span>Importing Records...</span>
+                        <span>{Math.round((importStatus.processed / importStatus.total) * 100)}%</span>
+                    </div>
+                    <Progress value={(importStatus.processed / importStatus.total) * 100} className="h-2" />
+                    <p className="text-xs text-muted-foreground text-center">
+                        Processed {importStatus.processed} of {importStatus.total} records. Please wait...
+                    </p>
+                </div>
+            </CardContent>
+        </Card>
+      )}
+
+      <div className="grid gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>License Records</CardTitle>
+            <CardDescription>
+              View and manage {licenseData.length} License records.
+            </CardDescription>
+            <div className="flex items-center gap-4 mt-4">
+                <Input
+                    placeholder="Search by name, town, or record type..."
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value)}
+                    className="max-w-sm"
+                />
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex h-64 items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : renderDataView()}
+          </CardContent>
+          {totalPages > 1 && (
+            <CardFooter className="flex justify-between items-center border-t pt-4">
+              <span className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </CardFooter>
+          )}
+        </Card>
+      </div>
 
       <EditLicenseDialog 
-        license={editingLicense}
-        isOpen={!!editingLicense}
-        onOpenChange={(isOpen) => !isOpen && setEditingLicense(null)}
+        license={editingLicense} 
+        isOpen={!!editingLicense} 
+        onOpenChange={(open) => !open && setEditingLicense(null)}
         onLicenseUpdate={handleLicenseUpdate}
       />
+
       <LicensePaymentHistoryDialog
         license={viewingPaymentsLicense}
         isOpen={!!viewingPaymentsLicense}
-        onOpenChange={(isOpen) => !isOpen && setViewingPaymentsLicense(null)}
+        onOpenChange={(open) => !open && setViewingPaymentsLicense(null)}
       />
     </>
   );

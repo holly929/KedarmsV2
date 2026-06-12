@@ -39,9 +39,11 @@ export const parseNumeric = (val: any): number => {
   if (val === undefined || val === null || val === '') return 0;
   if (typeof val === 'number') return val;
   
-  // Remove commas and currency prefixes like "GHS"
+  // Remove commas and common currency prefixes
   const cleaned = String(val)
     .replace(/GHS/gi, '')
+    .replace(/GH/gi, '')
+    .replace(/₵/g, '')
     .replace(/,/g, '')
     .trim();
   

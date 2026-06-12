@@ -12,6 +12,7 @@ import { usePropertyData } from '@/context/PropertyDataContext';
 import { useBillData } from '@/context/BillDataContext';
 import { getPropertyValue } from '@/lib/property-utils';
 import { getBillStatus } from '@/lib/billing-utils';
+import { parseNumeric } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -76,13 +77,13 @@ export default function DashboardPage() {
     const propertyCounts: { [key: string]: number } = {};
 
     properties.forEach(p => {
-        const rateableValue = Number(getPropertyValue(p, 'Rateable Value')) || 0;
-        const rateImpost = Number(getPropertyValue(p, 'Rate Impost')) || 0;
-        const sanitation = Number(getPropertyValue(p, 'Sanitation Charged')) || 0;
-        const previousBalance = Number(getPropertyValue(p, 'Previous Balance')) || 0;
-        const payment = Number(getPropertyValue(p, 'Total Payment')) || 0;
+        const rateableValue = parseNumeric(getPropertyValue(p, 'Rateable Value'));
+        const amountDue = parseNumeric(getPropertyValue(p, 'Amount Due'));
+        const bl = getPropertyValue(p, 'Basic Levy');
+        const basicLevy = parseNumeric(bl);
+        const payment = parseNumeric(getPropertyValue(p, 'Total Payment'));
         
-        const grandTotalDue = (rateableValue * rateImpost) + sanitation + previousBalance;
+        const grandTotalDue = amountDue !== 0 ? (amountDue + basicLevy) : (rateableValue + basicLevy);
         calculatedTotalRevenue += payment;
         
         const type = getPropertyValue(p, 'Property Type') || 'Other';
