@@ -176,15 +176,22 @@ export default function BopPage() {
             const nextIndex = Math.min(currentIndex + IMPORT_CHUNK_SIZE, dataRows.length);
             const chunk = dataRows.slice(currentIndex, nextIndex);
             
-            const chunkData: Bop[] = chunk.map((row, chunkIndex) => {
-                if (!row || row.every(cell => cell === null || String(cell).trim() === '')) return null;
-                const rowIndex = currentIndex + chunkIndex;
-                const rowData: { [key: string]: any } = { id: `bop-imported-${Date.now()}-${rowIndex}` };
-                validHeadersWithIndices.forEach(({ header, index }) => {
-                    rowData[header] = row[index];
-                });
-                return rowData as Bop;
-            }).filter((row): row is Bop => row !== null);
+	            const chunkData: Bop[] = chunk.map((row, chunkIndex) => {
+	                if (!row || row.every(cell => cell === null || String(cell).trim() === '')) return null;
+	                const rowIndex = currentIndex + chunkIndex;
+	                const rowData: { [key: string]: any } = { id: `bop-imported-${Date.now()}-${rowIndex}` };
+	                validHeadersWithIndices.forEach(({ header, index }) => {
+                        let value = row[index];
+                        // Standardize numeric fields
+                        const numericHeaders = ['permit fee', 'arrears', 'payment', 'total payment', 'amount due'];
+                        if (numericHeaders.some(nh => header.toLowerCase().includes(nh))) {
+                            const num = typeof value === 'number' ? value : Number(String(value || '0').replace(/,/g, '').replace(/[^0-9.-]/g, ''));
+                            value = isNaN(num) ? 0 : num;
+                        }
+	                    rowData[header] = value;
+	                });
+	                return rowData as Bop;
+	            }).filter((row): row is Bop => row !== null);
             
             allNewData.push(...chunkData);
             setImportStatus(prev => ({ ...prev, processed: nextIndex }));

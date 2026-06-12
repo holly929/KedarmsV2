@@ -190,16 +190,22 @@ export default function LicensePage() {
             const nextIndex = Math.min(currentIndex + IMPORT_CHUNK_SIZE, dataRows.length);
             const chunk = dataRows.slice(currentIndex, nextIndex);
             
-            const chunkData: License[] = chunk.map((row, chunkIndex) => {
-                if (!row || row.every(cell => cell === null || String(cell).trim() === '')) return null;
-                const rowIndex = currentIndex + chunkIndex;
-                const rowData: { [key: string]: any } = { id: `license-imported-${Date.now()}-${rowIndex}` };
-                validHeadersWithIndices.forEach(({ header, index }) => {
-                    let val = row[index];
-                    rowData[header] = val;
-                });
-                return rowData as License;
-            }).filter((row): row is License => row !== null);
+	            const chunkData: License[] = chunk.map((row, chunkIndex) => {
+	                if (!row || row.every(cell => cell === null || String(cell).trim() === '')) return null;
+	                const rowIndex = currentIndex + chunkIndex;
+	                const rowData: { [key: string]: any } = { id: `license-imported-${Date.now()}-${rowIndex}` };
+	                validHeadersWithIndices.forEach(({ header, index }) => {
+                        let val = row[index];
+                        // Standardize numeric fields
+                        const numericHeaders = ['license fee', 'bop amount', 'arrears', 'amount due', 'payment', 'property rate'];
+                        if (numericHeaders.some(nh => header.toLowerCase().includes(nh))) {
+                            const num = typeof val === 'number' ? val : Number(String(val || '0').replace(/,/g, '').replace(/[^0-9.-]/g, ''));
+                            val = isNaN(num) ? 0 : num;
+                        }
+	                    rowData[header] = val;
+	                });
+	                return rowData as License;
+	            }).filter((row): row is License => row !== null);
             
             allNewData.push(...chunkData);
             setImportStatus(prev => ({ ...prev, processed: nextIndex }));

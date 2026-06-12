@@ -168,11 +168,20 @@ export default function PropertiesPage() {
           }
           const nextIndex = Math.min(currentIndex + IMPORT_CHUNK_SIZE, dataRows.length);
           dataRows.slice(currentIndex, nextIndex).forEach((row, i) => {
-            if (!row || row.every(c => c === null)) return;
-            const rowData: any = { id: `imp-${Date.now()}-${currentIndex + i}` };
-            validIndices.forEach(({ header, index }) => { rowData[header] = row[index]; });
-            allNewData.push(rowData);
-          });
+	            if (!row || row.every(c => c === null)) return;
+	            const rowData: any = { id: `imp-${Date.now()}-${currentIndex + i}` };
+	            validIndices.forEach(({ header, index }) => { 
+                    let value = row[index];
+                    // Standardize numeric fields
+                    const numericHeaders = ['rateable value', 'rate impost', 'basic levy', 'total payment', 'amount due', 'payment', 'arrears', 'permit fee', 'bop amount'];
+                    if (numericHeaders.some(nh => header.toLowerCase().includes(nh))) {
+                        const num = typeof value === 'number' ? value : Number(String(value || '0').replace(/,/g, '').replace(/[^0-9.-]/g, ''));
+                        value = isNaN(num) ? 0 : num;
+                    }
+                    rowData[header] = value; 
+                });
+	            allNewData.push(rowData);
+	          });
           setImportStatus(p => ({ ...p, processed: nextIndex }));
           currentIndex = nextIndex;
           setTimeout(processChunk, 0);
