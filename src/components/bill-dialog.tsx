@@ -119,14 +119,13 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
 	    if (billType === 'property') {
 	      const rv = parseNumeric(getPropertyValue(data, 'Rateable Value'));
 	      const bl = parseNumeric(getPropertyValue(data, 'Basic Levy'));
-	      const tp = parseNumeric(getPropertyValue(data, 'Total Payment'));
-	      return rv + bl - tp;
+	      return rv + bl;
 	    } else if (billType === 'bop') {
-      return (parseNumeric(getPropertyValue(data, 'Permit Fee')) + parseNumeric(getPropertyValue(data, 'Arrears'))) - parseNumeric(getPropertyValue(data, 'Payment'));
-    } else {
-      const lf = parseNumeric(getPropertyValue(data, 'Property Rate')) || parseNumeric(getPropertyValue(data, 'License Fee'));
-      return (lf + parseNumeric(getPropertyValue(data, 'Bop Amount')) + parseNumeric(getPropertyValue(data, 'Arrears'))) - parseNumeric(getPropertyValue(data, 'Payment'));
-    }
+	      return (parseNumeric(getPropertyValue(data, 'Permit Fee')) + parseNumeric(getPropertyValue(data, 'Arrears')));
+	    } else {
+	      const lf = parseNumeric(getPropertyValue(data, 'Property Rate')) || parseNumeric(getPropertyValue(data, 'License Fee'));
+	      return (lf + parseNumeric(getPropertyValue(data, 'Bop Amount')) + parseNumeric(getPropertyValue(data, 'Arrears')));
+	    }
   }, [data, billType]);
 
   const isUnassessed = useMemo(() => {
@@ -209,18 +208,17 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
 	        <div style={{ flexGrow: 1 }}>
 	          {billType === 'property' ? (
 	            <>
-	              <div style={styles.row}><span>RATEABLE VALUE</span><span>{formatCurrency(getPropertyValue(data, 'Rateable Value'))}</span></div>
-	              <div style={styles.row}><span>BASIC LEVY</span><span>{formatCurrency(getPropertyValue(data, 'Basic Levy'))}</span></div>
+	              <div style={styles.row}><span>RATEABLE VALUE</span><span>{formatCurrency(parseNumeric(getPropertyValue(data, 'Rateable Value')))}</span></div>
+	              <div style={styles.row}><span>BASIC LEVY</span><span>{formatCurrency(parseNumeric(getPropertyValue(data, 'Basic Levy')))}</span></div>
 	              <div style={{ ...styles.row, ...styles.boldRow }}><span>CURRENT YEAR DUE</span><span>{formatCurrency(parseNumeric(getPropertyValue(data, 'Rateable Value')) + parseNumeric(getPropertyValue(data, 'Basic Levy')))}</span></div>
 	              <div style={{ ...styles.row, ...styles.boldRow }}><span>GROSS TOTAL DUE</span><span>{formatCurrency(parseNumeric(getPropertyValue(data, 'Rateable Value')) + parseNumeric(getPropertyValue(data, 'Basic Levy')))}</span></div>
-	              <div style={styles.row}><span>LESS TOTAL PAYMENTS</span><span>{formatCurrency(getPropertyValue(data, 'Total Payment'))}</span></div>
 	            </>
 	          ) : (
             <>
               <div style={styles.row}><span>FIXED LICENSE FEE</span><span>{formatCurrency(getPropertyValue(data, 'Permit Fee') || getPropertyValue(data, 'Property Rate') || getPropertyValue(data, 'License Fee'))}</span></div>
               {billType === 'license' && <div style={styles.row}><span>BOP COMPONENT</span><span>{formatCurrency(getPropertyValue(data, 'Bop Amount'))}</span></div>}
               <div style={styles.row}><span>ARREARS BROUGHT FORWARD</span><span>{formatCurrency(getPropertyValue(data, 'Arrears'))}</span></div>
-              <div style={styles.row}><span>LESS PAYMENTS RECEIVED</span><span>{formatCurrency(getPropertyValue(data, 'Payment'))}</span></div>
+
             </>
           )}
         </div>
