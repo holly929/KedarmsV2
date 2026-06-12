@@ -73,16 +73,14 @@ export default function PaymentPage() {
             if (bill.type === 'property') {
                 const p = bill.data as Property;
                 const rv = Number(getPropertyValue(p, 'Rateable Value')) || 0;
+                const ad = Number(getPropertyValue(p, 'Amount Due')) || 0;
                 const bl = Number(getPropertyValue(p, 'Basic Levy')) || 0;
                 const tp = Number(getPropertyValue(p, 'Total Payment')) || 0;
-                const importedDue = getPropertyValue(p, 'Amount Due');
                 
-                due = rv + bl - tp;
-                
-                // If calculation is 0 but we have an imported amount due, trust the imported value
-                if (due === 0 && importedDue !== undefined && importedDue !== null) {
-                    due = Number(importedDue);
-                }
+                // Formula: Amount Due + Basic Levy
+                // Fallback: Rateable Value + Basic Levy
+                const totalDue = ad !== 0 ? (ad + bl) : (rv + bl);
+                due = totalDue - tp;
             } else if (bill.type === 'bop') {
                 const b = bill.data as Bop;
                 due = (Number(getPropertyValue(b, 'Permit Fee')) || 0) + (Number(getPropertyValue(b, 'Arrears')) || 0) - (Number(getPropertyValue(b, 'Payment')) || 0);

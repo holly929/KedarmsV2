@@ -111,16 +111,19 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
 }>(function PrintableContent({ data, billType, settings, isDemandNotice }, ref) {
 
   // React Hooks must be called before any conditional early returns
-	  const totalAmountDue = useMemo(() => {
-	    if (!data) return 0;
-	    const importedTotal = parseNumeric(getPropertyValue(data, 'Amount Due'));
-	    if (importedTotal !== 0) return importedTotal;
-	
-	    if (billType === 'property') {
-	      const rv = parseNumeric(getPropertyValue(data, 'Rateable Value'));
-	      const bl = parseNumeric(getPropertyValue(data, 'Basic Levy'));
-	      return rv + bl;
-	    } else if (billType === 'bop') {
+		  const totalAmountDue = useMemo(() => {
+		    if (!data) return 0;
+		
+		    if (billType === 'property') {
+		      const ad = parseNumeric(getPropertyValue(data, 'Amount Due'));
+		      const bl = parseNumeric(getPropertyValue(data, 'Basic Levy'));
+		      const rv = parseNumeric(getPropertyValue(data, 'Rateable Value'));
+		      
+		      // If Amount Due is present, use Amount Due + Basic Levy
+		      // Otherwise fallback to Rateable Value + Basic Levy
+		      if (ad !== 0) return ad + bl;
+		      return rv + bl;
+		    } else if (billType === 'bop') {
 	      return (parseNumeric(getPropertyValue(data, 'Permit Fee')) + parseNumeric(getPropertyValue(data, 'Arrears')));
 	    } else {
 	      const lf = parseNumeric(getPropertyValue(data, 'Property Rate')) || parseNumeric(getPropertyValue(data, 'License Fee'));

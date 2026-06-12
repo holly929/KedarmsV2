@@ -8,13 +8,14 @@ export function getBillStatus(property: Property): BillStatus {
   const rateableValue = Number(getPropertyValue(property, 'Rateable Value')) || 0;
   const basicLevy = Number(getPropertyValue(property, 'Basic Levy')) || 0;
   const totalPayment = Number(getPropertyValue(property, 'Total Payment')) || 0;
-  const importedAmountDue = getPropertyValue(property, 'Amount Due');
+  const importedAmountDue = Number(getPropertyValue(property, 'Amount Due')) || 0;
 
-  const grandTotalDue = rateableValue + basicLevy;
+  // Formula: Amount Due + Basic Levy
+  // If Amount Due is 0, fallback to Rateable Value + Basic Levy
+  const grandTotalDue = importedAmountDue !== 0 ? (importedAmountDue + basicLevy) : (rateableValue + basicLevy);
 
-  // If we have an imported Amount Due and no component values, trust the Amount Due
-  if (importedAmountDue !== undefined && importedAmountDue !== null && grandTotalDue === 0) {
-      const amountDue = Number(importedAmountDue);
+  if (importedAmountDue !== 0 && rateableValue === 0 && grandTotalDue === importedAmountDue + basicLevy) {
+      const amountDue = grandTotalDue;
       if (amountDue <= 0 && totalPayment > 0) return 'Paid';
       if (amountDue > 0 && totalPayment > 0) return 'Pending';
       if (amountDue > 0) return 'Overdue';

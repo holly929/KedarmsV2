@@ -66,10 +66,11 @@ export function EditPropertyDialog({
   const watchedValues = form.watch();
   const calculatedPayable = React.useMemo(() => {
         const rateableValue = Number(watchedValues['Rateable Value']) || 0;
+        const amountDue = Number(watchedValues['Amount Due']) || 0;
         const basicLevy = Number(watchedValues['Basic Levy']) || 0;
         const totalPayment = Number(watchedValues['Total Payment']) || 0;
 
-        const totalBill = rateableValue + basicLevy;
+        const totalBill = amountDue !== 0 ? (amountDue + basicLevy) : (rateableValue + basicLevy);
         return totalBill - totalPayment;
   }, [watchedValues]);
 
