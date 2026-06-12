@@ -211,10 +211,10 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
           {billType === 'property' ? (
             <>
               <div style={styles.row}><span>ANNUAL RATE CHARGED</span><span>{formatCurrency(parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost')))}</span></div>
-              <div style={styles.row}><span>BASIC LEVY</span><span>{formatCurrency(getPropertyValue(data, 'Basic Levy'))}</span></div>
+              <div style={styles.row}><span>BASIC LEVY</span><span>{formatCurrency(parseNumeric(getPropertyValue(data, 'Basic Levy')))}</span></div>
               <div style={{ ...styles.row, ...styles.boldRow }}><span>CURRENT YEAR DUE</span><span>{formatCurrency((parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost'))) + parseNumeric(getPropertyValue(data, 'Basic Levy')))}</span></div>
               <div style={{ ...styles.row, ...styles.boldRow }}><span>GROSS TOTAL DUE</span><span>{formatCurrency((parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost'))) + parseNumeric(getPropertyValue(data, 'Basic Levy')))}</span></div>
-              <div style={styles.row}><span>LESS TOTAL PAYMENTS</span><span>{formatCurrency(getPropertyValue(data, 'Total Payment'))}</span></div>
+              <div style={styles.row}><span>LESS TOTAL PAYMENTS</span><span>{formatCurrency(parseNumeric(getPropertyValue(data, 'Total Payment')))}</span></div>
             </>
           ) : (
             <>

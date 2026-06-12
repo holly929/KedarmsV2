@@ -85,6 +85,8 @@ const formatValue = (value: any, header: string) => {
 
     if (isCurrencyHeader) {
         const num = parseNumeric(value);
+        // If it's a currency header and the value is 0, we still want to show it for Basic Levy
+        if (num === 0 && header.toLowerCase().includes('basic levy')) return '0.00';
         return formatCurrency(num);
     }
     return String(value);
