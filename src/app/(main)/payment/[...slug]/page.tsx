@@ -73,12 +73,11 @@ export default function PaymentPage() {
             if (bill.type === 'property') {
                 const p = bill.data as Property;
                 const rv = Number(getPropertyValue(p, 'Rateable Value')) || 0;
-                const ri = Number(getPropertyValue(p, 'Rate Impost')) || 0;
                 const bl = Number(getPropertyValue(p, 'Basic Levy')) || 0;
                 const tp = Number(getPropertyValue(p, 'Total Payment')) || 0;
                 const importedDue = getPropertyValue(p, 'Amount Due');
                 
-                due = (rv * ri) + bl - tp;
+                due = rv + bl - tp;
                 
                 // If calculation is 0 but we have an imported amount due, trust the imported value
                 if (due === 0 && importedDue !== undefined && importedDue !== null) {

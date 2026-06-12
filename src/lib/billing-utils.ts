@@ -6,12 +6,11 @@ export type BillStatus = 'Paid' | 'Pending' | 'Overdue' | 'Unbilled';
 
 export function getBillStatus(property: Property): BillStatus {
   const rateableValue = Number(getPropertyValue(property, 'Rateable Value')) || 0;
-  const rateImpost = Number(getPropertyValue(property, 'Rate Impost')) || 0;
   const basicLevy = Number(getPropertyValue(property, 'Basic Levy')) || 0;
   const totalPayment = Number(getPropertyValue(property, 'Total Payment')) || 0;
   const importedAmountDue = getPropertyValue(property, 'Amount Due');
 
-  const grandTotalDue = (rateableValue * rateImpost) + basicLevy;
+  const grandTotalDue = rateableValue + basicLevy;
 
   // If we have an imported Amount Due and no component values, trust the Amount Due
   if (importedAmountDue !== undefined && importedAmountDue !== null && grandTotalDue === 0) {

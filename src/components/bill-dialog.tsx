@@ -111,18 +111,17 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
 }>(function PrintableContent({ data, billType, settings, isDemandNotice }, ref) {
 
   // React Hooks must be called before any conditional early returns
-  const totalAmountDue = useMemo(() => {
-    if (!data) return 0;
-    const importedTotal = parseNumeric(getPropertyValue(data, 'Amount Due'));
-    if (importedTotal !== 0) return importedTotal;
-
-          if (billType === 'property') {
-      const rv = parseNumeric(getPropertyValue(data, 'Rateable Value'));
-      const ri = parseNumeric(getPropertyValue(data, 'Rate Impost'));
-      const bl = parseNumeric(getPropertyValue(data, 'Basic Levy'));
-      const tp = parseNumeric(getPropertyValue(data, 'Total Payment'));
-      return (rv * ri) + bl - tp;
-    } else if (billType === 'bop') {
+	  const totalAmountDue = useMemo(() => {
+	    if (!data) return 0;
+	    const importedTotal = parseNumeric(getPropertyValue(data, 'Amount Due'));
+	    if (importedTotal !== 0) return importedTotal;
+	
+	    if (billType === 'property') {
+	      const rv = parseNumeric(getPropertyValue(data, 'Rateable Value'));
+	      const bl = parseNumeric(getPropertyValue(data, 'Basic Levy'));
+	      const tp = parseNumeric(getPropertyValue(data, 'Total Payment'));
+	      return rv + bl - tp;
+	    } else if (billType === 'bop') {
       return (parseNumeric(getPropertyValue(data, 'Permit Fee')) + parseNumeric(getPropertyValue(data, 'Arrears'))) - parseNumeric(getPropertyValue(data, 'Payment'));
     } else {
       const lf = parseNumeric(getPropertyValue(data, 'Property Rate')) || parseNumeric(getPropertyValue(data, 'License Fee'));
@@ -207,16 +206,16 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
           </div>
         </div>
 
-        <div style={{ flexGrow: 1 }}>
-          {billType === 'property' ? (
-            <>
-              <div style={styles.row}><span>ANNUAL RATE CHARGED</span><span>{formatCurrency(parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost')))}</span></div>
-              <div style={styles.row}><span>BASIC LEVY</span><span>{formatCurrency(parseNumeric(getPropertyValue(data, 'Basic Levy')))}</span></div>
-              <div style={{ ...styles.row, ...styles.boldRow }}><span>CURRENT YEAR DUE</span><span>{formatCurrency((parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost'))) + parseNumeric(getPropertyValue(data, 'Basic Levy')))}</span></div>
-              <div style={{ ...styles.row, ...styles.boldRow }}><span>GROSS TOTAL DUE</span><span>{formatCurrency((parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost'))) + parseNumeric(getPropertyValue(data, 'Basic Levy')))}</span></div>
-              <div style={styles.row}><span>LESS TOTAL PAYMENTS</span><span>{formatCurrency(parseNumeric(getPropertyValue(data, 'Total Payment')))}</span></div>
-            </>
-          ) : (
+	        <div style={{ flexGrow: 1 }}>
+	          {billType === 'property' ? (
+	            <>
+	              <div style={styles.row}><span>RATEABLE VALUE</span><span>{formatCurrency(getPropertyValue(data, 'Rateable Value'))}</span></div>
+	              <div style={styles.row}><span>BASIC LEVY</span><span>{formatCurrency(getPropertyValue(data, 'Basic Levy'))}</span></div>
+	              <div style={{ ...styles.row, ...styles.boldRow }}><span>CURRENT YEAR DUE</span><span>{formatCurrency(parseNumeric(getPropertyValue(data, 'Rateable Value')) + parseNumeric(getPropertyValue(data, 'Basic Levy')))}</span></div>
+	              <div style={{ ...styles.row, ...styles.boldRow }}><span>GROSS TOTAL DUE</span><span>{formatCurrency(parseNumeric(getPropertyValue(data, 'Rateable Value')) + parseNumeric(getPropertyValue(data, 'Basic Levy')))}</span></div>
+	              <div style={styles.row}><span>LESS TOTAL PAYMENTS</span><span>{formatCurrency(getPropertyValue(data, 'Total Payment'))}</span></div>
+	            </>
+	          ) : (
             <>
               <div style={styles.row}><span>FIXED LICENSE FEE</span><span>{formatCurrency(getPropertyValue(data, 'Permit Fee') || getPropertyValue(data, 'Property Rate') || getPropertyValue(data, 'License Fee'))}</span></div>
               {billType === 'license' && <div style={styles.row}><span>BOP COMPONENT</span><span>{formatCurrency(getPropertyValue(data, 'Bop Amount'))}</span></div>}

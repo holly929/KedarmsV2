@@ -47,7 +47,6 @@ const propertyFormSchema = z.object({
   'Account Number': z.string().optional(),
   'Property Type': z.string().default('Residential'),
   'Rateable Value': z.coerce.number().min(0).default(0),
-  'Rate Impost': z.coerce.number().min(0).default(0),
   'Basic Levy': z.coerce.number().min(0).default(0),
   'Total Payment': z.coerce.number().min(0).default(0),
   'Amount Due': z.coerce.number().min(0).optional(),
@@ -67,11 +66,10 @@ export function EditPropertyDialog({
   const watchedValues = form.watch();
   const calculatedPayable = React.useMemo(() => {
         const rateableValue = Number(watchedValues['Rateable Value']) || 0;
-        const rateImpost = Number(watchedValues['Rate Impost']) || 0;
         const basicLevy = Number(watchedValues['Basic Levy']) || 0;
         const totalPayment = Number(watchedValues['Total Payment']) || 0;
 
-        const totalBill = (rateableValue * rateImpost) + basicLevy;
+        const totalBill = rateableValue + basicLevy;
         return totalBill - totalPayment;
   }, [watchedValues]);
 
@@ -88,7 +86,6 @@ export function EditPropertyDialog({
         'Account Number': getPropertyValue(property, 'Account Number'),
         'Property Type': getPropertyValue(property, 'Property Type') || 'Residential',
         'Rateable Value': getPropertyValue(property, 'Rateable Value') || 0,
-        'Rate Impost': getPropertyValue(property, 'Rate Impost') || 0,
         'Basic Levy': getPropertyValue(property, 'Basic Levy') || 0,
         'Total Payment': getPropertyValue(property, 'Total Payment') || 0,
         'Amount Due': getPropertyValue(property, 'Amount Due'),
@@ -235,13 +232,7 @@ export function EditPropertyDialog({
                                 <FormMessage />
                             </FormItem>
                         )} />
-                        <FormField control={form.control} name="Rate Impost" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Rate Impost</FormLabel>
-                                <FormControl><Input type="number" step="0.0001" {...field} value={field.value ?? ''}/></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
+
                         <FormField control={form.control} name="Basic Levy" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Basic Levy (GHS)</FormLabel>

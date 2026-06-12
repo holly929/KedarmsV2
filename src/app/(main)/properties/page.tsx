@@ -67,7 +67,6 @@ const DEFAULT_SYSTEM_HEADERS = [
     'Suburb', 
     'Property Type', 
     'Rateable Value', 
-    'Rate Impost', 
     'Basic Levy', 
     'Total Payment', 
     'Amount Due'
@@ -79,9 +78,6 @@ const formatValue = (value: any, header: string) => {
     if (value === undefined || value === null || String(value).trim() === '') return '';
     const skipFormatting = ['Property No', 'Account Number', 'Valuation List No.', 'Phone Number', 'S/N', 'SN', 'ID', 'Town', 'Suburb', 'Owner', 'Type'];
     const isCurrencyHeader = !skipFormatting.some(k => header.toLowerCase().includes(k.toLowerCase()));
-    const isRateImpost = header.toLowerCase().includes('rate impost');
-
-    if (isRateImpost) return String(value);
 
     if (isCurrencyHeader) {
         const num = parseNumeric(value);

@@ -10,8 +10,7 @@ const STANDARD_ALIASES: Record<string, string[]> = {
     'Account Number': ['Account Number', 'Acct No', 'accountnumber', 'Customer No', 'Ref'],
     'Property Type': ['Property Type', 'propertytype', 'Use', 'Category', 'Class'],
     'Rateable Value': ['Rateable Value', 'rateablevalue', 'Value', 'Assessed Value', 'Assessment'],
-    'Rate Impost': ['Rate Impost', 'rateimpost', 'Impost', 'Rate', 'Multiplier'],
-    'Basic Levy': ['Basic Levy', 'basiclevy', 'Levy', 'Basic Levy Amount', 'Basic'],
+    'Basic Levy': ['Basic Levy', 'basiclevy', 'Levy', 'Basic Levy Amount', 'Basic', 'Rate Impost', 'rateimpost', 'Impost', 'Rate', 'Multiplier'],
 
     'Total Payment': ['Total Payment', 'Amount Paid', 'Payment', 'totalpayment', 'Paid', 'Total Paid', 'Amt Paid'],
     'S/N': ['S/N', 'SN', 'Serial Number', 'Serial No', 'Index', 'No.', 'Serial', 'Number'],

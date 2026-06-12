@@ -14,7 +14,6 @@ function compileTemplate(template: string, data: Property | Bop | License | Bill
             } else {
                 const p = data as any;
                 const rv = Number(String(getPropertyValue(p, 'Rateable Value') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
-                const ri = Number(String(getPropertyValue(p, 'Rate Impost') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
                 const bl = Number(String(getPropertyValue(p, 'Basic Levy') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
                 const tp = Number(String(getPropertyValue(p, 'Total Payment') || getPropertyValue(p, 'Payment') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
                 
@@ -22,7 +21,7 @@ function compileTemplate(template: string, data: Property | Bop | License | Bill
                 const bop = Number(String(getPropertyValue(p, 'Bop Amount') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
                 const arr = Number(String(getPropertyValue(p, 'Arrears') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
 
-                const due = rv > 0 ? (rv * ri) + bl : fee + bop + arr;
+                const due = rv > 0 ? rv + bl : fee + bop + arr;
                 amountOwed = due > tp ? due - tp : 0;
             }
             return amountOwed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -77,8 +76,7 @@ function compileTemplate(template: string, data: Property | Bop | License | Bill
                     const num = Number(strVal.replace(/,/g, ''));
                     if (!isNaN(num)) {
                          // Skip currency formatting for Rate Impost as it's a small multiplier
-                         if (key.toLowerCase().includes('impost')) return strVal;
-                         return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                          return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                     }
                 }
             }
