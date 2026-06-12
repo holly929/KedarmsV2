@@ -50,6 +50,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useLicenseData } from '@/context/LicenseDataContext';
 import { useAuth } from '@/context/AuthContext';
 import { getPropertyValue } from '@/lib/property-utils';
+import { parseNumeric, formatCurrency as centralizedFormatCurrency } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { EditLicenseDialog } from '@/components/edit-license-dialog';
 import { LicensePaymentHistoryDialog } from '@/components/license-payment-history-dialog';
@@ -63,10 +64,8 @@ const formatValue = (value: any, header: string) => {
     const skipFormatting = ['S/N', 'Phone Number', 'ID', 'Hotel', 'Guest House', 'Name', 'Record Type'];
     const isCurrencyHeader = !skipFormatting.some(k => header.toLowerCase().includes(k.toLowerCase()));
 
-    const num = typeof value === 'number' ? value : Number(String(value).replace(/,/g, ''));
-    
-    if (!isNaN(num) && isCurrencyHeader) {
-        return `GHS ${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (isCurrencyHeader) {
+        return `GHS ${centralizedFormatCurrency(value)}`;
     }
     
     return String(value);
@@ -196,7 +195,13 @@ export default function LicensePage() {
                 const rowData: { [key: string]: any } = { id: `license-imported-${Date.now()}-${rowIndex}` };
                 validHeadersWithIndices.forEach(({ header, index }) => {
                     let val = row[index];
-                    rowData[header] = val;
+                    const skipFormatting = ['S/N', 'Phone Number', 'ID', 'Hotel', 'Guest House', 'Name', 'Record Type'];
+                    const isCurrencyHeader = !skipFormatting.some(k => header.toLowerCase().includes(k.toLowerCase()));
+                    if (isCurrencyHeader) {
+                        rowData[header] = parseNumeric(val);
+                    } else {
+                        rowData[header] = val;
+                    }
                 });
                 return rowData as License;
             }).filter((row): row is License => row !== null);

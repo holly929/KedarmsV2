@@ -31,3 +31,33 @@ export function normalizePhoneNumber(phone: string | number | null | undefined):
   
   return cleaned;
 }
+
+/**
+ * Parses a value into a numeric format, handling GHS prefixes and other non-numeric characters.
+ */
+export const parseNumeric = (val: any): number => {
+  if (val === undefined || val === null || val === '') return 0;
+  if (typeof val === 'number') return val;
+  
+  // Remove commas and currency prefixes like "GHS"
+  const cleaned = String(val)
+    .replace(/GHS/gi, '')
+    .replace(/,/g, '')
+    .trim();
+  
+  // Use regex to extract the first valid number (including decimals and negatives)
+  const match = cleaned.match(/-?\d*\.?\d+/);
+  if (match) {
+    const num = parseFloat(match[0]);
+    return isNaN(num) ? 0 : num;
+  }
+  
+  return 0;
+};
+
+/**
+ * Formats a value as a currency string with 2 decimal places.
+ */
+export const formatCurrency = (val: any): string => {
+  return parseNumeric(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};

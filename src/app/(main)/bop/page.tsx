@@ -53,6 +53,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useBopData } from '@/context/BopDataContext';
 import { useAuth } from '@/context/AuthContext';
 import { getPropertyValue } from '@/lib/property-utils';
+import { parseNumeric, formatCurrency } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 
 const ROWS_PER_PAGE = 15;
@@ -181,7 +182,13 @@ export default function BopPage() {
                 const rowIndex = currentIndex + chunkIndex;
                 const rowData: { [key: string]: any } = { id: `bop-imported-${Date.now()}-${rowIndex}` };
                 validHeadersWithIndices.forEach(({ header, index }) => {
-                    rowData[header] = row[index];
+                    let val = row[index];
+                    const isCurrencyHeader = ['permit fee', 'arrears', 'payment', 'amount'].some(k => header.toLowerCase().includes(k));
+                    if (isCurrencyHeader) {
+                        rowData[header] = parseNumeric(val);
+                    } else {
+                        rowData[header] = val;
+                    }
                 });
                 return rowData as Bop;
             }).filter((row): row is Bop => row !== null);
@@ -287,7 +294,9 @@ export default function BopPage() {
                   <TableCell key={cellIndex} className={cellIndex === 0 ? 'font-medium' : ''}>
                     {typeof getPropertyValue(row, header) === 'object' && getPropertyValue(row, header) !== null
                       ? 'View Payments'
-                      : String(getPropertyValue(row, header) ?? '')}
+                      : (['permit fee', 'arrears', 'payment', 'amount'].some(k => header.toLowerCase().includes(k)) 
+                          ? formatCurrency(getPropertyValue(row, header)) 
+                          : String(getPropertyValue(row, header) ?? ''))}
                   </TableCell>
                 ))}
                 {!isViewer && 

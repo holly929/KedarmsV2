@@ -22,13 +22,7 @@ import { sendManualPaymentSms } from '@/lib/sms-service';
 import { RefreshCcw, Zap } from 'lucide-react';
 import { store } from '@/lib/store';
 
-const parseNumeric = (val: any): number => {
-  if (val === undefined || val === null) return 0;
-  if (typeof val === 'number') return val;
-  const cleaned = String(val).replace(/,/g, '').trim();
-  const num = Number(cleaned);
-  return isNaN(num) ? 0 : num;
-};
+import { parseNumeric } from '@/lib/utils';
 
 const paymentSchema = z.object({
   amount: z.coerce.number().positive('Amount must be positive'),
