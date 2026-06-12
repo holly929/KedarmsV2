@@ -78,9 +78,10 @@ export default function DashboardPage() {
     properties.forEach(p => {
         const rateableValue = Number(getPropertyValue(p, 'Rateable Value')) || 0;
         const rateImpost = Number(getPropertyValue(p, 'Rate Impost')) || 0;
+        const basicLevy = Number(getPropertyValue(p, 'Basic Levy')) || 0;
         const payment = Number(getPropertyValue(p, 'Total Payment')) || 0;
         
-        const grandTotalDue = (rateableValue * rateImpost);
+        const grandTotalDue = (rateableValue * rateImpost) + basicLevy;
         calculatedTotalRevenue += payment;
         
         const type = getPropertyValue(p, 'Property Type') || 'Other';

@@ -57,6 +57,7 @@ function getDefaultStore(): AppStore {
             'Property Type', 
             'Rateable Value', 
             'Rate Impost', 
+            'Basic Levy',
             'Total Payment', 
             'Amount Due'
         ],

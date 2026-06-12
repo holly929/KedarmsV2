@@ -88,6 +88,7 @@ const DUMMY_PROPERTY = {
   'Property Type': 'Residential',
   'Rateable Value': 50000,
   'Rate Impost': 0.005,
+  'Basic Levy': 100,
   'Total Payment': 100,
 };
 

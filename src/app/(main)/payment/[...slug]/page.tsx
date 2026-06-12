@@ -74,8 +74,9 @@ export default function PaymentPage() {
                 const p = bill.data as Property;
                 const rv = Number(getPropertyValue(p, 'Rateable Value')) || 0;
                 const ri = Number(getPropertyValue(p, 'Rate Impost')) || 0;
+                const bl = Number(getPropertyValue(p, 'Basic Levy')) || 0;
                 const tp = Number(getPropertyValue(p, 'Total Payment')) || 0;
-                due = (rv * ri) - tp;
+                due = (rv * ri) + bl - tp;
             } else if (bill.type === 'bop') {
                 const b = bill.data as Bop;
                 due = (Number(getPropertyValue(b, 'Permit Fee')) || 0) + (Number(getPropertyValue(b, 'Arrears')) || 0) - (Number(getPropertyValue(b, 'Payment')) || 0);

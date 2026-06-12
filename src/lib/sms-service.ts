@@ -15,13 +15,14 @@ function compileTemplate(template: string, data: Property | Bop | License | Bill
                 const p = data as any;
                 const rv = Number(String(getPropertyValue(p, 'Rateable Value') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
                 const ri = Number(String(getPropertyValue(p, 'Rate Impost') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
+                const bl = Number(String(getPropertyValue(p, 'Basic Levy') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
                 const tp = Number(String(getPropertyValue(p, 'Total Payment') || getPropertyValue(p, 'Payment') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
                 
                 const fee = Number(String(getPropertyValue(p, 'Permit Fee') || getPropertyValue(p, 'Property Rate') || getPropertyValue(p, 'License Fee') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
                 const bop = Number(String(getPropertyValue(p, 'Bop Amount') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
                 const arr = Number(String(getPropertyValue(p, 'Arrears') || 0).replace(/,/g, '').replace(/[^0-9.-]/g, '')) || 0;
 
-                const due = rv > 0 ? (rv * ri) : fee + bop + arr;
+                const due = rv > 0 ? (rv * ri) + bl : fee + bop + arr;
                 amountOwed = due > tp ? due - tp : 0;
             }
             return amountOwed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });

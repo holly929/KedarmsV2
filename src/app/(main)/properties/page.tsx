@@ -68,6 +68,7 @@ const DEFAULT_SYSTEM_HEADERS = [
     'Property Type', 
     'Rateable Value', 
     'Rate Impost', 
+    'Basic Levy',
     'Total Payment', 
     'Amount Due'
 ];

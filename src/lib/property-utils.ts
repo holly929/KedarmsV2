@@ -11,6 +11,7 @@ const STANDARD_ALIASES: Record<string, string[]> = {
     'Property Type': ['Property Type', 'propertytype', 'Use', 'Category', 'Class'],
     'Rateable Value': ['Rateable Value', 'rateablevalue', 'Value', 'Assessed Value', 'Assessment'],
     'Rate Impost': ['Rate Impost', 'rateimpost', 'Impost', 'Rate', 'Multiplier'],
+    'Basic Levy': ['Basic Levy', 'basiclevy', 'Levy'],
 
     'Total Payment': ['Total Payment', 'Amount Paid', 'Payment', 'totalpayment', 'Paid', 'Total Paid', 'Amt Paid'],
     'S/N': ['S/N', 'SN', 'Serial Number', 'Serial No', 'Index', 'No.', 'Serial', 'Number'],
