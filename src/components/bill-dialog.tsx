@@ -114,23 +114,27 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
   const totalAmountDue = useMemo(() => {
     if (!data) return 0;
 
+    // Global priority: If 'Amount Due' is explicitly imported from Excel, use it as the final word
+    const importedAmountDue = parseNumeric(getPropertyValue(data, 'Amount Due'));
+    if (importedAmountDue !== 0) return importedAmountDue;
+
     if (billType === 'property') {
       const basicLevy = parseNumeric(getPropertyValue(data, 'Basic Levy'));
       const amount = parseNumeric(getPropertyValue(data, 'Amount'));
+      const arrears = parseNumeric(getPropertyValue(data, 'Previous Balance') || getPropertyValue(data, 'Arrears'));
+      const tp = parseNumeric(getPropertyValue(data, 'Total Payment'));
       
-      // If both are present, NET PAYABLE = BASIC LEVY + ANNUAL RATE CHARGED
+      // If Basic Levy or Amount is present, calculate: (Levy + Amount + Arrears) - Payment
+      // Note: User asked to remove 'Less Total Payments' from display but usually it should be subtracted from the total owed.
+      // However, if the user wants the "NET PAYABLE" to be EXACTLY what's in their Excel, 
+      // they should import it into the 'Amount Due' column which is handled above.
       if (basicLevy !== 0 || amount !== 0) {
-        return basicLevy + amount;
+        return (basicLevy + amount + arrears) - tp;
       }
-      
-      // Fallback to imported 'Amount Due' if exists
-      const importedAmountDue = parseNumeric(getPropertyValue(data, 'Amount Due'));
-      if (importedAmountDue !== 0) return importedAmountDue;
       
       const rv = parseNumeric(getPropertyValue(data, 'Rateable Value'));
       const ri = parseNumeric(getPropertyValue(data, 'Rate Impost'));
-      const tp = parseNumeric(getPropertyValue(data, 'Total Payment'));
-      return (rv * ri) - tp;
+      return (rv * ri + arrears) - tp;
     } else if (billType === 'bop') {
       return (parseNumeric(getPropertyValue(data, 'Permit Fee')) + parseNumeric(getPropertyValue(data, 'Arrears'))) - parseNumeric(getPropertyValue(data, 'Payment'));
     } else {
