@@ -114,21 +114,22 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
   const totalAmountDue = useMemo(() => {
     if (!data) return 0;
 
-    // Prioritize 'Amount Due' from Excel if it exists
-    const importedAmountDue = parseNumeric(getPropertyValue(data, 'Amount Due'));
-    if (importedAmountDue !== 0) return importedAmountDue;
-
     if (billType === 'property') {
       const basicLevy = parseNumeric(getPropertyValue(data, 'Basic Levy'));
       const amount = parseNumeric(getPropertyValue(data, 'Amount'));
-      const tp = parseNumeric(getPropertyValue(data, 'Total Payment'));
       
+      // If both are present, NET PAYABLE = BASIC LEVY + ANNUAL RATE CHARGED
       if (basicLevy !== 0 || amount !== 0) {
-        return (basicLevy + amount) - tp;
+        return basicLevy + amount;
       }
+      
+      // Fallback to imported 'Amount Due' if exists
+      const importedAmountDue = parseNumeric(getPropertyValue(data, 'Amount Due'));
+      if (importedAmountDue !== 0) return importedAmountDue;
       
       const rv = parseNumeric(getPropertyValue(data, 'Rateable Value'));
       const ri = parseNumeric(getPropertyValue(data, 'Rate Impost'));
+      const tp = parseNumeric(getPropertyValue(data, 'Total Payment'));
       return (rv * ri) - tp;
     } else if (billType === 'bop') {
       return (parseNumeric(getPropertyValue(data, 'Permit Fee')) + parseNumeric(getPropertyValue(data, 'Arrears'))) - parseNumeric(getPropertyValue(data, 'Payment'));
