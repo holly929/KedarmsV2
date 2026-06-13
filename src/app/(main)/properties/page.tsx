@@ -12,6 +12,7 @@ import {
   UploadCloud,
   FilePenLine,
   Wallet,
+  Download,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -206,6 +207,32 @@ export default function PropertiesPage() {
     toast({ title: 'Property Deleted' });
   }
 
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        'S/N': '1',
+        'Owner Name': 'Example Owner',
+        'Property No': 'KE-ABET-001',
+        'Town': 'ABETIFI',
+        'Suburb': 'CENTRAL',
+        'Property Type': 'Residential',
+        'Rateable Value': '5000',
+        'Rate Impost': '0.005',
+        'Basic Levy': '10',
+        'Amount': '25',
+        'Previous Balance': '0',
+        'Total Payment': '0',
+        'Amount Due': '35'
+      }
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(templateData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
+    XLSX.writeFile(workbook, "Property_Import_Template.xlsx");
+    toast({ title: 'Template Downloaded', description: 'Please fill this file and import it back.' });
+  };
+
   return (
     <>
       <input type="file" ref={fileInputRef} onChange={e => handleFile(e.target.files?.[0])} style={{ display: 'none' }} accept=".xlsx, .xls" />
@@ -213,6 +240,9 @@ export default function PropertiesPage() {
         <h1 className="text-3xl font-bold tracking-tight font-headline">Properties</h1>
         {!isViewer && 
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleDownloadTemplate} disabled={importStatus.inProgress}>
+              <Download className="mr-2 h-4 w-4" /> Template
+            </Button>
             <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={importStatus.inProgress}>
               {importStatus.inProgress ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <FileUp className="mr-2 h-4 w-4" />}
               Import
