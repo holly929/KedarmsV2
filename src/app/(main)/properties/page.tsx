@@ -129,6 +129,15 @@ export default function PropertiesPage() {
   const paginatedData = React.useMemo(() => {
     return filteredData.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
   }, [filteredData, currentPage]);
+
+  // Determine headers to show: use imported headers if available, otherwise fallback to system defaults
+  const displayHeaders = React.useMemo(() => {
+    if (headers && headers.length > 0) {
+      // Filter out internal system fields if they accidentally show up
+      return headers.filter(h => !['id', 'payments', 'created_at'].includes(h));
+    }
+    return DEFAULT_SYSTEM_HEADERS;
+  }, [headers]);
   
   React.useEffect(() => {
     setCurrentPage(1);
@@ -267,14 +276,14 @@ export default function PropertiesPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      {DEFAULT_SYSTEM_HEADERS.map(h => <TableHead key={h} className="whitespace-nowrap">{h}</TableHead>)}
+                      {displayHeaders.map(h => <TableHead key={h} className="whitespace-nowrap">{h}</TableHead>)}
                       {!isViewer && <TableHead><span className="sr-only">Actions</span></TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedData.map((row) => (
                       <TableRow key={row.id}>
-                        {DEFAULT_SYSTEM_HEADERS.map((h, i) => (
+                        {displayHeaders.map((h, i) => (
                           <TableCell key={h} className={cn(i === 1 ? 'font-bold' : '', "whitespace-nowrap")}>
                             {formatValue(getPropertyValue(row, h), h)}
                           </TableCell>
