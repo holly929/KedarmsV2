@@ -22,7 +22,7 @@ const STANDARD_ALIASES: Record<string, string[]> = {
     'Bop Amount': ['Bop Amount', 'BOP', 'Bop Fee', 'BOP Amount', 'BOP Fee', 'Business Operating Permit'],
     'Arrears': ['Arrears', 'Arrears BF', 'Prev Balance', 'Balance BF', 'Debt', 'Owed', 'Outstanding'],
     'Payment': ['Payment', 'Amount Paid', 'Paid', 'Total Payment', 'Amt Paid', 'Credit'],
-    'Amount Due': ['Amount Due', 'Total Amount Due', 'Amount Owed', 'Total Due', 'Current Balance', 'Total Payable', 'Grand Total', 'Balance', 'Net Due', 'Total', 'Amount Payable', 'Payable'],
+    'Amount Due': ['Amount Due', 'Total Amount Due', 'Amount Owed', 'Total Due', 'Current Balance', 'Total Payable', 'Grand Total', 'Balance', 'Net Due', 'Total', 'Amount Payable', 'Payable', 'Total Payment'],
 };
 
 export const getPropertyValue = (data: Property | License | null, standardKey: string): any => {

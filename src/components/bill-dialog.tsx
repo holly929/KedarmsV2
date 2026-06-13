@@ -221,8 +221,12 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
                 const amount = parseNumeric(getPropertyValue(data, 'Amount'));
                 const hasNewFormat = basicLevy !== 0 || amount !== 0;
                 
-                if (hasNewFormat) {
-                  const currentYearDue = basicLevy + amount;
+                                if (hasNewFormat) {
+                  const basicLevy = parseNumeric(getPropertyValue(data, 'Basic Levy'));
+                  const amount = parseNumeric(getPropertyValue(data, 'Amount'));
+                  const importedTotal = parseNumeric(getPropertyValue(data, 'Amount Due')); // This will pick up 'Total Payment'
+                  const currentYearDue = importedTotal !== 0 ? importedTotal : (basicLevy + amount);
+                  
                   return (
                     <>
                       <div style={styles.row}><span>BASIC LEVY</span><span>{formatCurrency(basicLevy)}</span></div>
@@ -239,7 +243,7 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
                     <>
                       <div style={styles.row}><span>ANNUAL RATE CHARGED</span><span>{formatCurrency(currentYearDue)}</span></div>
                       <div style={{ ...styles.row, ...styles.boldRow }}><span>CURRENT YEAR DUE</span><span>{formatCurrency(currentYearDue)}</span></div>
-                      <div style={{ ...styles.row, ...styles.boldRow }}><span>GROSS TOTAL DUE</span><span>{formatCurrency(currentYearDue)}</span></div>
+                      
                       <div style={styles.row}><span>LESS TOTAL PAYMENTS</span><span>{formatCurrency(getPropertyValue(data, 'Total Payment'))}</span></div>
                     </>
                   );
