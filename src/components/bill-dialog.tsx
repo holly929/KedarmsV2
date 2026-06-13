@@ -113,8 +113,6 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
   // React Hooks must be called before any conditional early returns
   const totalAmountDue = useMemo(() => {
     if (!data) return 0;
-    const importedTotal = parseNumeric(getPropertyValue(data, 'Amount Due'));
-    if (importedTotal !== 0) return importedTotal;
 
     if (billType === 'property') {
       const basicLevy = parseNumeric(getPropertyValue(data, 'Basic Levy'));
@@ -122,6 +120,7 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
       const tp = parseNumeric(getPropertyValue(data, 'Total Payment'));
       
       if (basicLevy !== 0 || amount !== 0) {
+        // For new format: NET PAYABLE = (BASIC LEVY + ANNUAL RATE CHARGED) - TOTAL PAYMENT
         return (basicLevy + amount) - tp;
       }
       
@@ -219,32 +218,32 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
               {(() => {
                 const basicLevy = parseNumeric(getPropertyValue(data, 'Basic Levy'));
                 const amount = parseNumeric(getPropertyValue(data, 'Amount'));
+                const totalPayment = parseNumeric(getPropertyValue(data, 'Total Payment'));
                 const hasNewFormat = basicLevy !== 0 || amount !== 0;
                 
-                                if (hasNewFormat) {
-                  const basicLevy = parseNumeric(getPropertyValue(data, 'Basic Levy'));
-                  const amount = parseNumeric(getPropertyValue(data, 'Amount'));
-                  const importedTotal = parseNumeric(getPropertyValue(data, 'Amount Due')); // This will pick up 'Total Payment'
-                  const currentYearDue = importedTotal !== 0 ? importedTotal : (basicLevy + amount);
+                if (hasNewFormat) {
+                  // New format with Basic Levy and Annual Rate Charged
+                  const grossTotalDue = basicLevy + amount; // GROSS TOTAL DUE = BASIC LEVY + ANNUAL RATE CHARGED
                   
                   return (
                     <>
                       <div style={styles.row}><span>BASIC LEVY</span><span>{formatCurrency(basicLevy)}</span></div>
                       <div style={styles.row}><span>ANNUAL RATE CHARGED</span><span>{formatCurrency(amount)}</span></div>
-                      <div style={{ ...styles.row, ...styles.boldRow }}><span>CURRENT YEAR DUE</span><span>{formatCurrency(currentYearDue)}</span></div>
-                      <div style={styles.row}><span>LESS TOTAL PAYMENTS</span><span>{formatCurrency(getPropertyValue(data, 'Total Payment'))}</span></div>
+                      <div style={{ ...styles.row, ...styles.boldRow }}><span>GROSS TOTAL DUE</span><span>{formatCurrency(grossTotalDue)}</span></div>
+                      <div style={styles.row}><span>LESS TOTAL PAYMENTS</span><span>{formatCurrency(totalPayment)}</span></div>
                     </>
                   );
                 } else {
+                  // Old format with Rateable Value and Rate Impost
                   const rateableValue = parseNumeric(getPropertyValue(data, 'Rateable Value'));
                   const rateImpost = parseNumeric(getPropertyValue(data, 'Rate Impost'));
                   const currentYearDue = rateableValue * rateImpost;
+                  
                   return (
                     <>
                       <div style={styles.row}><span>ANNUAL RATE CHARGED</span><span>{formatCurrency(currentYearDue)}</span></div>
                       <div style={{ ...styles.row, ...styles.boldRow }}><span>CURRENT YEAR DUE</span><span>{formatCurrency(currentYearDue)}</span></div>
-                      
-                      <div style={styles.row}><span>LESS TOTAL PAYMENTS</span><span>{formatCurrency(getPropertyValue(data, 'Total Payment'))}</span></div>
+                      <div style={styles.row}><span>LESS TOTAL PAYMENTS</span><span>{formatCurrency(totalPayment)}</span></div>
                     </>
                   );
                 }
