@@ -142,6 +142,10 @@ function loadStore(): AppStore {
                 paystackSettings: {
                     ...defaultStore.settings.paystackSettings,
                     ...(parsedStore.settings?.paystackSettings || {})
+                },
+                billDisplaySettings: {
+                    ...defaultStore.settings.billDisplaySettings,
+                    ...(parsedStore.settings?.billDisplaySettings || {})
                 }
             };
             parsedStore.settings = mergedSettings;

@@ -348,9 +348,9 @@ export default function SettingsPage() {
                                 <div key={header} className="flex items-center space-x-2">
                                   <Checkbox 
                                     id={`field-${header}`} 
-                                    checked={billDisplayForm.watch('customFields').includes(header)}
+                                    checked={(billDisplayForm.watch('customFields') || []).includes(header)}
                                     onCheckedChange={(checked) => {
-                                      const current = billDisplayForm.getValues('customFields');
+                                      const current = billDisplayForm.getValues('customFields') || [];
                                       if (checked) {
                                         billDisplayForm.setValue('customFields', [...current, header]);
                                       } else {
