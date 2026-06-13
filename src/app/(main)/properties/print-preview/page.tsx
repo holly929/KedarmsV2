@@ -24,7 +24,7 @@ export default function PropertyPrintPreviewPage() {
   const { toast } = useToast();
   
   const [selectedItems, setSelectedItems] = useState<Property[]>([]);
-  const [settings, setSettings] = useState<any>({ general: {}, appearance: {} });
+  const [settings, setSettings] = useState<any>({ general: {}, appearance: {}, billDisplay: {} });
   const [isDemandNotice, setIsDemandNotice] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
@@ -41,7 +41,8 @@ export default function PropertyPrintPreviewPage() {
     setIsDemandNotice(demand);
     setSettings({ 
       general: store.settings.generalSettings || {}, 
-      appearance: store.settings.appearanceSettings || {} 
+      appearance: store.settings.appearanceSettings || {},
+      billDisplay: store.settings.billDisplaySettings || {}
     });
     setIsReady(true);
   }, [properties]);

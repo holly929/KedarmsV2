@@ -57,6 +57,16 @@ const appearanceFormSchema = z.object({
   accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color code").default('#F1F5F9'),
 });
 
+const billDisplayFormSchema = z.object({
+  showBasicLevy: z.boolean().default(true),
+  showAnnualRate: z.boolean().default(true),
+  showGrossTotal: z.boolean().default(true),
+  showArrears: z.boolean().default(true),
+  showTotalPayment: z.boolean().default(false),
+  showNetPayable: z.boolean().default(true),
+  customFields: z.array(z.string()).default([]),
+});
+
 const smsFormSchema = z.object({
   provider: z.enum(['arkesel', 'twilio', 'sms_gh', 'none']),
   apiKey: z.string().optional(),
@@ -103,6 +113,7 @@ export default function SettingsPage() {
   const { deleteAllLicense } = useLicenseData();
   const { deleteAllBills } = useBillData();
   const { clearSmsLogs } = useSmsLogs();
+  const { headers: propertyHeaders } = usePropertyData();
   const clearLogs = useActivityLogClear();
   const addLog = useActivityLogDispatch();
 
@@ -124,6 +135,11 @@ export default function SettingsPage() {
   const paymentForm = useForm<z.infer<typeof paymentFormSchema>>({
       resolver: zodResolver(paymentFormSchema),
       defaultValues: store.settings.paystackSettings,
+  });
+
+  const billDisplayForm = useForm<z.infer<typeof billDisplayFormSchema>>({
+    resolver: zodResolver(billDisplayFormSchema),
+    defaultValues: store.settings.billDisplaySettings,
   });
 
   const watchedProvider = smsForm.watch('provider');
@@ -152,6 +168,12 @@ export default function SettingsPage() {
       store.settings.paystackSettings = data;
       saveStore();
       toast({ title: 'Payment Gateway Saved', description: 'Paystack configuration updated.' });
+  };
+
+  const onBillDisplaySave = (data: z.infer<typeof billDisplayFormSchema>) => {
+    store.settings.billDisplaySettings = data;
+    saveStore();
+    toast({ title: 'Bill Display Settings Saved' });
   };
 
   const handleTestSms = async () => {
@@ -195,9 +217,10 @@ export default function SettingsPage() {
       <h1 className="text-3xl font-bold tracking-tight font-headline">System Settings</h1>
       
       <Tabs defaultValue="appearance" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-6 h-auto">
           <TabsTrigger value="general" className="py-2">General</TabsTrigger>
           <TabsTrigger value="appearance" className="py-2">Appearance</TabsTrigger>
+          <TabsTrigger value="bill-display" className="py-2">Bill Fields</TabsTrigger>
           <TabsTrigger value="payments" className="py-2">Payments</TabsTrigger>
           <TabsTrigger value="sms" className="py-2">SMS Gateway</TabsTrigger>
           <TabsTrigger value="backup" className="py-2">Maintenance</TabsTrigger>
@@ -254,6 +277,100 @@ export default function SettingsPage() {
                 </CardContent>
                 <CardFooter>
                   <Button type="submit">Save General Info</Button>
+                </CardFooter>
+              </Card>
+            </form>
+          </Form>
+        </TabsContent>
+
+        <TabsContent value="bill-display">
+          <Form {...billDisplayForm}>
+            <form onSubmit={billDisplayForm.handleSubmit(onBillDisplaySave)}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Bill Field Visibility</CardTitle>
+                  <CardDescription>Select which fields should appear on the Demand Notices.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Standard Fields</h3>
+                      <FormField control={billDisplayForm.control} name="showBasicLevy" render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                          <div className="space-y-0.5"><FormLabel>Show Basic Levy</FormLabel></div>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                      )} />
+                      <FormField control={billDisplayForm.control} name="showAnnualRate" render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                          <div className="space-y-0.5"><FormLabel>Show Annual Rate</FormLabel></div>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                      )} />
+                      <FormField control={billDisplayForm.control} name="showGrossTotal" render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                          <div className="space-y-0.5"><FormLabel>Show Gross Total Due</FormLabel></div>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                      )} />
+                      <FormField control={billDisplayForm.control} name="showArrears" render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                          <div className="space-y-0.5"><FormLabel>Show Arrears BF</FormLabel></div>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                      )} />
+                      <FormField control={billDisplayForm.control} name="showTotalPayment" render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                          <div className="space-y-0.5"><FormLabel>Show Total Payments</FormLabel></div>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                      )} />
+                      <FormField control={billDisplayForm.control} name="showNetPayable" render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                          <div className="space-y-0.5"><FormLabel>Show Net Payable</FormLabel></div>
+                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                        </FormItem>
+                      )} />
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Custom Imported Fields</h3>
+                      <div className="p-4 border rounded-lg bg-muted/20 max-h-[400px] overflow-y-auto">
+                        {propertyHeaders.filter(h => !['id', 'payments', 'created_at', 'Owner Name', 'Property No', 'Town', 'Suburb', 'Property Type', 'Rateable Value', 'Rate Impost', 'Basic Levy', 'Amount', 'Total Payment', 'Amount Due', 'Previous Balance'].includes(h)).length === 0 ? (
+                          <p className="text-xs text-center text-muted-foreground py-10">No additional custom fields found in your imported data.</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {propertyHeaders
+                              .filter(h => !['id', 'payments', 'created_at', 'Owner Name', 'Property No', 'Town', 'Suburb', 'Property Type', 'Rateable Value', 'Rate Impost', 'Basic Levy', 'Amount', 'Total Payment', 'Amount Due', 'Previous Balance'].includes(h))
+                              .map(header => (
+                                <div key={header} className="flex items-center space-x-2">
+                                  <Checkbox 
+                                    id={`field-${header}`} 
+                                    checked={billDisplayForm.watch('customFields').includes(header)}
+                                    onCheckedChange={(checked) => {
+                                      const current = billDisplayForm.getValues('customFields');
+                                      if (checked) {
+                                        billDisplayForm.setValue('customFields', [...current, header]);
+                                      } else {
+                                        billDisplayForm.setValue('customFields', current.filter(c => c !== header));
+                                      }
+                                    }}
+                                  />
+                                  <Label htmlFor={`field-${header}`} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                    {header}
+                                  </Label>
+                                </div>
+                              ))
+                            }
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground italic">These fields are extracted from your most recent Excel import.</p>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button type="submit">Save Bill Field Settings</Button>
                 </CardFooter>
               </Card>
             </form>

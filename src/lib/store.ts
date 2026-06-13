@@ -102,7 +102,15 @@ function getDefaultStore(): AppStore {
                 enableSmsOnManualPayment: true,
                 manualPaymentMessageTemplate: "Dear {{Owner Name}}, we have received your payment of GHS {{Amount Paid}} on {{Payment Date}}. Your new balance is GHS {{Amount Owed}}. Receipt No: {{Receipt No}}. Thank you.",
             },
-            billDisplaySettings: {},
+            billDisplaySettings: {
+                showBasicLevy: true,
+                showAnnualRate: true,
+                showGrossTotal: true,
+                showArrears: true,
+                showTotalPayment: false,
+                showNetPayable: true,
+                customFields: []
+            },
         },
     };
 }

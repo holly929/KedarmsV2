@@ -114,13 +114,16 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
   const totalAmountDue = useMemo(() => {
     if (!data) return 0;
 
+    // Prioritize 'Amount Due' from Excel if it exists
+    const importedAmountDue = parseNumeric(getPropertyValue(data, 'Amount Due'));
+    if (importedAmountDue !== 0) return importedAmountDue;
+
     if (billType === 'property') {
       const basicLevy = parseNumeric(getPropertyValue(data, 'Basic Levy'));
       const amount = parseNumeric(getPropertyValue(data, 'Amount'));
       const tp = parseNumeric(getPropertyValue(data, 'Total Payment'));
       
       if (basicLevy !== 0 || amount !== 0) {
-        // For new format: NET PAYABLE = (BASIC LEVY + ANNUAL RATE CHARGED) - TOTAL PAYMENT
         return (basicLevy + amount) - tp;
       }
       
@@ -218,35 +221,43 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
               {(() => {
                 const basicLevy = parseNumeric(getPropertyValue(data, 'Basic Levy'));
                 const amount = parseNumeric(getPropertyValue(data, 'Amount'));
+                const arrears = parseNumeric(getPropertyValue(data, 'Previous Balance') || getPropertyValue(data, 'Arrears'));
                 const totalPayment = parseNumeric(getPropertyValue(data, 'Total Payment'));
-                const hasNewFormat = basicLevy !== 0 || amount !== 0;
+                const displaySettings = settings?.billDisplay || {};
+                const customFields = displaySettings.customFields || [];
                 
-                if (hasNewFormat) {
-                  // New format with Basic Levy and Annual Rate Charged
-                  const grossTotalDue = basicLevy + amount; // GROSS TOTAL DUE = BASIC LEVY + ANNUAL RATE CHARGED
-                  
-                  return (
-                    <>
+                return (
+                  <>
+                    {/* Standard Fields based on visibility settings */}
+                    {displaySettings.showBasicLevy !== false && basicLevy !== 0 && (
                       <div style={styles.row}><span>BASIC LEVY</span><span>{formatCurrency(basicLevy)}</span></div>
+                    )}
+                    {displaySettings.showAnnualRate !== false && amount !== 0 && (
                       <div style={styles.row}><span>ANNUAL RATE CHARGED</span><span>{formatCurrency(amount)}</span></div>
-                      <div style={{ ...styles.row, ...styles.boldRow }}><span>GROSS TOTAL DUE</span><span>{formatCurrency(grossTotalDue)}</span></div>
+                    )}
+                    {displaySettings.showGrossTotal !== false && (basicLevy !== 0 || amount !== 0) && (
+                      <div style={{ ...styles.row, ...styles.boldRow }}><span>GROSS TOTAL DUE</span><span>{formatCurrency(basicLevy + amount)}</span></div>
+                    )}
+                    {displaySettings.showArrears !== false && arrears !== 0 && (
+                      <div style={styles.row}><span>ARREARS BROUGHT FORWARD</span><span>{formatCurrency(arrears)}</span></div>
+                    )}
+                    {displaySettings.showTotalPayment === true && totalPayment !== 0 && (
                       <div style={styles.row}><span>LESS TOTAL PAYMENTS</span><span>{formatCurrency(totalPayment)}</span></div>
-                    </>
-                  );
-                } else {
-                  // Old format with Rateable Value and Rate Impost
-                  const rateableValue = parseNumeric(getPropertyValue(data, 'Rateable Value'));
-                  const rateImpost = parseNumeric(getPropertyValue(data, 'Rate Impost'));
-                  const currentYearDue = rateableValue * rateImpost;
-                  
-                  return (
-                    <>
-                      <div style={styles.row}><span>ANNUAL RATE CHARGED</span><span>{formatCurrency(currentYearDue)}</span></div>
-                      <div style={{ ...styles.row, ...styles.boldRow }}><span>CURRENT YEAR DUE</span><span>{formatCurrency(currentYearDue)}</span></div>
-                      <div style={styles.row}><span>LESS TOTAL PAYMENTS</span><span>{formatCurrency(totalPayment)}</span></div>
-                    </>
-                  );
-                }
+                    )}
+
+                    {/* Custom Fields from Excel */}
+                    {customFields.map((field: string) => {
+                      const val = getPropertyValue(data, field);
+                      if (val === undefined || val === null || val === '') return null;
+                      return (
+                        <div key={field} style={styles.row}>
+                          <span style={{ textTransform: 'uppercase' }}>{field}</span>
+                          <span>{typeof val === 'number' ? formatCurrency(val) : String(val)}</span>
+                        </div>
+                      );
+                    })}
+                  </>
+                );
               })()}
             </>
           ) : (
@@ -316,6 +327,7 @@ export function BillDialog({ bill, isOpen, onOpenChange }: BillDialogProps) {
       setSettings({
         general: store.settings.generalSettings || {},
         appearance: store.settings.appearanceSettings || {},
+        billDisplay: store.settings.billDisplaySettings || {},
       });
     }
   }, [isOpen]);
