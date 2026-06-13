@@ -240,9 +240,7 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
                     {displaySettings.showAnnualRate !== false && amount !== 0 && (
                       <div style={styles.row}><span>ANNUAL RATE CHARGED</span><span>{formatCurrency(amount)}</span></div>
                     )}
-                    {displaySettings.showGrossTotal !== false && (basicLevy !== 0 || amount !== 0) && (
-                      <div style={{ ...styles.row, ...styles.boldRow }}><span>GROSS TOTAL DUE</span><span>{formatCurrency(basicLevy + amount)}</span></div>
-                    )}
+
                     {displaySettings.showArrears !== false && arrears !== 0 && (
                       <div style={styles.row}><span>ARREARS BROUGHT FORWARD</span><span>{formatCurrency(arrears)}</span></div>
                     )}

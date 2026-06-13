@@ -105,7 +105,6 @@ function getDefaultStore(): AppStore {
             billDisplaySettings: {
                 showBasicLevy: true,
                 showAnnualRate: true,
-                showGrossTotal: true,
                 showArrears: true,
                 showTotalPayment: false,
                 showNetPayable: true,

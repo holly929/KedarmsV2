@@ -62,7 +62,6 @@ const appearanceFormSchema = z.object({
 const billDisplayFormSchema = z.object({
   showBasicLevy: z.boolean().default(true),
   showAnnualRate: z.boolean().default(true),
-  showGrossTotal: z.boolean().default(true),
   showArrears: z.boolean().default(true),
   showTotalPayment: z.boolean().default(false),
   showNetPayable: z.boolean().default(true),
@@ -309,12 +308,7 @@ export default function SettingsPage() {
                           <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                         </FormItem>
                       )} />
-                      <FormField control={billDisplayForm.control} name="showGrossTotal" render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                          <div className="space-y-0.5"><FormLabel>Show Gross Total Due</FormLabel></div>
-                          <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                        </FormItem>
-                      )} />
+
                       <FormField control={billDisplayForm.control} name="showArrears" render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                           <div className="space-y-0.5"><FormLabel>Show Arrears BF</FormLabel></div>
