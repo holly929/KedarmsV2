@@ -124,12 +124,9 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
       const arrears = parseNumeric(getPropertyValue(data, 'Previous Balance') || getPropertyValue(data, 'Arrears'));
       const tp = parseNumeric(getPropertyValue(data, 'Total Payment'));
       
-      // If Basic Levy or Amount is present, calculate: (Levy + Amount + Arrears) - Payment
-      // Note: User asked to remove 'Less Total Payments' from display but usually it should be subtracted from the total owed.
-      // However, if the user wants the "NET PAYABLE" to be EXACTLY what's in their Excel, 
-      // they should import it into the 'Amount Due' column which is handled above.
+      // If Basic Levy or Amount is present, NET PAYABLE = BASIC LEVY + ANNUAL RATE CHARGED
       if (basicLevy !== 0 || amount !== 0) {
-        return (basicLevy + amount + arrears) - tp;
+        return basicLevy + amount;
       }
       
       const rv = parseNumeric(getPropertyValue(data, 'Rateable Value'));
