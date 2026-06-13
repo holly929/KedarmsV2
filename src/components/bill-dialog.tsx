@@ -114,21 +114,22 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
   const totalAmountDue = useMemo(() => {
     if (!data) return 0;
 
-    // Global priority: If 'Amount Due' is explicitly imported from Excel, use it as the final word
-    const importedAmountDue = parseNumeric(getPropertyValue(data, 'Amount Due'));
-    if (importedAmountDue !== 0) return importedAmountDue;
-
     if (billType === 'property') {
+      // Priority 1: BASIC LEVY + ANNUAL RATE CHARGED (Sum of the two components)
       const basicLevy = parseNumeric(getPropertyValue(data, 'Basic Levy'));
       const amount = parseNumeric(getPropertyValue(data, 'Amount'));
-      const arrears = parseNumeric(getPropertyValue(data, 'Previous Balance') || getPropertyValue(data, 'Arrears'));
-      const tp = parseNumeric(getPropertyValue(data, 'Total Payment'));
       
-      // If Basic Levy or Amount is present, NET PAYABLE = BASIC LEVY + ANNUAL RATE CHARGED
       if (basicLevy !== 0 || amount !== 0) {
         return basicLevy + amount;
       }
       
+      // Priority 2: Explicitly imported 'Amount Due' from Excel
+      const importedAmountDue = parseNumeric(getPropertyValue(data, 'Amount Due'));
+      if (importedAmountDue !== 0) return importedAmountDue;
+      
+      // Fallback for old format
+      const arrears = parseNumeric(getPropertyValue(data, 'Previous Balance') || getPropertyValue(data, 'Arrears'));
+      const tp = parseNumeric(getPropertyValue(data, 'Total Payment'));
       const rv = parseNumeric(getPropertyValue(data, 'Rateable Value'));
       const ri = parseNumeric(getPropertyValue(data, 'Rate Impost'));
       return (rv * ri + arrears) - tp;
