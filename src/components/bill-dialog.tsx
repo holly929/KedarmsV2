@@ -116,10 +116,17 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
     const importedTotal = parseNumeric(getPropertyValue(data, 'Amount Due'));
     if (importedTotal !== 0) return importedTotal;
 
-          if (billType === 'property') {
+    if (billType === 'property') {
+      const basicLevy = parseNumeric(getPropertyValue(data, 'Basic Levy'));
+      const amount = parseNumeric(getPropertyValue(data, 'Amount'));
+      const tp = parseNumeric(getPropertyValue(data, 'Total Payment'));
+      
+      if (basicLevy !== 0 || amount !== 0) {
+        return (basicLevy + amount) - tp;
+      }
+      
       const rv = parseNumeric(getPropertyValue(data, 'Rateable Value'));
       const ri = parseNumeric(getPropertyValue(data, 'Rate Impost'));
-      const tp = parseNumeric(getPropertyValue(data, 'Total Payment'));
       return (rv * ri) - tp;
     } else if (billType === 'bop') {
       return (parseNumeric(getPropertyValue(data, 'Permit Fee')) + parseNumeric(getPropertyValue(data, 'Arrears'))) - parseNumeric(getPropertyValue(data, 'Payment'));
@@ -209,10 +216,35 @@ export const PrintableContent = forwardRef<HTMLDivElement, {
         <div style={{ flexGrow: 1 }}>
           {billType === 'property' ? (
             <>
-              <div style={styles.row}><span>ANNUAL RATE CHARGED</span><span>{formatCurrency(parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost')))}</span></div>
-              <div style={{ ...styles.row, ...styles.boldRow }}><span>CURRENT YEAR DUE</span><span>{formatCurrency(parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost')))}</span></div>
-              <div style={{ ...styles.row, ...styles.boldRow }}><span>GROSS TOTAL DUE</span><span>{formatCurrency(parseNumeric(getPropertyValue(data, 'Rateable Value')) * parseNumeric(getPropertyValue(data, 'Rate Impost')))}</span></div>
-              <div style={styles.row}><span>LESS TOTAL PAYMENTS</span><span>{formatCurrency(getPropertyValue(data, 'Total Payment'))}</span></div>
+              {(() => {
+                const basicLevy = parseNumeric(getPropertyValue(data, 'Basic Levy'));
+                const amount = parseNumeric(getPropertyValue(data, 'Amount'));
+                const hasNewFormat = basicLevy !== 0 || amount !== 0;
+                
+                if (hasNewFormat) {
+                  const currentYearDue = basicLevy + amount;
+                  return (
+                    <>
+                      <div style={styles.row}><span>BASIC LEVY</span><span>{formatCurrency(basicLevy)}</span></div>
+                      <div style={styles.row}><span>ANNUAL RATE CHARGED</span><span>{formatCurrency(amount)}</span></div>
+                      <div style={{ ...styles.row, ...styles.boldRow }}><span>CURRENT YEAR DUE</span><span>{formatCurrency(currentYearDue)}</span></div>
+                      <div style={styles.row}><span>LESS TOTAL PAYMENTS</span><span>{formatCurrency(getPropertyValue(data, 'Total Payment'))}</span></div>
+                    </>
+                  );
+                } else {
+                  const rateableValue = parseNumeric(getPropertyValue(data, 'Rateable Value'));
+                  const rateImpost = parseNumeric(getPropertyValue(data, 'Rate Impost'));
+                  const currentYearDue = rateableValue * rateImpost;
+                  return (
+                    <>
+                      <div style={styles.row}><span>ANNUAL RATE CHARGED</span><span>{formatCurrency(currentYearDue)}</span></div>
+                      <div style={{ ...styles.row, ...styles.boldRow }}><span>CURRENT YEAR DUE</span><span>{formatCurrency(currentYearDue)}</span></div>
+                      <div style={{ ...styles.row, ...styles.boldRow }}><span>GROSS TOTAL DUE</span><span>{formatCurrency(currentYearDue)}</span></div>
+                      <div style={styles.row}><span>LESS TOTAL PAYMENTS</span><span>{formatCurrency(getPropertyValue(data, 'Total Payment'))}</span></div>
+                    </>
+                  );
+                }
+              })()}
             </>
           ) : (
             <>

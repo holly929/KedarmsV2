@@ -66,6 +66,8 @@ const DEFAULT_SYSTEM_HEADERS = [
     'Town', 
     'Suburb', 
     'Property Type', 
+    'Basic Levy',
+    'Amount', 
     'Rateable Value', 
     'Rate Impost', 
     'Sanitation Charged', 
